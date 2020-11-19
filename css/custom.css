@@ -1,0 +1,36 @@
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.overflow-scroll-vertical {
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+.container-list-text {
+    font-size: 0.9rem;
+}
+
+.icon {
+    overflow: hidden;
+    max-height: 18px;
+}
+
+.icon>i {
+    position: relative;
+    background-size: 16px 16px;
+    width: 16px;
+    height: 16px;
+    overflow: hidden;
+    left: calc(16px * -1);
+    border-right: 16px solid transparent;
+}
+
+.loading {
+    display: none;
+}
+
+.trash-icon {
+    max-width: 14px;
+    max-height: 14px;
+}
