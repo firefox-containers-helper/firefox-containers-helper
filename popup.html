@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/custom.css">
+</head>
+
+<body>
+    <div class="container-fluid mt-2" id="mainDivContainer">
+        <div class="row border-bottom">
+            <div class="col-12">
+                <form id="searchContainerForm">
+                    <div class="form-group">
+                        <label for="searchContainerInput">Search for a container:</label>
+                        <input type="text" class="form-control mb-2" placeholder="Search" id="searchContainerInput" />
+                        <button type="submit" class="btn btn-primary btn-block">Search</button>
+                    </div>
+                    <div class="form-group">
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="row border-bottom loading" id="listOfContainersRow">
+            <div class="col-12 d-flex justify-content-center align-items-center align-content-center">
+                <form id="optionsForm">
+                    <div class="form-group form-check-inline">
+                        <input type="checkbox" id="closePopupOnClick" class="form-check-input" checked="true">
+                        <label for="closePopupOnClick" id="closePopupOnClickLabel" class="form-check-label small">Stay
+                            open</label>
+                    </div>
+                    <div class="form-group form-check-inline">
+                        <input type="checkbox" id="deleteContainersOnClick" class="form-check-input" checked="true">
+                        <label for="deleteContainersOnClick" id="deleteContainersOnClickLabel"
+                            class="form-check-label small">Delete
+                            Mode</label>
+                    </div>
+                    <div class="form-group form-check-inline">
+                        <input type="checkbox" id="setDefaultUrlsOnClick" class="form-check-input" checked="false">
+                        <label for="setDefaultUrlsOnClick" id="setDefaultUrlsOnClickLabel"
+                            class="form-check-label small">Set Default URL</label>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 text-center">
+                <span class="text-muted text-center small" id="summaryText"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 text-center">
+                <span class="text-muted text-center small" id="warningText"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 mt-1">
+                <div id="container-list" class="overflow-scroll-vertical"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 text-center">
+                <span class="text-muted small"><a href="https://gitlab.com/icode331/firefox-containers-helper/README.md"
+                        target="_blank" rel="noopener noreferrer">Extension Readme</a></span>
+            </div>
+        </div>
+    </div>
+    <script src="context.js"></script>
+</body>
+
+</html>

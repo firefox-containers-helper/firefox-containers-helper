@@ -1,0 +1,35 @@
+{
+    "manifest_version": 2,
+    "name": "Containers Helper",
+    "version": "0.0.2",
+    "description": "Helps improve container interactions by providing container searching, deleting, and default URLs on a per-container basis.",
+    "icons": {
+        "48": "icons/icon_square.png"
+    },
+    "applications": {
+        "gecko": {
+            "strict_min_version": "57.0"
+        }
+    },
+    "permissions": [
+        "activeTab",
+        "contextualIdentities",
+        "cookies",
+        "tabs",
+        "storage"
+    ],
+    "browser_action": {
+        "browser_style": true,
+        "default_icon": "icons/icon_square.png",
+        "default_title": "Containers Helper",
+        "default_popup": "popup.html"
+    },
+    "commands": {
+        "_execute_browser_action": {
+            "suggested_key": {
+                "default": "Alt+Shift+D"
+            },
+            "description": "Open containers helper panel"
+        }
+    }
+}
