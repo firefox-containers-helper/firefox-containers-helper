@@ -2,6 +2,11 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.9
+
+* revert change in `v0.0.7` to ignore spaces in search
+  * behavior is search-exact for what you type, may revisit later
+
 ## v0.0.8
 
 * revert change in `v0.0.7` to ignore `-_` characters when searching
