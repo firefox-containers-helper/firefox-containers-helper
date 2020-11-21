@@ -1,10 +1,12 @@
 {
     "manifest_version": 2,
     "name": "Containers Helper",
-    "version": "0.0.2",
-    "description": "Helps improve container interactions by providing container searching, deleting, and default URLs on a per-container basis.",
+    "version": "0.0.4",
+    "description": "Helps improve container management by providing container searching, deleting, renaming, duplicating, and default URLs on a per-container or bulk basis.",
     "icons": {
-        "48": "icons/icon_square.png"
+        "48": "icons/icon_cube.svg",
+        "96": "icons/icon_cube.svg",
+        "128": "icons/icon_cube.svg"
     },
     "applications": {
         "gecko": {
@@ -20,7 +22,7 @@
     ],
     "browser_action": {
         "browser_style": true,
-        "default_icon": "icons/icon_square.png",
+        "default_icon": "icons/icon_cube.svg",
         "default_title": "Containers Helper",
         "default_popup": "popup.html"
     },
