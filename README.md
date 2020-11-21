@@ -214,6 +214,13 @@ This container management extension is dangerously powerful. If you're not caref
 
 ## Future Features
 
+* **New modes**:
+  * **Name Replace mode** - Replaces a string in every matched container name
+  * **URL Replace mode** - Replaces a string in every matched container URL
+  * **Recolor mode** - Updates the color of all matched containers
+  * **Set Icon mode** - Updates the icon of all matched containers
+* **Sorting** - Sort results according to criteria
+* **UI improvements** - Use a dropdown field for selecting the current mode instead of checkboxes
 * **Container Import/Export** - Very much needed feature that I want to implement next. This will be a bit tricky though, since this extension doesn't have control over url-to-container associations made in the multi-account containers extension.
 * **Saved searches** - Saving the results and possibly binding to a keystroke might be useful.
 * **Favorite/Tagged containers** - Adding a "star" capability to certain tabs so that you can filter them easier. For now, a workaround is using the naming conventions suggested in the [tips](#tips) section.
