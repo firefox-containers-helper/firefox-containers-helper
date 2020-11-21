@@ -34,3 +34,7 @@
     max-width: 14px;
     max-height: 14px;
 }
+
+body {
+    min-width: 330px;
+}
