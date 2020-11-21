@@ -410,7 +410,7 @@ const deleteMultipleContainers = (contextsToDelete) => {
         dialogStr += `${contextToDelete.name}\n`;
     });
 
-    if (confirm(dialogStr)) {
+    if (confirm(dialogStr) && confirm(`Are you absolutely sure you want to delete ${contextsToDelete.length} container(s)? This is not reversible.`)) {
         // delete every context
         let deletedContexts = [];
         contextsToDelete.forEach((contextToDelete, i, arr) => {
