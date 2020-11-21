@@ -2,6 +2,11 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.6
+
+* fix url to readme in extension popup
+* add faq in `README.md`
+
 ## v0.0.5
 
 * small cleanup
