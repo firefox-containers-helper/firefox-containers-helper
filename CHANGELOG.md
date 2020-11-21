@@ -5,6 +5,7 @@ This changelog will be corrected in the future.
 ## v0.0.7
 
 * ignore spaces and trip `-_` characters when searching
+* add extra confirmation prompt for deleting containers
 
 ## v0.0.6
 
