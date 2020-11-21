@@ -117,9 +117,9 @@ finds and deletes the container list group elements.</p>
 assembles a list group element.</p>
 <p>TODO: make the <code>containerListGroup</code> ID use consistent naming conventions</p>
 </dd>
-<dt><a href="#isUserQueryContextNameMatch">isUserQueryContextNameMatch(contextName, userQueryArray)</a> ⇒ <code>boolean</code></dt>
-<dd><p>Checks if a user input string matches a container name using a somewhat
-intuitive search algorithm.</p>
+<dt><a href="#isUserQueryContextNameMatch">isUserQueryContextNameMatch(contextName, userQuery)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Checks if a user input string matches a container name using a rudimentary
+search algorithm.</p>
 </dd>
 <dt><a href="#filterContainers">filterContainers(event)</a> ⇒ <code>void</code></dt>
 <dd><p>Applies the user&#39;s search query, and updates the list of containers accordingly.</p>
@@ -527,9 +527,9 @@ TODO: make the `containerListGroup` ID use consistent naming conventions
 **Returns**: <code>Element</code> - The `<ul>` list group element that will hold the child `<li>` container list items.  
 <a name="isUserQueryContextNameMatch"></a>
 
-## isUserQueryContextNameMatch(contextName, userQueryArray) ⇒ <code>boolean</code>
-Checks if a user input string matches a container name using a somewhat
-intuitive search algorithm.
+## isUserQueryContextNameMatch(contextName, userQuery) ⇒ <code>boolean</code>
+Checks if a user input string matches a container name using a rudimentary
+search algorithm.
 
 **Kind**: global function  
 **Returns**: <code>boolean</code> - Whether or not a name and query should be included as part of the search results  
@@ -537,7 +537,7 @@ intuitive search algorithm.
 | Param | Type | Description |
 | --- | --- | --- |
 | contextName | <code>string</code> | The lowercase name of the `contextualIdentity` to run the search query against |
-| userQueryArray | <code>Array.&lt;string&gt;</code> | An array of strings built by splitting the lowercase user query string based on space characters |
+| userQuery | <code>string</code> | A string that the user entered as a search term |
 
 <a name="filterContainers"></a>
 

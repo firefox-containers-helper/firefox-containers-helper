@@ -625,17 +625,15 @@ const buildContainerListGroupElement = () => {
 };
 
 /**
- * Checks if a user input string matches a container name using a somewhat
- * intuitive search algorithm.
+ * Checks if a user input string matches a container name using a rudimentary
+ * search algorithm.
  * @param {string} contextName The lowercase name of the `contextualIdentity` to run the search query against
- * @param {string[]} userQueryArray An array of strings built by splitting the lowercase user query string based on space characters
+ * @param {string} userQuery A string that the user entered as a search term
  * @returns {boolean} Whether or not a name and query should be included as part of the search results
  */
-const isUserQueryContextNameMatch = (contextName, userQueryArray) => {
-    for (let queryWord of userQueryArray) {
-        if (contextName.indexOf(queryWord) !== -1) {
-            return true;
-        }
+const isUserQueryContextNameMatch = (contextName, userQuery) => {
+    if (contextName.indexOf(userQuery) !== -1) {
+        return true;
     }
     return false;
 };
@@ -663,12 +661,12 @@ const filterContainers = (event) => {
             // now build its successor
             const ulElement = buildContainerListGroupElement();
 
+            const lowerCaseUserQuery = userQuery.toLowerCase();
+
             contexts.forEach((context) => {
                 const lowerCaseContextName = context.name.toLowerCase();
-                const lowerCaseUserQueryArray = userQuery.toLowerCase()
-                    .split(" ");
 
-                if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQueryArray) || checkDefaultUrlsForUserQuery(context, userQuery)) {
+                if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery) || checkDefaultUrlsForUserQuery(context, lowerCaseUserQuery)) {
                     const liElement = buildContainerListItem(filteredResults, context);
                     ulElement.appendChild(liElement);
                     filteredResults.push(context);
