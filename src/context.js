@@ -10,10 +10,7 @@ let initialLoadingComplete = false;
  * All configuration options for this web extension are stored in this object.
  * @typedef {Object} Configuration
  * @property {boolean} windowStayOpenState
- * @property {boolean} deleteContainersOnClick
- * @property {boolean} setDefaultUrlsOnClick
- * @property {boolean} renameContainersOnClick
- * @property {boolean} duplicateOnClick
+ * @property {string} mode
  * @property {Object} containerDefaultUrls
  */
 
@@ -35,10 +32,7 @@ let initialLoadingComplete = false;
  * All configuration options for this web extension are stored in this object.
  * @namespace
  * @property {boolean} windowStayOpenState
- * @property {boolean} deleteContainersOnClick
- * @property {boolean} setDefaultUrlsOnClick
- * @property {boolean} renameOnClick
- * @property {boolean} duplicateOnClick
+ * @property {string} mode
  * @property {object} containerDefaultUrls
  */
 const config = {
@@ -51,35 +45,12 @@ const config = {
     windowStayOpenState: true,
 
     /**
-     * deleteContainersOnClick triggers deletion of contextual identities
-     * (containers) upon clicking a container tab result.
-     * @type {boolean}
+     * mode is the current mode the user is operating in, such as
+     * deleteContainersOnClick or setDefaultUrlsOnClick.
+     * @type {string}
      * @default
      */
-    deleteContainersOnClick: false,
-
-    /**
-     * setDefaultUrlsOnClick will prompt the user to set a default URL for
-     * each container tab result if set to true.
-     * @type {boolean}
-     * @default
-     */
-    setDefaultUrlsOnClick: false,
-
-    /**
-     * renameOnClick will allow the user to quickly rename a container on click.
-     * @type {boolean}
-     * @default
-     */
-    renameOnClick: false,
-
-    /**
-     * duplicateOnClick will allow the user to quickly duplicate a container
-     * on click.
-     * @type {boolean}
-     * @default
-     */
-    duplicateOnClick: false,
+    mode: "",
 
     /**
      * containerDefaultUrls is a key-value pair of container ID's to
@@ -92,18 +63,22 @@ const config = {
 };
 
 /**
- * Each of these values represents a key in the `config` object that,
- * when set to `true`, will require all other values to be false
+ * All functional modes.
+ * TODO: jsdoc this as enum?
  * @constant
  * @type {string[]}
  * @default
  */
-const mutuallyExclusiveConfigOptions = [
-    'deleteContainersOnClick',
-    'duplicateOnClick',
-    'renameOnClick',
-    'setDefaultUrlsOnClick',
-];
+const MODES = {
+    OPEN: "openOnClick",
+    SET_URL: "setDefaultUrlsOnClick",
+    SET_NAME: "renameOnClick",
+    SET_COLOR: "setColorOnClick",
+    SET_ICON: "setIconOnClick",
+    DUPLICATE: "duplicateOnClick",
+    DELETE: "deleteContainersOnClick",
+}
+
 
 /**
  * Random list of help messages to show in the Help Text area.
@@ -112,7 +87,7 @@ const mutuallyExclusiveConfigOptions = [
  * @default
  */
 const helpTextMessages = [
-    'Tip: Use ctrl to open pinned tab(s).',
+    'Tip: Use Ctrl to open pinned tab(s).',
     'Tip: Shift+Click to execute against every shown result'
 ];
 
@@ -212,7 +187,7 @@ const buildContainerLabelElement = (context) => {
 const applyEventListenersToContainerListItem = (liElement, filteredResults, context) => {
     try {
         liElement.addEventListener('mouseover', (event) => {
-            if (config.deleteContainersOnClick) {
+            if (config.mode === MODES.DELETE) {
                 event.target.className = containerListItemActiveDangerClassNames;
             } else {
                 event.target.className = containerListItemActiveClassNames;
@@ -230,7 +205,7 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
             }
         });
         liElement.addEventListener('onfocus', (event) => {
-            if (config.deleteContainersOnClick) {
+            if (config.mode === MODES.DELETE) {
                 event.target.className = containerListItemActiveDangerClassNames;
             } else {
                 event.target.className = containerListItemActiveClassNames;
@@ -259,7 +234,7 @@ const buildContainerListItem = (filteredResults, context) => {
     const containerIconHolderElement = buildContainerIconElement(context);
     const containerLabelElement = buildContainerLabelElement(context);
 
-    if (config.deleteContainersOnClick) {
+    if (config.mode === MODES.DELETE) {
         const divElement = document.createElement('div');
         divElement.className = "d-flex justify-content-center align-items-center align-content-center"
         addEmptyEventListenersToElement(divElement);
@@ -324,7 +299,7 @@ const setHelpText = (message) => {
  * @returns {void}
  */
 const setDeletionWarningText = () => {
-    if (config.deleteContainersOnClick) {
+    if (config.mode === MODES.DELETE) {
         setHelpText("Warning: Will delete containers that you click");
         return;
     }
@@ -337,7 +312,7 @@ const setDeletionWarningText = () => {
  * @returns {void}
  */
 const setUrlWarningText = () => {
-    if (config.setDefaultUrlsOnClick) {
+    if (config.mode === MODES.SET_URL) {
         setHelpText("URLs do not affect multi-account container preferences.");
         return;
     }
@@ -350,7 +325,7 @@ const setUrlWarningText = () => {
  * @returns {void}
  */
 const setSummaryText = (message) => {
-    document.querySelector("#summaryText").innerHTML = message;
+    document.querySelector("#summaryText").innerText = message;
 }
 
 /**
@@ -578,15 +553,15 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
     }
 
     // decision tree
-    if (config.renameOnClick) {
+    if (config.mode === MODES.SET_NAME) {
         renameContexts(contextsToActOn);
-    } else if (config.deleteContainersOnClick) {
+    } else if (config.mode === MODES.DELETE) {
         deleteMultipleContainers(contextsToActOn);
-    } else if (config.setDefaultUrlsOnClick) {
+    } else if (config.mode === MODES.SET_URL) {
         setMultipleDefaultUrlsWithPrompt(contextsToActOn);
-    } else if (config.duplicateOnClick) {
+    } else if (config.mode === MODES.DUPLICATE) {
         duplicateContexts(contextsToActOn);
-    } else {
+    } else if (config.mode === MODES.OPEN) {
         openMultipleContexts(contextsToActOn, shouldOpenPinnedTab);
     }
 
@@ -693,36 +668,6 @@ const filterContainers = (event) => {
 }
 
 /**
- * Retrieves extension settings from browser storage and persists them to
- * the `config` object, as well as setting the state of a few HTML elements.
- * @param {object} data The data from calling `browser.storage.local.get()`
- * @returns {void}
- */
-const processExtensionSettings = (data) => {
-    if (data) {
-        Object.keys(config).forEach((configKey) => {
-            if (data[configKey] === undefined) {
-                if (typeof config[configKey] === "boolean") {
-                    document.querySelector(`#${configKey}`).checked = config[configKey];
-                }
-                return;
-            } else {
-                if (typeof data[configKey] === "boolean") {
-                    config[configKey] = data[configKey] === true;
-                    document.querySelector(`#${configKey}`).checked = config[configKey];
-                    return;
-                } else {
-                    if (data[configKey]) {
-                        config[configKey] = data[configKey];
-                    }
-                }
-            }
-        });
-        return;
-    }
-};
-
-/**
  * When a user checks a checkbox, this function toggles that value in the
  * `config` object, as well as setting all of the other mutually exclusive
  * options to `false`. It will also update the UI checkboxes to reflect the
@@ -734,31 +679,68 @@ const setConfigParam = (parameter) => {
     // start by toggling the intended config parameter
     config[parameter] = !config[parameter];
 
-    /**
-     * we have to build out an object that will be pushed to the extension
-     * config storage for persistence
-     * TODO: test/determine if we can just push the config object
-     * to the store without negative consequences
-     * @type {Configuration}
-     */
     const extensionStorageConfigStore = {};
     extensionStorageConfigStore[parameter] = config[parameter];
-
-    if (mutuallyExclusiveConfigOptions.indexOf(parameter) !== -1) {
-        mutuallyExclusiveConfigOptions.forEach((mutuallyExclusiveConfigOption) => {
-            if (mutuallyExclusiveConfigOption !== parameter) {
-                // set all other mutually exclusive values to false
-                config[mutuallyExclusiveConfigOption] = false;
-                // persist the value to the temporary store
-                extensionStorageConfigStore[mutuallyExclusiveConfigOption] = config[mutuallyExclusiveConfigOption];
-                document.querySelector(`#${mutuallyExclusiveConfigOption}`).checked = config[mutuallyExclusiveConfigOption];
-            }
-        });
-    }
 
     document.querySelector(`#${parameter}`).checked = config[parameter];
     browser.storage.local.set(extensionStorageConfigStore);
 }
+
+
+/**
+ * Retrieves extension settings from browser storage and persists them to
+ * the `config` object, as well as setting the state of a few HTML elements.
+ * @param {object} data The data from calling `browser.storage.local.get()`
+ * @returns {void}
+ */
+const processExtensionSettings = (data) => {
+    // checks if *any* settings have been defined
+    Object.keys(config).forEach((configKey) => {
+        if (data[configKey] !== undefined) {
+            config[configKey] = data[configKey];
+        }
+        switch (configKey) {
+            case "mode":
+                document.getElementById(`modeSelect`).value = config[configKey];
+                break;
+            case "windowStayOpenState":
+                document.getElementById(`windowStayOpenState`).checked = config[configKey];
+            case "containerDefaultUrls":
+                // do nothing at this time
+                break;
+            default:
+                break;
+        }
+    });
+};
+
+/**
+ * When the user changes the current mode, this function sets the stored
+ * configuration value accordingly.
+ * @param {string} newMode The mode to set.
+ * @returns {void}
+ */
+const setMode = (newMode) => {
+    config.mode = newMode;
+
+    // push to storage
+    browser.storage.local.set({
+        mode: config.mode
+    });
+
+    // set help message
+    switch (config.mode) {
+        case MODES.DELETE:
+            setDeletionWarningText();
+        case MODES.SET_URL:
+            setUrlWarningText();
+        case MODES.SET_NAME:
+            setHelpText("")
+        default:
+            setHelpText("");
+            break;
+    }
+};
 
 /**
  * Initializes the extension data upon document load, intended to be added as
@@ -786,24 +768,9 @@ const initializeDocument = (event) => {
         setConfigParam("windowStayOpenState");
     });
 
-    document.querySelector("#setDefaultUrlsOnClick").addEventListener("click", () => {
-        setConfigParam("setDefaultUrlsOnClick");
-        setUrlWarningText();
-    });
-
-    document.querySelector("#deleteContainersOnClick").addEventListener("click", () => {
-        setConfigParam("deleteContainersOnClick");
-        setDeletionWarningText();
-    });
-
-    document.querySelector("#renameOnClick").addEventListener("click", () => {
-        setConfigParam("renameOnClick");
-        setHelpText("");
-    });
-
-    document.querySelector("#duplicateOnClick").addEventListener("click", () => {
-        setConfigParam("duplicateOnClick");
-        setHelpText("");
+    document.querySelector("#modeSelect").addEventListener("change", (event) => {
+        setMode(event.target.value);
+        event.preventDefault();
     });
 }
 
