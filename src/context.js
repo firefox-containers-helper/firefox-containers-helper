@@ -9,9 +9,11 @@ let initialLoadingComplete = false;
 /**
  * All configuration options for this web extension are stored in this object.
  * @typedef {Object} Configuration
- * @property {boolean} windowStayOpenState - Keeps the window open while the user clicks on a container tab.
+ * @property {boolean} windowStayOpenState
  * @property {boolean} deleteContainersOnClick
  * @property {boolean} setDefaultUrlsOnClick
+ * @property {boolean} renameContainersOnClick
+ * @property {boolean} duplicateOnClick
  * @property {Object} containerDefaultUrls
  */
 
@@ -35,6 +37,8 @@ let initialLoadingComplete = false;
  * @property {boolean} windowStayOpenState
  * @property {boolean} deleteContainersOnClick
  * @property {boolean} setDefaultUrlsOnClick
+ * @property {boolean} renameOnClick
+ * @property {boolean} duplicateOnClick
  * @property {object} containerDefaultUrls
  */
 const config = {
@@ -63,6 +67,21 @@ const config = {
     setDefaultUrlsOnClick: false,
 
     /**
+     * renameOnClick will allow the user to quickly rename a container on click.
+     * @type {boolean}
+     * @default
+     */
+    renameOnClick: false,
+
+    /**
+     * duplicateOnClick will allow the user to quickly duplicate a container
+     * on click.
+     * @type {boolean}
+     * @default
+     */
+    duplicateOnClick: false,
+
+    /**
      * containerDefaultUrls is a key-value pair of container ID's to
      * default URLs to open for each container ID.
      * @example {"container-name-01":"https://site.com"}
@@ -72,6 +91,30 @@ const config = {
     containerDefaultUrls: {},
 };
 
+/**
+ * Each of these values represents a key in the `config` object that,
+ * when set to `true`, will require all other values to be false
+ * @constant
+ * @type {string[]}
+ * @default
+ */
+const mutuallyExclusiveConfigOptions = [
+    'deleteContainersOnClick',
+    'duplicateOnClick',
+    'renameOnClick',
+    'setDefaultUrlsOnClick',
+];
+
+/**
+ * Random list of help messages to show in the Help Text area.
+ * @constant
+ * @type {string[]}
+ * @default
+ */
+const helpTextMessages = [
+    'Tip: Use ctrl to open pinned tab(s).',
+    'Tip: Shift+Click to execute against every shown result'
+];
 
 /**
  * This is the set of classes to assign to a container list item that is not
@@ -136,16 +179,27 @@ const buildContainerIconElement = (context) => {
  * container's name and default URL, if defined.
  */
 const buildContainerLabelElement = (context) => {
+    const containerLabelDivHoldingElement = document.createElement('div');
+    containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
+
     const containerLabelElement = document.createElement('span');
-    containerLabelElement.className = 'container-list-text px-3';
     containerLabelElement.innerText = `${context.name}`;
+
+    const containerUrlLabelElement = document.createElement('span');
+    containerUrlLabelElement.className = 'text-muted small'
     const contextDefaultUrl = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
     if (contextDefaultUrl) {
-        containerLabelElement.innerHTML = `${context.name.substr(0, 25)} <br/> ${contextDefaultUrl.substr(0, 25)} `;
+        containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
     }
-    addEmptyEventListenersToElement(containerLabelElement);
 
-    return containerLabelElement;
+    addEmptyEventListenersToElement(containerLabelElement);
+    addEmptyEventListenersToElement(containerUrlLabelElement);
+    addEmptyEventListenersToElement(containerLabelDivHoldingElement);
+
+    containerLabelDivHoldingElement.appendChild(containerLabelElement);
+    containerLabelDivHoldingElement.appendChild(containerUrlLabelElement);
+
+    return containerLabelDivHoldingElement;
 };
 
 /**
@@ -256,8 +310,13 @@ const addEmptyEventListenersToElement = (element) => {
  * @param {string} message The HTML string to put inside the warning text element.
  * @returns {void}
  */
-const setWarningText = (message) => {
-    document.querySelector("#warningText").innerHTML = message;
+const setHelpText = (message) => {
+    let msg = message;
+    if (!message) {
+        const rngHelpMsgIndex = parseInt(Math.random() * helpTextMessages.length, 10) || 0;
+        msg = helpTextMessages[rngHelpMsgIndex];
+    }
+    document.querySelector("#helpText").innerText = msg;
 };
 
 /**
@@ -266,11 +325,11 @@ const setWarningText = (message) => {
  */
 const setDeletionWarningText = () => {
     if (config.deleteContainersOnClick) {
-        setWarningText("Warning: Will delete containers that you click");
+        setHelpText("Warning: Will delete containers that you click");
         return;
     }
 
-    setWarningText("");
+    setHelpText("");
 }
 
 /**
@@ -279,10 +338,10 @@ const setDeletionWarningText = () => {
  */
 const setUrlWarningText = () => {
     if (config.setDefaultUrlsOnClick) {
-        setWarningText("URLs do not affect multi-account container preferences.");
+        setHelpText("URLs do not affect multi-account container preferences.");
         return;
     }
-    setWarningText("");
+    setHelpText("");
 }
 
 /**
@@ -311,6 +370,19 @@ const writeContainerDefaultUrlsToStorage = () => {
 }
 
 /**
+ * Actions to perform when an action is completed.
+ * @returns {void}
+ */
+const actionCompletedHandler = () => {
+    // decide to close the extension or not at the last step
+    if (config.windowStayOpenState === false) {
+        window.close();
+    } else {
+        filterContainers();
+    }
+}
+
+/**
  * Checks if a given container's `contextualIdentity` (`context`) has a default
  * URL value set in `config.containerDefaultUrls`.
  * @param {ContextualIdentity} context The context for a container, straight from `browser.contextualIdentities`
@@ -324,31 +396,6 @@ const checkDefaultUrlsForUserQuery = (context, userQuery) => {
     }
     return false;
 }
-
-/**
- * Asks if the user wants to delete a single container, and executes if the user says so.
- * TODO: For unit testability, convert to an asynchronous function.
- * @param {ContextualIdentity} contextToDelete The `contextualIdentity` to possibly be deleted.
- * @returns {void}
- */
-const deleteSingleContainer = (contextToDelete) => {
-    if (confirm(`Are you sure you want to delete the container ${contextToDelete.name}?`)) {
-        browser.contextualIdentities.remove(contextToDelete.cookieStoreId).then(
-            (deletedContext) => {
-                if (!deletedContext) {
-                    setWarning("Container not found.");
-                    return;
-                }
-                setWarningText(`Deleted container ${deletedContext.name}`);
-            },
-            (error) => {
-                if (error) {
-                    alert(`Error deleting container ${contextToDelete.name}: ${error}`);
-                }
-            }
-        );
-    }
-};
 
 /**
  * Asks if the user wants to delete multiple containers, and executes if the user says so.
@@ -366,12 +413,11 @@ const deleteMultipleContainers = (contextsToDelete) => {
     if (confirm(dialogStr)) {
         // delete every context
         let deletedContexts = [];
-        contextsToDelete.forEach((contextToDelete) => {
+        contextsToDelete.forEach((contextToDelete, i, arr) => {
             browser.contextualIdentities.remove(contextToDelete.cookieStoreId).then(
                 (context) => {
-                    console.log(`deleted ${context.name}`);
                     deletedContexts.push(context);
-                    setWarningText(`Deleted ${deletedContexts.length}/${contextsToDelete.length} containers`);
+                    setHelpText(`Deleted ${deletedContexts.length}/${contextsToDelete.length} containers`);
                 },
                 (error) => {
                     if (error) {
@@ -380,44 +426,36 @@ const deleteMultipleContainers = (contextsToDelete) => {
                 }
             );
         });
+        return;
     }
 };
 
 /**
- * Requests a default URL from the user, and assigns that URL to every provided `contextualIdentity`.
- * TODO: easy refactor opportunity w/ setSingleDefaultUrl
+ * Associates a default URL to each item in the `contextsToSetDefaultUrls`
+ * parameter.
  * @param {ContextualIdentity[]} contextsToSetDefaultUrls The `contextualIdentity` array whose default URLs will be updated.
  * @returns {void}
  */
-const setMultipleDefaultUrls = (contextsToSetDefaultUrls) => {
-    const userInputUrl = prompt(`What should the default URL be for ${contextsToSetDefaultUrls.length} containers?\n\nType "none" (without quotes) to clear the saved default URL value(s).`);
-    if (userInputUrl) {
-        contextsToSetDefaultUrls.forEach((contextToSetDefaultUrl) => {
-            if (userInputUrl === "none") {
-                delete config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()];
-                return;
-            }
-            config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()] = userInputUrl;
-        });
-        writeContainerDefaultUrlsToStorage();
-    }
-};
+const setMultipleDefaultUrls = (contextsToSetDefaultUrls, urlToSet) => {
+    contextsToSetDefaultUrls.forEach((contextToSetDefaultUrl) => {
+        if (urlToSet === "none") {
+            delete config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()];
+            return;
+        }
+        config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()] = urlToSet;
+    });
+    writeContainerDefaultUrlsToStorage();
+}
 
 /**
- * Requests a default URL from the user, and assigns that URL to the provided `contextualIdentity`.
- * TODO: easy refactor opportunity w/ setMultipleDefaultUrls
- * @param {ContextualIdentity} contextToSetDefaultUrl The `contextualIdentity` whose default URL will be updated.
+ * Requests a default URL from the user, and assigns that URL to every provided `contextualIdentity`.
+ * @param {ContextualIdentity[]} contextsToSetDefaultUrls The `contextualIdentity` array whose default URLs will be updated.
  * @returns {void}
  */
-const setSingleDefaultUrl = (contextToSetDefaultUrl) => {
-    const userInputUrl = prompt(`What should the default URL be for the ${contextToSetDefaultUrl.name} container?\n\nType "none" (without quotes) to clear the saved default URL value.`);
+const setMultipleDefaultUrlsWithPrompt = (contextsToSetDefaultUrls) => {
+    const userInputUrl = prompt(`What should the default URL be for ${contextsToSetDefaultUrls.length} container(s)?\n\nType "none" (without quotes) to clear the saved default URL value(s).`);
     if (userInputUrl) {
-        if (userInputUrl === "none") {
-            delete config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()]
-        } else {
-            config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()] = userInputUrl;
-        }
-        writeContainerDefaultUrlsToStorage();
+        setMultipleDefaultUrls(contextsToSetDefaultUrls, userInputUrl);
     }
 };
 
@@ -442,15 +480,68 @@ const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab) => {
 };
 
 /**
- * Opens a single container tab according to controllable conditions.
- * @param {ContextualIdentity[]} contextToOpenAsContainer The `contextualIdentity` that will open as a container tab.
- * @param {boolean} openAsPinnedTab Whether or not to open as a pinned tab.
+ * Renames one or more contexts simultaneously.
+ * @param {ContextualIdentity[]} contextsToRename The `contextualIdentities` to change.
  * @returns {void}
  */
-const openSingleContext = (contextToOpenAsContainer, openAsPinnedTab) => {
-    openMultipleContexts([contextToOpenAsContainer], openAsPinnedTab);
+const renameContexts = (contextsToRename) => {
+    const userInput = prompt(`Rename ${contextsToRename.length} container(s) to:`);
+    if (userInput) {
+        if (userInput.length > 25) {
+            alert('Container names must be no more than 25 characters.');
+            return;
+        }
+        let updatedContexts = [];
+        contextsToRename.forEach((contextToRename) => {
+            browser.contextualIdentities.update(
+                contextToRename.cookieStoreId,
+                { "name": userInput }
+            ).then(
+                (updatedContext) => {
+                    updatedContexts.push(updatedContext);
+                    setHelpText(`Renamed ${updatedContexts.length} containers`);
+                },
+                (err) => {
+                    if (err) {
+                        alert(`Failed to update containers: ${JSON.stringify(err)}`);
+                    }
+                }
+            );
+        });
+    };
 };
 
+/**
+ * Duplicates one or more contexts.
+ * @param {ContextualIdentity[]} contextsToDuplicate The `contextualIdentities` to duplicate.
+ * @returns {void}
+ */
+const duplicateContexts = (contextsToDuplicate) => {
+    if (contextsToDuplicate.length <= 1 || confirm(`Are you sure you want to duplicate ${contextsToDuplicate.length} containers?`)) {
+        let createdContexts = [];
+        contextsToDuplicate.forEach((contextToDuplicate) => {
+            const newContext = {
+                color: contextToDuplicate.color,
+                icon: contextToDuplicate.icon,
+                name: contextToDuplicate.name
+            };
+            browser.contextualIdentities.create(newContext).then(
+                (createdContext) => {
+                    createdContexts.push(createdContext);
+                    // if the containers have default URL associations, we need to update those too
+                    const urlToSet = config.containerDefaultUrls[contextToDuplicate.cookieStoreId] || "none";
+                    setMultipleDefaultUrls([createdContext], urlToSet);
+                    setHelpText(`Duplicated ${createdContexts.length} containers`);
+                },
+                (err) => {
+                    if (err) {
+                        alert(`Failed to duplicate one or more containers: ${JSON.stringify(err)}`);
+                    }
+                }
+            );
+        });
+    };
+};
 
 /**
  * Adds click and other event handlers to a container list item HTML element.
@@ -472,27 +563,34 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
         }
     }
 
-    // decision tree
-    if (config.setDefaultUrlsOnClick && shouldExecuteOnAllResults) {
-        setMultipleDefaultUrls(filteredContexts);
-    } else if (config.setDefaultUrlsOnClick && !shouldExecuteOnAllResults) {
-        setSingleDefaultUrl(singleContext)
-    } else if (config.deleteContainersOnClick && shouldExecuteOnAllResults) {
-        deleteMultipleContainers(filteredContexts);
-    } else if (!config.deleteContainersOnClick && shouldExecuteOnAllResults) {
-        openMultipleContexts(filteredContexts, shouldOpenPinnedTab);
-    } else if (config.deleteContainersOnClick && !shouldExecuteOnAllResults) {
-        deleteSingleContainer(singleContext);
-    } else if (!config.deleteContainersOnClick && !shouldExecuteOnAllResults) {
-        openSingleContext(singleContext, shouldOpenPinnedTab);
+    let contextsToActOn = [];
+    // determine how many containers to modify
+    if (shouldExecuteOnAllResults) {
+        filteredContexts.forEach((filteredContext) => {
+            contextsToActOn.push(filteredContext);
+        });
+    } else {
+        if (singleContext) {
+            contextsToActOn.push(singleContext);
+        } else {
+            contextsToActOn.push(filteredContexts[0]);
+        }
     }
 
-    // decide to close the extension or not at the last step
-    if (config.windowStayOpenState === false) {
-        window.close();
+    // decision tree
+    if (config.renameOnClick) {
+        renameContexts(contextsToActOn);
+    } else if (config.deleteContainersOnClick) {
+        deleteMultipleContainers(contextsToActOn);
+    } else if (config.setDefaultUrlsOnClick) {
+        setMultipleDefaultUrlsWithPrompt(contextsToActOn);
+    } else if (config.duplicateOnClick) {
+        duplicateContexts(contextsToActOn);
     } else {
-        filterContainers();
+        openMultipleContexts(contextsToActOn, shouldOpenPinnedTab);
     }
+
+    actionCompletedHandler();
 };
 
 /**
@@ -558,7 +656,7 @@ const filterContainers = (event) => {
             })
 
             containerList.appendChild(ulElement);
-            setSummaryText(`Showing ${filteredResults.length}/${contexts.length} containers. <br/>Tip: Shift+Click to execute against every shown result`);
+            setSummaryText(`Showing ${filteredResults.length}/${contexts.length} containers.`);
             if (event) {
                 if (event.key === 'Enter') {
                     containerClickHandler(filteredResults, filteredResults[0], event);
@@ -584,31 +682,65 @@ const filterContainers = (event) => {
  */
 const processExtensionSettings = (data) => {
     if (data) {
-        // sets the "stay open" config setting
-        config.windowStayOpenState = data.windowStayOpenState === true;
-
-        // updates the HTML element (checkbox) for the "stay open" config setting
-        document.querySelector("#closePopupOnClick").checked = config.windowStayOpenState;
-
-        // sets the "delete containers on click" config setting
-        config.deleteContainersOnClick = data.deleteContainersOnClick === true;
-
-        // updates HTML elements for "delete containers on click" setting
-        document.querySelector("#deleteContainersOnClick").checked = config.deleteContainersOnClick;
-        setDeletionWarningText();
-
-        // applies container default URLs to config object, if they exist
-        if (data.containerDefaultUrls) {
-            config.containerDefaultUrls = data.containerDefaultUrls;
-        }
-
-        // sets the "set default URLs on click" config setting
-        config.setDefaultUrlsOnClick = data.setDefaultUrlsOnClick === true;
-
-        // updates the "set default URLs on click" HTML elements
-        document.querySelector("#setDefaultUrlsOnClick").checked = config.setDefaultUrlsOnClick;
+        Object.keys(config).forEach((configKey) => {
+            if (data[configKey] === undefined) {
+                if (typeof config[configKey] === "boolean") {
+                    document.querySelector(`#${configKey}`).checked = config[configKey];
+                }
+                return;
+            } else {
+                if (typeof data[configKey] === "boolean") {
+                    config[configKey] = data[configKey] === true;
+                    document.querySelector(`#${configKey}`).checked = config[configKey];
+                    return;
+                } else {
+                    if (data[configKey]) {
+                        config[configKey] = data[configKey];
+                    }
+                }
+            }
+        });
+        return;
     }
 };
+
+/**
+ * When a user checks a checkbox, this function toggles that value in the
+ * `config` object, as well as setting all of the other mutually exclusive
+ * options to `false`. It will also update the UI checkboxes to reflect the
+ * values. See `mutuallyExclusiveConfigOptions`.
+ * @param {string} parameter The `config` key to toggle.
+ * @returns {void}
+ */
+const setConfigParam = (parameter) => {
+    // start by toggling the intended config parameter
+    config[parameter] = !config[parameter];
+
+    /**
+     * we have to build out an object that will be pushed to the extension
+     * config storage for persistence
+     * TODO: test/determine if we can just push the config object
+     * to the store without negative consequences
+     * @type {Configuration}
+     */
+    const extensionStorageConfigStore = {};
+    extensionStorageConfigStore[parameter] = config[parameter];
+
+    if (mutuallyExclusiveConfigOptions.indexOf(parameter) !== -1) {
+        mutuallyExclusiveConfigOptions.forEach((mutuallyExclusiveConfigOption) => {
+            if (mutuallyExclusiveConfigOption !== parameter) {
+                // set all other mutually exclusive values to false
+                config[mutuallyExclusiveConfigOption] = false;
+                // persist the value to the temporary store
+                extensionStorageConfigStore[mutuallyExclusiveConfigOption] = config[mutuallyExclusiveConfigOption];
+                document.querySelector(`#${mutuallyExclusiveConfigOption}`).checked = config[mutuallyExclusiveConfigOption];
+            }
+        });
+    }
+
+    document.querySelector(`#${parameter}`).checked = config[parameter];
+    browser.storage.local.set(extensionStorageConfigStore);
+}
 
 /**
  * Initializes the extension data upon document load, intended to be added as
@@ -630,41 +762,30 @@ const initializeDocument = (event) => {
     // probably the most important event to add, this ensures that
     // key events toggle filtering
     document.querySelector("#searchContainerInput").addEventListener("keyup", filterContainers);
+    document.querySelector("#searchButton").addEventListener("click", filterContainers);
 
-    // when clicking the "stay open" checkbox, this toggles the config state
-    document.querySelector("#closePopupOnClick").addEventListener("click", () => {
-        config.windowStayOpenState = !config.windowStayOpenState;
-        browser.storage.local.set({ "windowStayOpenState": config.windowStayOpenState });
+    document.querySelector("#windowStayOpenState").addEventListener("click", () => {
+        setConfigParam("windowStayOpenState");
     });
 
-    // when clicking the "set default URLs" checkbox, this toggles the config state
     document.querySelector("#setDefaultUrlsOnClick").addEventListener("click", () => {
-        config.deleteContainersOnClick = false;
-        config.setDefaultUrlsOnClick = !config.setDefaultUrlsOnClick;
-        browser.storage.local.set({
-            "deleteContainersOnClick": config.deleteContainersOnClick,
-            "setDefaultUrlsOnClick": config.setDefaultUrlsOnClick,
-        });
-        // updates HTML elements for "delete containers on click" setting
-        document.querySelector("#deleteContainersOnClick").checked = config.deleteContainersOnClick;
-        // updates the "set default URLs on click" HTML elements
-        document.querySelector("#setDefaultUrlsOnClick").checked = config.setDefaultUrlsOnClick;
+        setConfigParam("setDefaultUrlsOnClick");
         setUrlWarningText();
     });
 
-    // when clicking the "delete containers on click" checkbox, this toggles the config state
     document.querySelector("#deleteContainersOnClick").addEventListener("click", () => {
-        config.deleteContainersOnClick = !config.deleteContainersOnClick;
-        config.setDefaultUrlsOnClick = false;
-        browser.storage.local.set({
-            "deleteContainersOnClick": config.deleteContainersOnClick,
-            "setDefaultUrlsOnClick": config.setDefaultUrlsOnClick,
-        });
-        // updates HTML elements for "delete containers on click" setting
-        document.querySelector("#deleteContainersOnClick").checked = config.deleteContainersOnClick;
-        // updates the "set default URLs on click" HTML elements
-        document.querySelector("#setDefaultUrlsOnClick").checked = config.setDefaultUrlsOnClick;
+        setConfigParam("deleteContainersOnClick");
         setDeletionWarningText();
+    });
+
+    document.querySelector("#renameOnClick").addEventListener("click", () => {
+        setConfigParam("renameOnClick");
+        setHelpText("");
+    });
+
+    document.querySelector("#duplicateOnClick").addEventListener("click", () => {
+        setConfigParam("duplicateOnClick");
+        setHelpText("");
     });
 }
 
