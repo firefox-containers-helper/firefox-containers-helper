@@ -625,6 +625,23 @@ const buildContainerListGroupElement = () => {
 };
 
 /**
+ * Checks if a user input string matches a container name using a somewhat
+ * intuitive search algorithm.
+ * @param {string} contextName The lowercase name of the `contextualIdentity` to run the search query against
+ * @param {string[]} userQueryArray An array of strings built by splitting the lowercase, punctuation-stripped
+ * user query string based on space characters
+ * @returns {boolean} Whether or not a name and query should be included as part of the search results
+ */
+const isUserQueryContextNameMatch = (contextName, userQueryArray) => {
+    for (let queryWord of userQueryArray) {
+        if (contextName.indexOf(queryWord) !== -1) {
+            return true;
+        }
+    }
+    return false;
+};
+
+/**
  * Applies the user's search query, and updates the list of containers accordingly.
  * @param {Event} event The event that called this function, such as a key press or mouse click
  * @returns {void}
@@ -648,7 +665,13 @@ const filterContainers = (event) => {
             const ulElement = buildContainerListGroupElement();
 
             contexts.forEach((context) => {
-                if (!userQuery || context.name.toLowerCase().indexOf(userQuery) !== -1 || checkDefaultUrlsForUserQuery(context, userQuery)) {
+                const lowerCaseContextName = context.name.toLowerCase();
+                const lowerCaseUserQueryArray = userQuery.toLowerCase()
+                    .replaceAll("-", "")
+                    .replaceAll("_", "")
+                    .split(" ");
+
+                if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQueryArray) || checkDefaultUrlsForUserQuery(context, userQuery)) {
                     const liElement = buildContainerListItem(filteredResults, context);
                     ulElement.appendChild(liElement);
                     filteredResults.push(context);

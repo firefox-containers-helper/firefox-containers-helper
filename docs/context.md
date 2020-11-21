@@ -117,6 +117,10 @@ finds and deletes the container list group elements.</p>
 assembles a list group element.</p>
 <p>TODO: make the <code>containerListGroup</code> ID use consistent naming conventions</p>
 </dd>
+<dt><a href="#isUserQueryContextNameMatch">isUserQueryContextNameMatch(contextName, userQueryArray)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Checks if a user input string matches a container name using a somewhat
+intuitive search algorithm.</p>
+</dd>
 <dt><a href="#filterContainers">filterContainers(event)</a> ⇒ <code>void</code></dt>
 <dd><p>Applies the user&#39;s search query, and updates the list of containers accordingly.</p>
 </dd>
@@ -521,6 +525,20 @@ TODO: make the `containerListGroup` ID use consistent naming conventions
 
 **Kind**: global function  
 **Returns**: <code>Element</code> - The `<ul>` list group element that will hold the child `<li>` container list items.  
+<a name="isUserQueryContextNameMatch"></a>
+
+## isUserQueryContextNameMatch(contextName, userQueryArray) ⇒ <code>boolean</code>
+Checks if a user input string matches a container name using a somewhat
+intuitive search algorithm.
+
+**Kind**: global function  
+**Returns**: <code>boolean</code> - Whether or not a name and query should be included as part of the search results  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| contextName | <code>string</code> | The lowercase name of the `contextualIdentity` to run the search query against |
+| userQueryArray | <code>Array.&lt;string&gt;</code> | An array of strings built by splitting the lowercase, punctuation-stripped user query string based on space characters |
+
 <a name="filterContainers"></a>
 
 ## filterContainers(event) ⇒ <code>void</code>
