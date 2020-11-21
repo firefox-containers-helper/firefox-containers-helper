@@ -26,6 +26,7 @@ This readme contains extensive information about the extension and it aims to bo
       - [(Outdated) Bulk deletion of containers](#outdated-bulk-deletion-of-containers)
   - [Tips](#tips)
     - [Container naming convention suggestions](#container-naming-convention-suggestions)
+  - [FAQ](#faq)
   - [Warnings](#warnings)
   - [Future Features](#future-features)
   - [Community](#community)
@@ -201,6 +202,11 @@ duckduckgo-ddg
 ```
 
 Then, you can filter on your containers easily and perform bulk actions.
+
+## FAQ
+
+* When duplicating an existing container, does it also duplicate cookies and other session information?
+  * No, it creates a fresh container with only the same basic metadata as the original container, such as color/name/icon.
 
 ## Warnings
 
