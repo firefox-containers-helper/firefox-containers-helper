@@ -537,7 +537,7 @@ intuitive search algorithm.
 | Param | Type | Description |
 | --- | --- | --- |
 | contextName | <code>string</code> | The lowercase name of the `contextualIdentity` to run the search query against |
-| userQueryArray | <code>Array.&lt;string&gt;</code> | An array of strings built by splitting the lowercase, punctuation-stripped user query string based on space characters |
+| userQueryArray | <code>Array.&lt;string&gt;</code> | An array of strings built by splitting the lowercase user query string based on space characters |
 
 <a name="filterContainers"></a>
 
