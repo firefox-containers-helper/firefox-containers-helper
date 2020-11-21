@@ -2,6 +2,10 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.5
+
+* small cleanup
+
 ## v0.0.4
 
 * extension packaging and signing methodology
