@@ -1,6 +1,6 @@
 # Firefox Containers Helper
 
-<img align="right" src="icons/icon_cube.png">
+<img align="right" src="src/icons/icon_cube.png">
 
 Firefox multi-account containers are for power users. So is this extension. This extension adds bulk container interactivity features missing from the Mozilla Multi-Account Containers extension.
 
