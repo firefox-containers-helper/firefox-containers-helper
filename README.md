@@ -186,7 +186,7 @@ dev-github-work
 dev-gitlab-personal
 dev-gitlab-work
 social-reddit-personal
-social-reddit-professional
+social-reddit-public
 social-reddit-work
 chat-discord-personal
 chat-discord-work

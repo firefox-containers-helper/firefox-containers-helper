@@ -2,6 +2,10 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.7
+
+* ignore spaces and trip `-_` characters when searching
+
 ## v0.0.6
 
 * fix url to readme in extension popup
