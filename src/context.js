@@ -628,8 +628,7 @@ const buildContainerListGroupElement = () => {
  * Checks if a user input string matches a container name using a somewhat
  * intuitive search algorithm.
  * @param {string} contextName The lowercase name of the `contextualIdentity` to run the search query against
- * @param {string[]} userQueryArray An array of strings built by splitting the lowercase, punctuation-stripped
- * user query string based on space characters
+ * @param {string[]} userQueryArray An array of strings built by splitting the lowercase user query string based on space characters
  * @returns {boolean} Whether or not a name and query should be included as part of the search results
  */
 const isUserQueryContextNameMatch = (contextName, userQueryArray) => {
@@ -667,8 +666,6 @@ const filterContainers = (event) => {
             contexts.forEach((context) => {
                 const lowerCaseContextName = context.name.toLowerCase();
                 const lowerCaseUserQueryArray = userQuery.toLowerCase()
-                    .replaceAll("-", "")
-                    .replaceAll("_", "")
                     .split(" ");
 
                 if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQueryArray) || checkDefaultUrlsForUserQuery(context, userQuery)) {
