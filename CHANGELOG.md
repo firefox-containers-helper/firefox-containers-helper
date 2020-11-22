@@ -13,6 +13,7 @@ This changelog will be corrected in the future.
 * keep track of last query between popup close/open
 * change "Stay Open" checkbox label to "Sticky Popup"
 * simplified UI by removing buttons and labels
+* provider better help messages
 
 ## v0.0.9
 
