@@ -1,10 +1,9 @@
 "use strict";
+
 // helpful links:
 // https://github.com/mdn/webextensions-examples/blob/master/favourite-colour/options.js
 // https://github.com/crazymousethief/container-plus/blob/master/context.js
 // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/contextualIdentities/ContextualIdentity
-
-let initialLoadingComplete = false;
 
 /**
  * All configuration options for this web extension are stored in this object.
@@ -33,6 +32,7 @@ let initialLoadingComplete = false;
  * @namespace
  * @property {boolean} windowStayOpenState
  * @property {string} mode
+ * @property {string} lastQuery
  * @property {object} containerDefaultUrls
  */
 const config = {
@@ -50,7 +50,16 @@ const config = {
      * @type {string}
      * @default
      */
-    mode: "",
+    mode: "openOnClick",
+
+
+    /**
+     * lastQuery is the last thing that the user entered in the search box
+     * @type {string}
+     * @default
+     */
+    lastQuery: "",
+
 
     /**
      * containerDefaultUrls is a key-value pair of container ID's to
@@ -66,7 +75,7 @@ const config = {
  * All functional modes.
  * TODO: jsdoc this as enum?
  * @constant
- * @type {string[]}
+ * @type {object}
  * @default
  */
 const MODES = {
@@ -75,9 +84,54 @@ const MODES = {
     SET_NAME: "renameOnClick",
     SET_COLOR: "setColorOnClick",
     SET_ICON: "setIconOnClick",
+    REPLACE_IN_NAME: "replaceInNameOnClick",
+    REPLACE_IN_URL: "replaceInUrlOnClick",
     DUPLICATE: "duplicateOnClick",
     DELETE: "deleteContainersOnClick",
 }
+
+/**
+ * All allowable container (context) colors.
+ * TODO: jsdoc this as enum?
+ * @constant
+ * @type {string[]}
+ * @default
+ */
+const CONTEXT_COLORS = [
+    "blue",
+    "turquoise",
+    "green",
+    "yellow",
+    "orange",
+    "red",
+    "pink",
+    "purple",
+    "toolbar",
+];
+
+
+/**
+ * All allowable container (context) icons.
+ * TODO: jsdoc this as enum?
+ * @constant
+ * @type {string[]}
+ * @default
+ */
+const CONTEXT_ICONS = [
+    "fingerprint",
+    "briefcase",
+    "dollar",
+    "cart",
+    "circle",
+    "gift",
+    "vacation",
+    "food",
+    "fruit",
+    "pet",
+    "tree",
+    "chill",
+    "fence",
+];
 
 
 /**
@@ -87,7 +141,8 @@ const MODES = {
  * @default
  */
 const helpTextMessages = [
-    'Tip: Use Ctrl to open pinned tab(s).',
+    'Tip: Press Enter or click on a container below.',
+    'Tip: Use Ctrl(+Shift) to open pinned tab(s).',
     'Tip: Shift+Click to execute against every shown result'
 ];
 
@@ -295,31 +350,6 @@ const setHelpText = (message) => {
 };
 
 /**
- * When toggling the "Delete mode" option, this will set the help text accordingly.
- * @returns {void}
- */
-const setDeletionWarningText = () => {
-    if (config.mode === MODES.DELETE) {
-        setHelpText("Warning: Will delete containers that you click");
-        return;
-    }
-
-    setHelpText("");
-}
-
-/**
- * When toggling the "Set Default URLs" option, this will set the help text accordingly.
- * @returns {void}
- */
-const setUrlWarningText = () => {
-    if (config.mode === MODES.SET_URL) {
-        setHelpText("URLs do not affect multi-account container preferences.");
-        return;
-    }
-    setHelpText("");
-}
-
-/**
  * Sets a message inside the "summary" text element, such as "Showing x/y containers"
  * @param {string} message The HTML string to put inside the summary text element.
  * @returns {void}
@@ -379,7 +409,7 @@ const checkDefaultUrlsForUserQuery = (context, userQuery) => {
  * @returns {void}
  */
 const deleteMultipleContainers = (contextsToDelete) => {
-    let dialogStr = `Are you sure you want to delete the following containers?\n\n`;
+    let dialogStr = `Are you sure you want to delete the following container(s)?\n\n`;
     contextsToDelete.forEach((contextToDelete) => {
         // build confirmation dialog first
         dialogStr += `${contextToDelete.name}\n`;
@@ -487,6 +517,142 @@ const renameContexts = (contextsToRename) => {
 };
 
 /**
+ * Updates one or more contexts simultaneously.
+ * @param {ContextualIdentity[]} contextsToUpdate The `contextualIdentities` to change.
+ * @param {string} fieldToUpdate The field to set for the context(s)
+ * @param {string} valueToSet The value to assign to the context(s)' `fieldToUpdate` property
+ * @returns {void}
+ */
+const updateContexts = (contextsToUpdate, fieldToUpdate, valueToSet) => {
+    let updatedContexts = [];
+    const newValues = {};
+    newValues[fieldToUpdate] = valueToSet;
+    contextsToUpdate.forEach((contextToRename) => {
+        browser.contextualIdentities.update(
+            contextToRename.cookieStoreId,
+            newValues
+        ).then(
+            (updatedContext) => {
+                updatedContexts.push(updatedContext);
+                setHelpText(`Updated ${updatedContexts.length} containers`);
+            },
+            (err) => {
+                if (err) {
+                    alert(`Failed to update containers: ${JSON.stringify(err)}`);
+                }
+            }
+        );
+    });
+};
+
+/**
+ * Sets the color of one or more contexts simultaneously.
+ * @param {ContextualIdentity[]} contextsToUpdate The `contextualIdentities` to change.
+ * @returns {void}
+ */
+const setColorForContexts = (contextsToUpdate) => {
+    const msg = `Choose a color for ${contextsToUpdate.length} containers from the following list:\n\n${CONTEXT_COLORS.join("\n")}`;
+    const newColor = prompt(msg);
+    if (newColor && CONTEXT_COLORS.indexOf(newColor) !== -1) {
+        updateContexts(contextsToUpdate, "color", newColor);
+    }
+};
+
+/**
+ * Sets the icon of one or more contexts simultaneously.
+ * @param {ContextualIdentity[]} contextsToUpdate The `contextualIdentities` to change.
+ * @returns {void}
+ */
+const setIconForContexts = (contextsToUpdate) => {
+    const msg = `Choose an icon for ${contextsToUpdate.length} containers from the following list:\n\n${CONTEXT_ICONS.join("\n")}`;
+    const newIcon = prompt(msg);
+    if (newIcon && CONTEXT_ICONS.indexOf(newIcon) !== -1) {
+        updateContexts(contextsToUpdate, "icon", newIcon);
+    }
+};
+
+/**
+ * Executes a find & replace against either a container name or predefined URL.
+ * @param {ContextualIdentity[]} contextsToUpdate The `contextualIdentities` to change.
+ * @param {string} fieldToUpdate The field to set for the context(s)
+ * @param {string} valueToSet The value to assign to the context(s)' `fieldToUpdate` property
+ * @returns {void}
+ */
+const findReplaceNameInContexts = (contextsToUpdate) => {
+    const findStr = prompt(`(1/3) What case-insensitive string in ${contextsToUpdate.length} container name(s) would you like to search for?`);
+    if (!findStr) return;
+    const replaceStr = prompt("(2/3) What string would you like to replace it with?");
+    if (findStr && replaceStr !== null) {
+        const userConfirm = confirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the name of ${contextsToUpdate.length} container(s)?`);
+        if (userConfirm) {
+            let updatedContexts = [];
+            setHelpText(`Updated ${updatedContexts.length} containers`);
+            contextsToUpdate.forEach((contextToUpdate) => {
+                const lowerContextName = contextToUpdate.name.toLowerCase();
+                if (lowerContextName.indexOf(findStr) !== -1) {
+                    const newNameStr = lowerContextName.replaceAll(findStr, replaceStr);
+                    browser.contextualIdentities.update(
+                        contextToUpdate.cookieStoreId,
+                        { "name": newNameStr }
+                    ).then(
+                        (updatedContext) => {
+                            updatedContexts.push(updatedContext);
+                            setHelpText(`Updated ${updatedContexts.length} containers`);
+                        },
+                        (err) => {
+                            if (err) {
+                                alert(`Failed to update containers: ${JSON.stringify(err)}`);
+                            }
+                        }
+                    );
+                }
+            });
+        }
+    }
+};
+
+
+/**
+ * Executes a find & replace against either a container name or predefined URL.
+ * @param {ContextualIdentity[]} contextsToUpdate The `contextualIdentities` to change.
+ * @returns {void}
+ */
+const findReplaceUrlInContexts = (contextsToUpdate) => {
+    const findStr = prompt(`(1/3) What case-insensitive string in ${contextsToUpdate.length} container default URL(s) would you like to search for?`);
+    if (!findStr) return;
+    const replaceStr = prompt("(2/3) What string would you like to replace it with?");
+    if (findStr && replaceStr !== null) {
+        const userConfirm = confirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contextsToUpdate.length} container(s)?`);
+        if (userConfirm) {
+            let updatedContexts = [];
+            setHelpText(`Updated ${updatedContexts.length} containers`);
+            contextsToUpdate.forEach((contextToUpdate) => {
+                // retrieve the lowercase URL for the container by first
+                // retrieving its unique ID
+                const contextId = contextToUpdate.cookieStoreId;
+                const defaultUrlForContext = config.containerDefaultUrls[contextId];
+                // check if there is actually a default URL set for this container
+                if (defaultUrlForContext) {
+                    // there is a default URL, so proceed to find, replace &
+                    // update it
+                    const lowerContextUrl = defaultUrlForContext.toLowerCase();
+                    if (lowerContextUrl.indexOf(findStr) !== -1) {
+                        const newUrlStr = lowerContextUrl.replaceAll(findStr, replaceStr);
+                        config.containerDefaultUrls[contextId] = newUrlStr;
+                        updatedContexts.push(contextToUpdate);
+                    }
+                }
+            });
+            // only update storage if needed
+            if (updatedContexts.length > 0) {
+                writeContainerDefaultUrlsToStorage();
+                setHelpText(`Updated ${updatedContexts.length} containers`);
+            }
+        }
+    }
+};
+
+/**
  * Duplicates one or more contexts.
  * @param {ContextualIdentity[]} contextsToDuplicate The `contextualIdentities` to duplicate.
  * @returns {void}
@@ -559,6 +725,14 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
         deleteMultipleContainers(contextsToActOn);
     } else if (config.mode === MODES.SET_URL) {
         setMultipleDefaultUrlsWithPrompt(contextsToActOn);
+    } else if (config.mode === MODES.SET_COLOR) {
+        setColorForContexts(contextsToActOn);
+    } else if (config.mode === MODES.SET_ICON) {
+        setIconForContexts(contextsToActOn);
+    } else if (config.mode === MODES.REPLACE_IN_NAME) {
+        findReplaceNameInContexts(contextsToActOn);
+    } else if (config.mode === MODES.REPLACE_IN_URL) {
+        findReplaceUrlInContexts(contextsToActOn);
     } else if (config.mode === MODES.DUPLICATE) {
         duplicateContexts(contextsToActOn);
     } else if (config.mode === MODES.OPEN) {
@@ -625,6 +799,9 @@ const filterContainers = (event) => {
     // retrieve the search query from the user
     const userQuery = document.querySelector("#searchContainerInput").value.trim().toLowerCase();
 
+    // persist the last query to extension storage
+    browser.storage.local.set({ "lastQuery": userQuery });
+
     // now query the contextual identities
     const filteredResults = [];
     browser.contextualIdentities.query({}).then((contexts) => {
@@ -660,11 +837,6 @@ const filterContainers = (event) => {
     }, (error) => {
         console.error(`failed to query contextual identities: ${error}`);
     })
-
-    if (!initialLoadingComplete) {
-        initialLoadingComplete = true;
-        document.querySelector("#listOfContainersRow").className = "row border-bottom mt-3"
-    }
 }
 
 /**
@@ -686,7 +858,6 @@ const setConfigParam = (parameter) => {
     browser.storage.local.set(extensionStorageConfigStore);
 }
 
-
 /**
  * Retrieves extension settings from browser storage and persists them to
  * the `config` object, as well as setting the state of a few HTML elements.
@@ -699,6 +870,8 @@ const processExtensionSettings = (data) => {
         if (data[configKey] !== undefined) {
             config[configKey] = data[configKey];
         }
+        // this switch/case block is for doing tasks specific to each config
+        // key, such as updating UI elements
         switch (configKey) {
             case "mode":
                 document.getElementById(`modeSelect`).value = config[configKey];
@@ -706,12 +879,50 @@ const processExtensionSettings = (data) => {
             case "windowStayOpenState":
                 document.getElementById(`windowStayOpenState`).checked = config[configKey];
             case "containerDefaultUrls":
-                // do nothing at this time
+                // do nothing at this time, because there are no special
+                // UI elements to update
                 break;
+            case "lastQuery":
+                document.getElementById("searchContainerInput").value = config[configKey];
             default:
                 break;
         }
     });
+};
+
+/**
+ * Based on the currently selected mode, set a helpful message to show
+ * to the user.
+ * @returns {void}
+ */
+const showModeHelpMessage = () => {
+    switch (config.mode) {
+        case MODES.SET_URL:
+            setHelpText("URLs do not affect multi-account container preferences.");
+            break;
+        case MODES.SET_NAME:
+            setHelpText("You will be prompted for a new name, 25 character max.")
+            break;
+        case MODES.REPLACE_IN_URL:
+        case MODES.REPLACE_IN_NAME:
+            setHelpText("You will be prompted for find & replace strings.")
+            break;
+        case MODES.SET_ICON:
+            setHelpText("You will be prompted for a new icon.")
+            break;
+        case MODES.SET_COLOR:
+            setHelpText("You will be prompted for a new color.")
+            break;
+        case MODES.DUPLICATE:
+            setHelpText("Duplicates container(s) and URLs, but not cookies etc.")
+            break;
+        case MODES.DELETE:
+            setHelpText("Warning: Will delete containers that you click");
+            break;
+        default:
+            setHelpText("");
+            break;
+    }
 };
 
 /**
@@ -728,18 +939,7 @@ const setMode = (newMode) => {
         mode: config.mode
     });
 
-    // set help message
-    switch (config.mode) {
-        case MODES.DELETE:
-            setDeletionWarningText();
-        case MODES.SET_URL:
-            setUrlWarningText();
-        case MODES.SET_NAME:
-            setHelpText("")
-        default:
-            setHelpText("");
-            break;
-    }
+    showModeHelpMessage();
 };
 
 /**
@@ -752,6 +952,7 @@ const initializeDocument = (event) => {
     // initialize the "stay open" boolean state
     browser.storage.local.get((data) => {
         processExtensionSettings(data);
+        showModeHelpMessage();
         filterContainers();
         focusSearchBox();
     });
@@ -762,7 +963,6 @@ const initializeDocument = (event) => {
     // probably the most important event to add, this ensures that
     // key events toggle filtering
     document.querySelector("#searchContainerInput").addEventListener("keyup", filterContainers);
-    document.querySelector("#searchButton").addEventListener("click", filterContainers);
 
     document.querySelector("#windowStayOpenState").addEventListener("click", () => {
         setConfigParam("windowStayOpenState");

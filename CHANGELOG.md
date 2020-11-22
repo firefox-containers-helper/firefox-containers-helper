@@ -2,6 +2,18 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.10
+
+* new modes added:
+  * Name Replace mode - Replaces a string in every matched container name
+  * URL Replace mode - Replaces a string in every matched container URL
+  * Set Color mode - Updates the color of all matched containers
+  * Set Icon mode - Updates the icon of all matched containers
+* use a dropdown field for selecting the current mode instead of checkboxes
+* keep track of last query between popup close/open
+* change "Stay Open" checkbox label to "Sticky Popup"
+* simplified UI by removing buttons and labels
+
 ## v0.0.9
 
 * revert change in `v0.0.7` to ignore spaces in search

@@ -9,52 +9,42 @@
 </head>
 
 <body>
-    <div class="container-fluid mt-2" id="mainDivContainer">
-        <div class="row border-bottom">
-            <div class="col-12">
-                <form id="searchContainerForm">
-                    <div class="form-group">
-                        <label for="searchContainerInput">
-                            Search containers:</label>
-                        <input type="text" class="form-control mb-2" placeholder="Search" id="searchContainerInput" />
-                        <button type="submit" id="searchButton" class="btn btn-primary btn-block">Search</button>
-                    </div>
-                </form>
+    <div class="container-fluid mt-3" id="mainDivContainer">
+        <form id="searchContainerForm">
+            <div class="form-group form-row">
+                <div class="col-12">
+                    <input type="text" class="form-control" placeholder="Search Containers" id="searchContainerInput" />
+                </div>
             </div>
-        </div>
-        <div class="row border-bottom loading" id="listOfContainersRow">
-            <div class="col-12">
-                <form id="optionsForm">
-                    <div class="form-group row">
-                        <label for="modeSelect" class="col-4 col-form-label text-center text-muted"
-                            id="modeSelectLabel"><small>Choose Mode:</small></label>
-                        <div class="col-8">
-                            <select class="custom-select" id="modeSelect">
-                                <option value="openOnClick" selected>Tab Open</option>
-                                <option value="setDefaultUrlsOnClick">Set Default URL</option>
-                                <option value="renameOnClick">Rename</option>
-                                <option value="setColorOnClick">Set Color</option>
-                                <option value="setIconOnClick">Set Icon</option>
-                                <option value="duplicateOnClick">Duplicate</option>
-                                <option value="deleteContainersOnClick">Delete</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="col-12 d-flex justify-content-center align-items-center align-content-center">
-                            <div class="form-group form-check-inline">
-                                <input type="checkbox" id="windowStayOpenState" class="form-check-input" checked="true">
-                                <label for="windowStayOpenState" id="windowStayOpenStateLabel"
-                                    class="form-check-label small">Sticky Popup</label>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+            <div class="form-group form-row">
+                <div class="col-12">
+                    <select class="custom-select" id="modeSelect">
+                        <option value="openOnClick" selected>Open as Tab(s)</option>
+                        <option value="setDefaultUrlsOnClick">Set Default URL</option>
+                        <option value="renameOnClick">Set Name</option>
+                        <option value="setColorOnClick">Set Color</option>
+                        <option value="setIconOnClick">Set Icon</option>
+                        <option value="replaceInNameOnClick">Replace in Name</option>
+                        <option value="replaceInUrlOnClick">Replace in URL</option>
+                        <option value="duplicateOnClick">Duplicate</option>
+                        <option value="deleteContainersOnClick">Delete</option>
+                    </select>
+                </div>
             </div>
-        </div>
-        <div class="row my-1">
+            <div class="form-row">
+                <div class="col-12 d-flex justify-content-center align-items-center align-content-center">
+                    <div class="form-group form-check-inline small">
+                        <input type="checkbox" id="windowStayOpenState" class="form-check-input" checked="true">
+                        <label for="windowStayOpenState" id="windowStayOpenStateLabel" class="form-check-label">
+                            Sticky Popup
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div class="row">
             <div class="col-12 text-center">
-                <span class="text-muted text-center small" id="helpText"></span>
+                <span class="text-muted small" id="helpText"></span>
             </div>
         </div>
         <div class="row">
