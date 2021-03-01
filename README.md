@@ -8,6 +8,12 @@ This extension is intended to *augment* the Multi-Account Containers extension i
 
 This readme contains extensive information about the extension and it aims to bootstrap new users into using the extension effectively.
 
+## Repository source code update
+
+This repository is now going to be hosted and managed on GitHub here: https://github.com/charles-m-knox/firefox-containers-helper
+
+This repository will be archived.
+
 ## Table of Contents
 
 - [Firefox Containers Helper](#firefox-containers-helper)
