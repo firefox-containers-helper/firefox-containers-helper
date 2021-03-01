@@ -10,13 +10,12 @@ This readme contains extensive information about the extension and it aims to bo
 
 ## Repository source code update
 
-This repository is now going to be hosted and managed on GitHub here: https://github.com/charles-m-knox/firefox-containers-helper
-
-This repository will be archived.
+This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/en-US/firefox/addon/containers-helper/).
 
 ## Table of Contents
 
 - [Firefox Containers Helper](#firefox-containers-helper)
+  - [Repository source code update](#repository-source-code-update)
   - [Table of Contents](#table-of-contents)
   - [Who is this intended for?](#who-is-this-intended-for)
   - [Features](#features)
