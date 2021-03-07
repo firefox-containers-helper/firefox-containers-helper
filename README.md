@@ -292,7 +292,7 @@ Open to suggestions.
 
 ## Community
 
-If you have suggestions, please feel free to voice them on GitLab. Thank you for using my extension and reading this far!
+If you have suggestions, please feel free to voice them on GitHub. Thank you for using my extension and reading this far!
 
 ## Attributions
 
