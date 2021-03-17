@@ -2,6 +2,12 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.11
+
+* dark mode and light mode added in https://github.com/charles-m-knox/firefox-containers-helper/pull/8
+  * Thanks to https://github.com/KerfuffleV2 for this contribution!
+* configurable keyboard shortcut added (see https://github.com/charles-m-knox/firefox-containers-helper/issues/4)
+
 ## v0.0.10
 
 * new modes added:

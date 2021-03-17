@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/bootstrap-dark.css">
+    <link rel="stylesheet" href="css/custom.css">
+</head>
+
+<body style="min-height: 500px;">
+    <div class="container-fluid mt-2">
+        <div class="row">
+            <div class="col">
+                <h3>
+                    Firefox Containers Helper Preferences
+                </h3>
+                <p>
+                    You can set the keyboard shortcut that will cause the addon window to appear here. You will have to
+                    type out the keyboard shortcut yourself - use key combinations such as <code>Alt+Shift+D</code>,
+                    <code>Alt+Shift+W</code>, etc.
+                </p>
+                <p>
+                    Warning: Many keyboard shortcuts may not work, you will have to
+                    experiment until you find one that works. Please <a target="_blank"
+                        href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#key_combinations"
+                        rel="noopener noreferer">visit the official documentation to see what options are available</a>.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Shortcut: Show Window</span>
+                    </div>
+                    <input type="text" class="form-control" aria-label="Keyboard Shortcut" aria-describedby="update"
+                        id="shortcut">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="button" id="update">Set</button>
+                        <button class="btn btn-warning" type="button" id="reset">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <form>
+        <label>Keyboard shortcut</label>
+        <input type="text" id="shortcut">
+        <button class="btn btn-primary" id="update">Update keyboard shortcut</button>
+        <button class="btn btn-secondary" id="reset">Reset keyboard shortcut</button>
+    </form> -->
+    <script src="options.js"></script>
+</body>
+
+</html>

@@ -26,6 +26,11 @@
         "default_title": "Containers Helper",
         "default_popup": "popup.html"
     },
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
     "commands": {
         "_execute_browser_action": {
             "suggested_key": {
@@ -33,5 +38,9 @@
             },
             "description": "Open containers helper panel"
         }
+    },
+    "options_ui": {
+        "page": "options.html",
+        "browser_style": true
     }
 }
