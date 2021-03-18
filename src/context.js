@@ -45,6 +45,14 @@ const config = {
     windowStayOpenState: true,
 
     /**
+     * selectionMode is what allows the user to individually click or
+     * shift+click to select ranges of containers from the list.
+     * @type {boolean}
+     * @default
+     */
+    selectionMode: false,
+
+    /**
      * mode is the current mode the user is operating in, such as
      * deleteContainersOnClick or setDefaultUrlsOnClick.
      * @type {string}
@@ -69,6 +77,25 @@ const config = {
      * @default
      */
     containerDefaultUrls: {},
+
+    /**
+     * selectedContextIndices keeps track of every context that is selected
+     * in selection mode - this is simply an object with every key as a counter,
+     * and every value as a 1 or 0 depending on whether or not the corresponding
+     * filtered context (container) is selected
+     * @example {0: 1, 1: 1, 2: 0, 3: 1}
+     * @type {object}
+     * @default
+     */
+    selectedContextIndices: {},
+
+    /**
+     * lastSelectedContextIndex keeps track of the item that was last selected
+     * @example 3
+     * @type {number}
+     * @default
+     */
+    lastSelectedContextIndex: -1,
 };
 
 /**
@@ -156,6 +183,16 @@ const helpTextMessages = [
 const containerListItemInactiveClassNames = 'list-group-item container-list-item d-flex justify-content-space-between align-items-center';
 
 /**
+ * This is the set of classes to assign to a container list item that is not
+ * currently being hovered over, but is selected via the selection mode.
+ * Assign to `element.className` for a given element.
+ * @constant
+ * @type {string}
+ * @default
+ */
+const containerListItemSelectedClassNames = 'list-group-item container-list-item d-flex justify-content-space-between align-items-center bg-secondary border-secondary';
+
+/**
  * This is the set of classes to assign to a container list item that is
  * currently being hovered over. Assign to `element.className` for a given element.
  * @constant
@@ -181,6 +218,49 @@ const containerListItemActiveDangerClassNames = `${containerListItemActiveClassN
  * @default
  */
 const CONTAINER_LIST_DIV_ID = 'container-list';
+
+/**
+ * Quickly checks to see if a context is selected, via the selection mode
+ * @param {number} i The index of a particular context within the array of filteredContexts
+ * @returns {boolean} Whether or not the current context is selected
+ */
+const isContextSelected = (i) => {
+    if (config.selectedContextIndices[i] === 1) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Quickly checks to see if *any* context is selected, via the selection mode
+ * @returns {boolean} Whether or not *any* current context is selected
+ */
+const isAnyContextSelected = () => {
+    const keys = Object.keys(config.selectedContextIndices);
+    for (let i = 0; i < keys.length; i++) {
+        if (config.selectedContextIndices[keys[i]] === 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Sets the proper class names for filtered contexts that are either selected
+ * or not
+ * @returns {void} Nothing
+ */
+const setSelectedListItemClassNames = () => {
+    const keys = Object.keys(config.selectedContextIndices);
+    for (let i = 0; i < keys.length; i++) {
+        const liElement = document.getElementById(`filtered-context-${i}-li`);
+        if (config.selectedContextIndices[i] === 1) {
+            liElement.className = containerListItemSelectedClassNames;
+        } else {
+            liElement.className = containerListItemInactiveClassNames;
+        }
+    }
+}
 
 /**
  * Assembles an HTML element that contains the colorized container icon for a given container.
@@ -237,9 +317,10 @@ const buildContainerLabelElement = (context) => {
  * @param {Element} liElement The container list item that will receive all event listeners
  * @param {ContextualIdentity[]} filteredResults A list of the currently filtered set of browser.contextualIdentities
  * @param {ContextualIdentity} context The contextualIdentity that this list item will represent
+ * @param {number} i The index of this contextualIdentity within the filteredResults array
  * @returns {string} Any error message, or empty string if no errors occurred.
  */
-const applyEventListenersToContainerListItem = (liElement, filteredResults, context) => {
+const applyEventListenersToContainerListItem = (liElement, filteredResults, context, i) => {
     try {
         liElement.addEventListener('mouseover', (event) => {
             if (config.mode === MODES.DELETE) {
@@ -249,7 +330,11 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
             }
         });
         liElement.addEventListener('mouseleave', (event) => {
-            event.target.className = containerListItemInactiveClassNames;
+            if (isContextSelected(i)) {
+                event.target.className = containerListItemSelectedClassNames;
+            } else {
+                event.target.className = containerListItemInactiveClassNames;
+            }
         });
         liElement.addEventListener('click', (event) => {
             containerClickHandler(filteredResults, context, event);
@@ -267,7 +352,11 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
             }
         });
         liElement.addEventListener('blur', (event) => {
-            event.target.className = containerListItemInactiveClassNames;
+            if (isContextSelected(i)) {
+                event.target.className = containerListItemSelectedClassNames;
+            } else {
+                event.target.className = containerListItemInactiveClassNames;
+            }
         });
 
         return "";
@@ -280,9 +369,10 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
  * Assembles an HTML element that contains an entire container list item.
  * @param {ContextualIdentity[]} filteredResults A list of the currently filtered set of browser.contextualIdentities
  * @param {ContextualIdentity} context The contextualIdentity that this list item will represent
+ * @param {number} i The index of this contextualIdentity within the filteredResults array
  * @returns {Element} An HTML element with event listeners, formatted with css as a bootstrap list item.
  */
-const buildContainerListItem = (filteredResults, context) => {
+const buildContainerListItem = (filteredResults, context, i) => {
     const liElement = document.createElement('li');
     liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
 
@@ -291,7 +381,8 @@ const buildContainerListItem = (filteredResults, context) => {
 
     if (config.mode === MODES.DELETE) {
         const divElement = document.createElement('div');
-        divElement.className = "d-flex justify-content-center align-items-center align-content-center"
+        divElement.className = "d-flex justify-content-center align-items-center align-content-center";
+        divElement.id = `filtered-context-${i}-div`;
         addEmptyEventListenersToElement(divElement);
         divElement.appendChild(containerIconHolderElement);
         liElement.appendChild(divElement);
@@ -301,7 +392,11 @@ const buildContainerListItem = (filteredResults, context) => {
 
     liElement.appendChild(containerLabelElement);
 
-    const err = applyEventListenersToContainerListItem(liElement, filteredResults, context);
+    containerIconHolderElement.id = `filtered-context-${i}-icon`;
+    containerLabelElement.id = `filtered-context-${i}-label`;
+    liElement.id = `filtered-context-${i}-li`;
+
+    const err = applyEventListenersToContainerListItem(liElement, filteredResults, context, i);
     if (err) {
         console.error(`encountered error building list item for context ${context.name}: ${err}`)
     }
@@ -684,6 +779,21 @@ const duplicateContexts = (contextsToDuplicate) => {
     };
 };
 
+
+/**
+ * Empties out the list of contexts to act on when the "selection mode" is
+ * enabled. A precursor to this is that the config option should have been
+ *  set before executing this function.
+ * @returns {void}
+ */
+const resetSelectedContexts = () => {
+    // reset selectedContextIndices if the selection mode has been turned on
+    if (config.selectionMode) {
+        config.selectedContextIndices = {};
+        config.lastSelectedContextIndex = 0;
+    }
+};
+
 /**
  * Adds click and other event handlers to a container list item HTML element.
  * @param {ContextualIdentity[]} filteredResults A list of the currently filtered set of `browser.contextualIdentities`
@@ -693,51 +803,146 @@ const duplicateContexts = (contextsToDuplicate) => {
  */
 const containerClickHandler = (filteredContexts, singleContext, event) => {
     // start by processing a few options based on event data
-    let shouldOpenPinnedTab = false;
-    let shouldExecuteOnAllResults = false;
+    let ctrlModifier = false;
+    let shiftModifier = false;
     if (event) {
         if (event.getModifierState('Control')) {
-            shouldOpenPinnedTab = true;
+            ctrlModifier = true;
         }
         if (event.getModifierState('Shift')) {
-            shouldExecuteOnAllResults = true;
+            shiftModifier = true;
         }
     }
 
-    let contextsToActOn = [];
-    // determine how many containers to modify
-    if (shouldExecuteOnAllResults) {
-        filteredContexts.forEach((filteredContext) => {
-            contextsToActOn.push(filteredContext);
+    // if "selectionMode" has been turned on...
+    if (config.selectionMode && ctrlModifier) {
+        const prevSelectedIndex = config.lastSelectedContextIndex;
+        // determine the index of the context that was selected
+        for (let i = 0; i < filteredContexts.length; i++) {
+            // initialize the the list of indices if there isn't a value there
+            if (config.selectedContextIndices[i] !== 1 && config.selectedContextIndices[i] !== 0) {
+                config.selectedContextIndices[i] = 0;
+            }
+            // take note of the currently selected index
+            if (filteredContexts[i].cookieStoreId === singleContext.cookieStoreId) {
+                config.lastSelectedContextIndex = i;
+                console.log(i, prevSelectedIndex);
+                // toggle the currently selected index unless the shift key is pressed
+                if (!shiftModifier) {
+                    if (config.selectedContextIndices[i] === 1) {
+                        config.selectedContextIndices[i] = 0;
+                    } else {
+                        config.selectedContextIndices[i] = 1;
+                    }
+                } else {
+                    // if shift+ctrl is pressed, then invert the current
+                    // selection, and then also set the rest of the
+                    // range from the last click to the same value
+                    let newVal = 0;
+                    if (config.selectedContextIndices[i] === 1) {
+                        newVal = 0;
+                    } else {
+                        newVal = 1;
+                    }
+                    if (prevSelectedIndex < i) {
+                        for (let j = prevSelectedIndex; j <= i; j++) {
+                            config.selectedContextIndices[j] = newVal;
+                        }
+                    } else if (prevSelectedIndex > i) {
+                        for (let j = prevSelectedIndex; j >= i; j--) {
+                            config.selectedContextIndices[j] = newVal;
+                        }
+                    } else {
+                        config.selectedContextIndices[i] = newVal;
+                    }
+                }
+            }
+        }
+        // push these values to the extension storage so that
+        // the same exact settings come up next time
+        browser.storage.local.set({
+            "selectedContextIndices": config.selectedContextIndices,
+            "lastSelectedContextIndex": config.lastSelectedContextIndex,
         });
+        setSelectedListItemClassNames();
+        return;
+    }
+
+    let contextsToActOn = [];
+    if (isAnyContextSelected()) {
+        const keys = Object.keys(config.selectedContextIndices);
+        for (let i = 0; i < keys.length; i++) {
+            if (config.selectedContextIndices[i] === 1) {
+                contextsToActOn.push(filteredContexts[i]);
+            }
+        }
     } else {
-        if (singleContext) {
-            contextsToActOn.push(singleContext);
+        // determine how many containers to modify
+        if (shiftModifier) {
+            filteredContexts.forEach((filteredContext) => {
+                contextsToActOn.push(filteredContext);
+            });
         } else {
-            contextsToActOn.push(filteredContexts[0]);
+            if (singleContext) {
+                contextsToActOn.push(singleContext);
+            } else {
+                contextsToActOn.push(filteredContexts[0]);
+            }
         }
     }
 
     // decision tree
-    if (config.mode === MODES.SET_NAME) {
-        renameContexts(contextsToActOn);
-    } else if (config.mode === MODES.DELETE) {
-        deleteMultipleContainers(contextsToActOn);
-    } else if (config.mode === MODES.SET_URL) {
-        setMultipleDefaultUrlsWithPrompt(contextsToActOn);
-    } else if (config.mode === MODES.SET_COLOR) {
-        setColorForContexts(contextsToActOn);
-    } else if (config.mode === MODES.SET_ICON) {
-        setIconForContexts(contextsToActOn);
-    } else if (config.mode === MODES.REPLACE_IN_NAME) {
-        findReplaceNameInContexts(contextsToActOn);
-    } else if (config.mode === MODES.REPLACE_IN_URL) {
-        findReplaceUrlInContexts(contextsToActOn);
-    } else if (config.mode === MODES.DUPLICATE) {
-        duplicateContexts(contextsToActOn);
-    } else if (config.mode === MODES.OPEN) {
-        openMultipleContexts(contextsToActOn, shouldOpenPinnedTab);
+    switch (config.mode) {
+        case MODES.SET_NAME:
+            renameContexts(contextsToActOn);
+            break;
+        case MODES.DELETE:
+            deleteMultipleContainers(contextsToActOn);
+            break;
+        case MODES.SET_URL:
+            setMultipleDefaultUrlsWithPrompt(contextsToActOn);
+            break;
+        case MODES.SET_COLOR:
+            setColorForContexts(contextsToActOn);
+            break;
+        case MODES.SET_ICON:
+            setIconForContexts(contextsToActOn);
+            break;
+        case MODES.REPLACE_IN_NAME:
+            findReplaceNameInContexts(contextsToActOn);
+            break;
+        case MODES.REPLACE_IN_URL:
+            findReplaceUrlInContexts(contextsToActOn);
+            break;
+        case MODES.DUPLICATE:
+            duplicateContexts(contextsToActOn);
+            break;
+        case MODES.OPEN:
+            openMultipleContexts(contextsToActOn, ctrlModifier);
+            break;
+        default:
+            break;
     }
+    // TODO: delete
+    // if (config.mode === MODES.SET_NAME) {
+    //     renameContexts(contextsToActOn);
+    // } else if (config.mode === MODES.DELETE) {
+    //     deleteMultipleContainers(contextsToActOn);
+    // } else if (config.mode === MODES.SET_URL) {
+    //     setMultipleDefaultUrlsWithPrompt(contextsToActOn);
+    // } else if (config.mode === MODES.SET_COLOR) {
+    //     setColorForContexts(contextsToActOn);
+    // } else if (config.mode === MODES.SET_ICON) {
+    //     setIconForContexts(contextsToActOn);
+    // } else if (config.mode === MODES.REPLACE_IN_NAME) {
+    //     findReplaceNameInContexts(contextsToActOn);
+    // } else if (config.mode === MODES.REPLACE_IN_URL) {
+    //     findReplaceUrlInContexts(contextsToActOn);
+    // } else if (config.mode === MODES.DUPLICATE) {
+    //     duplicateContexts(contextsToActOn);
+    // } else if (config.mode === MODES.OPEN) {
+    //     openMultipleContexts(contextsToActOn, shouldOpenPinnedTab);
+    // }
 
     actionCompletedHandler();
 };
@@ -799,8 +1004,17 @@ const filterContainers = (event) => {
     // retrieve the search query from the user
     const userQuery = document.querySelector("#searchContainerInput").value.trim().toLowerCase();
 
+    if (userQuery !== config.lastQuery) {
+        // the query has changed, so reset any items the user has selected
+        resetSelectedContexts();
+    }
+
     // persist the last query to extension storage
-    browser.storage.local.set({ "lastQuery": userQuery });
+    browser.storage.local.set({
+        "lastQuery": userQuery,
+        "selectedContextIndices": config.selectedContextIndices,
+        "lastSelectedContextIndex": config.lastSelectedContextIndex,
+    });
 
     // now query the contextual identities
     const filteredResults = [];
@@ -815,11 +1029,11 @@ const filterContainers = (event) => {
 
             const lowerCaseUserQuery = userQuery.toLowerCase();
 
-            contexts.forEach((context) => {
+            contexts.forEach((context, i) => {
                 const lowerCaseContextName = context.name.toLowerCase();
 
                 if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery) || checkDefaultUrlsForUserQuery(context, lowerCaseUserQuery)) {
-                    const liElement = buildContainerListItem(filteredResults, context);
+                    const liElement = buildContainerListItem(filteredResults, context, i);
                     ulElement.appendChild(liElement);
                     filteredResults.push(context);
                 }
@@ -834,6 +1048,7 @@ const filterContainers = (event) => {
                 event.preventDefault();
             }
         }
+        setSelectedListItemClassNames();
     }, (error) => {
         console.error(`failed to query contextual identities: ${error}`);
     })
@@ -878,6 +1093,8 @@ const processExtensionSettings = (data) => {
                 break;
             case "windowStayOpenState":
                 document.getElementById(`windowStayOpenState`).checked = config[configKey];
+            case "selectionMode":
+                document.getElementById(`selectionMode`).checked = config[configKey];
             case "containerDefaultUrls":
                 // do nothing at this time, because there are no special
                 // UI elements to update
@@ -966,6 +1183,15 @@ const initializeDocument = (event) => {
 
     document.querySelector("#windowStayOpenState").addEventListener("click", () => {
         setConfigParam("windowStayOpenState");
+    });
+    document.querySelector("#selectionMode").addEventListener("click", () => {
+        setConfigParam("selectionMode");
+        resetSelectedContexts();
+        if (config.selectionMode) {
+            setHelpText("Use Ctrl+Click to select 1; Ctrl+Shift+Click for a range");
+        } else {
+            showModeHelpMessage();
+        }
     });
 
     document.querySelector("#modeSelect").addEventListener("change", (event) => {
