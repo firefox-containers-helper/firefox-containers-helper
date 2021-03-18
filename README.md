@@ -314,6 +314,8 @@ The containers starting with `*` could be considered as permanently pinned tabs,
 
 This container management extension is dangerously powerful. If you're not careful, you can delete all of your containers by turning on "Delete Mode", pressing `shift+enter`, and pressing "OK" to the prompts. At this time, the extension doesn't support undoing operations or rolling back commands. You've been warned!
 
+**Major warning:** if you delete all the extension on your browser that leverage containers, Firefox *will* reset them all. I discovered this the hard way when releasing v0.0.11-v0.0.14 - it caused a bit of panic when I was debugging and kept seeing my containers getting blown away.
+
 ## Future Features
 
 Open to suggestions.

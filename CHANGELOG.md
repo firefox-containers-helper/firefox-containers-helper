@@ -2,6 +2,12 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.12-v0.0.14
+
+* fix [#11](https://github.com/charles-m-knox/firefox-containers-helper/issues/11), the indexing for multi-select was using the total number of containers instead of the filtered number of containers 😰
+* re-add "+" button for containers since it's actually fine
+* added stern warning to the readme about NEVER disabling or deleting all of your container extensions in Firefox, or else they'll get completely reset
+
 ## v0.0.11
 
 * dark mode and light mode added in [#8](https://github.com/charles-m-knox/firefox-containers-helper/pull/8)
