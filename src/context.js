@@ -254,10 +254,12 @@ const setSelectedListItemClassNames = () => {
     const keys = Object.keys(config.selectedContextIndices);
     for (let i = 0; i < keys.length; i++) {
         const liElement = document.getElementById(`filtered-context-${i}-li`);
-        if (config.selectedContextIndices[i] === 1) {
-            liElement.className = containerListItemSelectedClassNames;
-        } else {
-            liElement.className = containerListItemInactiveClassNames;
+        if (liElement) {
+            if (config.selectedContextIndices[i] === 1) {
+                liElement.className = containerListItemSelectedClassNames;
+            } else {
+                liElement.className = containerListItemInactiveClassNames;
+            }
         }
     }
 }
@@ -518,6 +520,7 @@ const deleteMultipleContainers = (contextsToDelete) => {
                 (context) => {
                     deletedContexts.push(context);
                     setHelpText(`Deleted ${deletedContexts.length}/${contextsToDelete.length} containers`);
+                    resetSelectedContexts();
                 },
                 (error) => {
                     if (error) {
@@ -674,18 +677,20 @@ const setIconForContexts = (contextsToUpdate) => {
  * @returns {void}
  */
 const findReplaceNameInContexts = (contextsToUpdate) => {
-    const findStr = prompt(`(1/3) What case-insensitive string in ${contextsToUpdate.length} container name(s) would you like to search for?`);
+    const findStr = prompt(`(1/3) What case-sensitive string in ${contextsToUpdate.length} container name(s) would you like to search for?`);
     if (!findStr) return;
     const replaceStr = prompt("(2/3) What string would you like to replace it with?");
     if (findStr && replaceStr !== null) {
-        const userConfirm = confirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the name of ${contextsToUpdate.length} container(s)?`);
+        const userConfirm = confirm(`(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contextsToUpdate.length} container(s)?`);
         if (userConfirm) {
             let updatedContexts = [];
-            setHelpText(`Updated ${updatedContexts.length} containers`);
+            setHelpText(`Updated ${updatedContexts.length} containers`); // in case the operation fails
             contextsToUpdate.forEach((contextToUpdate) => {
-                const lowerContextName = contextToUpdate.name.toLowerCase();
-                if (lowerContextName.indexOf(findStr) !== -1) {
-                    const newNameStr = lowerContextName.replaceAll(findStr, replaceStr);
+                // if we want to add case-insensitivity back later, uncomment this
+                // const lowerContextName = contextToUpdate.name.toLowerCase();
+                // if (lowerContextName.indexOf(findStr) !== -1) {
+                if (contextToUpdate.name.indexOf(findStr) !== -1) {
+                    const newNameStr = contextToUpdate.name.replaceAll(findStr, replaceStr);
                     browser.contextualIdentities.update(
                         contextToUpdate.cookieStoreId,
                         { "name": newNameStr }
@@ -768,6 +773,7 @@ const duplicateContexts = (contextsToDuplicate) => {
                     const urlToSet = config.containerDefaultUrls[contextToDuplicate.cookieStoreId] || "none";
                     setMultipleDefaultUrls([createdContext], urlToSet);
                     setHelpText(`Duplicated ${createdContexts.length} containers`);
+                    resetSelectedContexts();
                 },
                 (err) => {
                     if (err) {
@@ -777,6 +783,34 @@ const duplicateContexts = (contextsToDuplicate) => {
             );
         });
     };
+};
+
+/**
+ * Adds a brand new context (container).
+ * @returns {void}
+ */
+const addContext = () => {
+    if (config.lastQuery) {
+        const newContext = {
+            color: "toolbar",
+            icon: "circle",
+            name: config.lastQuery,
+        };
+        browser.contextualIdentities.create(newContext).then(
+            (createdContext) => {
+                filterContainers();
+                setHelpText(`Added a container named ${config.lastQuery}`);
+                resetSelectedContexts();
+            },
+            (err) => {
+                if (err) {
+                    alert(`Failed to create a container named ${config.lastQuery}: ${JSON.stringify(err)}`);
+                }
+            }
+        );
+    } else {
+        alert("You must specify a container name in the input field.")
+    }
 };
 
 
@@ -826,7 +860,6 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
             // take note of the currently selected index
             if (filteredContexts[i].cookieStoreId === singleContext.cookieStoreId) {
                 config.lastSelectedContextIndex = i;
-                console.log(i, prevSelectedIndex);
                 // toggle the currently selected index unless the shift key is pressed
                 if (!shiftModifier) {
                     if (config.selectedContextIndices[i] === 1) {
@@ -1016,6 +1049,8 @@ const filterContainers = (event) => {
         "lastSelectedContextIndex": config.lastSelectedContextIndex,
     });
 
+    config.lastQuery = userQuery;
+
     // now query the contextual identities
     const filteredResults = [];
     browser.contextualIdentities.query({}).then((contexts) => {
@@ -1171,6 +1206,9 @@ const initializeDocument = (event) => {
         processExtensionSettings(data);
         showModeHelpMessage();
         filterContainers();
+        if (config.selectionMode) {
+            setHelpText("Use Ctrl+Click to select 1; Ctrl+Shift+Click for a range");
+        }
         focusSearchBox();
     });
 
@@ -1192,6 +1230,9 @@ const initializeDocument = (event) => {
         } else {
             showModeHelpMessage();
         }
+    });
+    document.querySelector("#addNewContainer").addEventListener("click", (event) => {
+        addContext();
     });
 
     document.querySelector("#modeSelect").addEventListener("change", (event) => {
