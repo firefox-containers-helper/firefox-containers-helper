@@ -8,14 +8,9 @@ This extension is intended to *augment* the Multi-Account Containers extension i
 
 This readme contains extensive information about the extension and it aims to bootstrap new users into using the extension effectively.
 
-## Repository source code update
-
-This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/en-US/firefox/addon/containers-helper/).
-
 ## Table of Contents
 
 - [Firefox Containers Helper](#firefox-containers-helper)
-  - [Repository source code update](#repository-source-code-update)
   - [Table of Contents](#table-of-contents)
   - [Who is this intended for?](#who-is-this-intended-for)
   - [Features](#features)
@@ -40,6 +35,8 @@ This repository used to be hosted on GitLab. For all releases before and includi
   - [Warnings](#warnings)
   - [Future Features](#future-features)
   - [Community](#community)
+    - [Supporting the Project](#supporting-the-project)
+  - [Repository source code update](#repository-source-code-update)
   - [Attributions](#attributions)
 
 ## Who is this intended for?
@@ -47,6 +44,8 @@ This repository used to be hosted on GitLab. For all releases before and includi
 If you're like me and you care deeply about your web browsing privacy, you may be creating a large amount of containers for your browsing, even multiple containers for the same sites.
 
 If this is you, and if you've also struggled to scroll through your long list of containers without reprieve or do other bulk interactions with the multi-account containers extension, then this extension is for you. It will enable you to quickly filter all of your containers and open a new one quickly, or do other things (continue reading).
+
+With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/total-cookie-protection/), the use case for containers has been reduced a bit (this is a good thing; containers are extra effort that we shouldn't need to expend in the first place - privacy by default is the way to go). However, containers are still very useful for having multiple identities for a single site, or for having complete control over each tab's browsing context. This extension still complements [Temporary Containers](https://addons.mozilla.org/en-US/firefox/addon/temporary-containers/) and other extensions quite well.
 
 ## Features
 
@@ -79,6 +78,7 @@ If any of this is confusing, remember the basics:
 
 * Press `shift` and click/enter to act on ALL results (bulk open tab/delete container/set URL action)
 * Press `ctrl` and click/enter a result to open as pinned tab(s)
+  * Note that entering *Select Mode* will change the behavior of `ctrl+click` to specifically select one container from the list, or multiple if `shift` is also held
 
 ### v0.0.11 Examples
 
@@ -101,7 +101,7 @@ In this example, a few features are showcased:
 * **Multi-select over a range** - Select and open multiple specific tabs using `Ctrl+Shift+Click`
 * **Container quick-add** - Quickly add a bunch of containers by typing in a name into the search box
 
-![v0.0.11 usage example](readme-assets/v0.0.11/v0.0.11.mp4)
+![v0.0.11 usage example](readme-assets/v0.0.11/v0.0.11.gif)
 
 Additionally, a few screenshots:
 
@@ -318,7 +318,6 @@ This container management extension is dangerously powerful. If you're not caref
 
 Open to suggestions.
 
-* **Ctrl+Click to select individual results** instead of it just opening pinned tabs as it does now. Ideal behavior would be something like using ctrl to select individual results from the list, and then using a checkbox to open as pinned (or something similar to that).
 * **Sorting** - Sort results according to criteria
 * **Container Import/Export** - This will be a bit tricky though, since this extension doesn't have control over url-to-container associations made in the multi-account containers extension.
 * **Saved searches** - Saving the results and possibly binding to a keystroke might be useful.
@@ -331,6 +330,16 @@ Open to suggestions.
 
 If you have suggestions, please feel free to voice them on GitHub. Thank you for using my extension and reading this far!
 
+### Supporting the Project
+
+You can support the author directly [here](https://charlesmknox.com/about), and you can see supporters of the project [here](https://charlesmknox.com/about). The extension itself includes a "Donate" link as well. I am very appreciative of the community feedback and support I've received so far.
+
+## Repository source code update
+
+This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/en-US/firefox/addon/containers-helper/).
+
 ## Attributions
 
 This software uses Bootstrap. See the license [here](https://github.com/twbs/bootstrap/blob/main/LICENSE).
+
+It also is packaged with a variant of Bootstrap from [here](https://github.com/vinorodrigues/bootstrap-dark/releases/tag/v0.0.9), released under the MIT License.
