@@ -20,6 +20,8 @@ This repository used to be hosted on GitLab. For all releases before and includi
   - [Who is this intended for?](#who-is-this-intended-for)
   - [Features](#features)
   - [Examples and Screenshots](#examples-and-screenshots)
+    - [v0.0.11 Examples](#v0011-examples)
+      - [v0.0.11 Live Example](#v0011-live-example)
     - [v0.0.10 Examples](#v0010-examples)
       - [v0.0.10 Live Example](#v0010-live-example)
       - [v0.0.10 Screenshots](#v0010-screenshots)
@@ -63,7 +65,11 @@ If this is you, and if you've also struggled to scroll through your long list of
 * **Deletion mode** - When checked, you can click on a container to delete it. This method of deletion is a bit quicker than the multi-account containers extension. You will be prompted for deletion more than once.
   * **Caution: This can delete all of your containers if you're not careful.**
   * Similar to above, press `shift` to bulk-delete containers returned by a query.
-* **Keyboard shortcut** to open the popup window is `alt+shift+D`. It will immediately focus the search box, so you can quickly filter for a container, press enter, and go.
+* **Keyboard shortcut** to open the popup window is `alt+shift+D` (configurable). It will immediately focus the search box, so you can quickly filter for a container, press enter, and go.
+* **Dark and Light mode** - respects your system's dark/light mode setting, thanks to [KerfuffleV2](https://github.com/charles-m-knox/firefox-containers-helper/issues?q=is%3Apr+author%3AKerfuffleV2) in [PR #8](https://github.com/charles-m-knox/firefox-containers-helper/pull/8)
+  * Note: On my Ubuntu system, changing Firefox's theme isn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
+* **Select Mode** - Like you'd intuitively expect, you can enable Select Mode press `Ctrl+Click` to specifically select a couple results from the list, as well as `Ctrl+Shift+Click` to traverse a range of containers.
+* **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color.
 
 ## Examples and Screenshots
 
@@ -73,6 +79,37 @@ If any of this is confusing, remember the basics:
 
 * Press `shift` and click/enter to act on ALL results (bulk open tab/delete container/set URL action)
 * Press `ctrl` and click/enter a result to open as pinned tab(s)
+
+### v0.0.11 Examples
+
+In v0.0.11, the features introduced were:
+
+* **Dark and Light mode** - [Bootstrap dark mode](https://github.com/vinorodrigues/bootstrap-dark) which respects your system theme preference
+  * Note: On my Ubuntu system, changing Firefox's theme wasn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
+* **Select Mode** - Allows you to precisely select only a couple results from the list by first enabling the mode and then pressing `Ctrl+Click`, or multiple by pressing `Ctrl+Shift+Click`
+* **Configurable Keyboard Shortcut** - Allows you to change the keyboard shortcut for showing the extension popup window, which is by default `Alt+Shift+D`. This fixes [#4](https://github.com/charles-m-knox/firefox-containers-helper/issues/4)
+* **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color
+
+*See [`CHANGELOG.md`](./CHANGELOG.md) for more changes.*
+
+#### v0.0.11 Live Example
+
+In this example, a few features are showcased:
+
+* First, notice the **dark mode theme**.
+* **Multi-select** - Select and open multiple specific tabs using `Ctrl+Click`
+* **Multi-select over a range** - Select and open multiple specific tabs using `Ctrl+Shift+Click`
+* **Container quick-add** - Quickly add a bunch of containers by typing in a name into the search box
+
+![v0.0.11 usage example](readme-assets/v0.0.11/v0.0.11.mp4)
+
+Additionally, a few screenshots:
+
+![Multi-selection static image](readme-assets/v0.0.11/multi_selection.png)
+
+![Dark mode for keyboard shortcuts](readme-assets/v0.0.11/keyboard_shortcuts_dark_larger.png)
+
+![Light mode for keyboard shortcuts](readme-assets/v0.0.11/keyboard_shortcuts_light.png)
 
 ### v0.0.10 Examples
 

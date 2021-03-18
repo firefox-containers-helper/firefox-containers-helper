@@ -4,9 +4,16 @@ This changelog will be corrected in the future.
 
 ## v0.0.11
 
-* dark mode and light mode added in https://github.com/charles-m-knox/firefox-containers-helper/pull/8
+* dark mode and light mode added in [#8](https://github.com/charles-m-knox/firefox-containers-helper/pull/8)
   * Thanks to https://github.com/KerfuffleV2 for this contribution!
-* configurable keyboard shortcut added (see https://github.com/charles-m-knox/firefox-containers-helper/issues/4)
+* configurable keyboard shortcut added (see [#4](https://github.com/charles-m-knox/firefox-containers-helper/issues/4))
+* adds *Select Mode*, as requested by the project's [first supporter](https://charlesmknox.com/supporters/#bob-haines)!
+  * resolves [#6](https://github.com/charles-m-knox/firefox-containers-helper/issues/6)
+* fix [#9](https://github.com/charles-m-knox/firefox-containers-helper/issues/9)... no longer drops all casing to lowercase when using "replace in name" mode, sorry about that!
+* "replace in name" used to be case-insensitive, but I believe it's better to have case-sensitive replacing
+  * Please file an issue and talk with me if you disagree or believe there should be a better approach! Thank you! 🙂
+* added a small "Donate" link to my personal site with my personal avatar, I appreciate your support everyone 🙂
+* added a simple "+" button to quickly add a new container based on the user's current input, this was requested [here](https://www.reddit.com/r/firefox/comments/m0fvwy/the_multiaccount_containers_addon_is_awesome_but/gq8wqig?utm_source=share&utm_medium=web2x&context=3)
 
 ## v0.0.10
 
