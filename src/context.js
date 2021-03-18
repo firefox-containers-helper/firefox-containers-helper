@@ -251,17 +251,18 @@ const isAnyContextSelected = () => {
  * @returns {void} Nothing
  */
 const setSelectedListItemClassNames = () => {
-    const keys = Object.keys(config.selectedContextIndices);
-    for (let i = 0; i < keys.length; i++) {
-        const liElement = document.getElementById(`filtered-context-${i}-li`);
-        if (liElement) {
-            if (config.selectedContextIndices[i] === 1) {
-                liElement.className = containerListItemSelectedClassNames;
-            } else {
-                liElement.className = containerListItemInactiveClassNames;
-            }
-        }
-    }
+    // const keys = Object.keys(config.selectedContextIndices);
+    // for (let i = 0; i < keys.length; i++) {
+    //     const liElement = document.getElementById(`filtered-context-${i}-li`);
+    //     if (liElement) {
+    //         console.log(liElement.className);
+    //         if (config.selectedContextIndices[i] === 1) {
+    //             liElement.className = containerListItemSelectedClassNames;
+    //         } else {
+    //             liElement.className = containerListItemInactiveClassNames;
+    //         }
+    //     }
+    // }
 }
 
 /**
@@ -851,6 +852,7 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
     // if "selectionMode" has been turned on...
     if (config.selectionMode && ctrlModifier) {
         const prevSelectedIndex = config.lastSelectedContextIndex;
+        console.log(prevSelectedIndex, filteredContexts.length, config.selectedContextIndices);
         // determine the index of the context that was selected
         for (let i = 0; i < filteredContexts.length; i++) {
             // initialize the the list of indices if there isn't a value there
