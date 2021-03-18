@@ -1233,9 +1233,9 @@ const initializeDocument = (event) => {
             showModeHelpMessage();
         }
     });
-    document.querySelector("#addNewContainer").addEventListener("click", (event) => {
-        addContext();
-    });
+    // document.querySelector("#addNewContainer").addEventListener("click", (event) => {
+    //     addContext();
+    // });
 
     document.querySelector("#modeSelect").addEventListener("change", (event) => {
         setMode(event.target.value);
