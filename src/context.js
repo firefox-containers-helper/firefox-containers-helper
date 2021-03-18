@@ -251,18 +251,17 @@ const isAnyContextSelected = () => {
  * @returns {void} Nothing
  */
 const setSelectedListItemClassNames = () => {
-    // const keys = Object.keys(config.selectedContextIndices);
-    // for (let i = 0; i < keys.length; i++) {
-    //     const liElement = document.getElementById(`filtered-context-${i}-li`);
-    //     if (liElement) {
-    //         console.log(liElement.className);
-    //         if (config.selectedContextIndices[i] === 1) {
-    //             liElement.className = containerListItemSelectedClassNames;
-    //         } else {
-    //             liElement.className = containerListItemInactiveClassNames;
-    //         }
-    //     }
-    // }
+    const keys = Object.keys(config.selectedContextIndices);
+    for (let i = 0; i < keys.length; i++) {
+        const liElement = document.getElementById(`filtered-context-${i}-li`);
+        if (liElement) {
+            if (config.selectedContextIndices[i] === 1) {
+                liElement.className = containerListItemSelectedClassNames;
+            } else {
+                liElement.className = containerListItemInactiveClassNames;
+            }
+        }
+    }
 }
 
 /**
@@ -852,7 +851,6 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
     // if "selectionMode" has been turned on...
     if (config.selectionMode && ctrlModifier) {
         const prevSelectedIndex = config.lastSelectedContextIndex;
-        console.log(prevSelectedIndex, filteredContexts.length, config.selectedContextIndices);
         // determine the index of the context that was selected
         for (let i = 0; i < filteredContexts.length; i++) {
             // initialize the the list of indices if there isn't a value there
@@ -1070,7 +1068,7 @@ const filterContainers = (event) => {
                 const lowerCaseContextName = context.name.toLowerCase();
 
                 if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery) || checkDefaultUrlsForUserQuery(context, lowerCaseUserQuery)) {
-                    const liElement = buildContainerListItem(filteredResults, context, i);
+                    const liElement = buildContainerListItem(filteredResults, context, filteredResults.length);
                     ulElement.appendChild(liElement);
                     filteredResults.push(context);
                 }
@@ -1227,15 +1225,16 @@ const initializeDocument = (event) => {
     document.querySelector("#selectionMode").addEventListener("click", () => {
         setConfigParam("selectionMode");
         resetSelectedContexts();
+        setSelectedListItemClassNames();
         if (config.selectionMode) {
             setHelpText("Use Ctrl+Click to select 1; Ctrl+Shift+Click for a range");
         } else {
             showModeHelpMessage();
         }
     });
-    // document.querySelector("#addNewContainer").addEventListener("click", (event) => {
-    //     addContext();
-    // });
+    document.querySelector("#addNewContainer").addEventListener("click", (event) => {
+        addContext();
+    });
 
     document.querySelector("#modeSelect").addEventListener("change", (event) => {
         setMode(event.target.value);
