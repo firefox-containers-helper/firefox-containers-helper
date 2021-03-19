@@ -956,26 +956,6 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
         default:
             break;
     }
-    // TODO: delete
-    // if (config.mode === MODES.SET_NAME) {
-    //     renameContexts(contextsToActOn);
-    // } else if (config.mode === MODES.DELETE) {
-    //     deleteMultipleContainers(contextsToActOn);
-    // } else if (config.mode === MODES.SET_URL) {
-    //     setMultipleDefaultUrlsWithPrompt(contextsToActOn);
-    // } else if (config.mode === MODES.SET_COLOR) {
-    //     setColorForContexts(contextsToActOn);
-    // } else if (config.mode === MODES.SET_ICON) {
-    //     setIconForContexts(contextsToActOn);
-    // } else if (config.mode === MODES.REPLACE_IN_NAME) {
-    //     findReplaceNameInContexts(contextsToActOn);
-    // } else if (config.mode === MODES.REPLACE_IN_URL) {
-    //     findReplaceUrlInContexts(contextsToActOn);
-    // } else if (config.mode === MODES.DUPLICATE) {
-    //     duplicateContexts(contextsToActOn);
-    // } else if (config.mode === MODES.OPEN) {
-    //     openMultipleContexts(contextsToActOn, shouldOpenPinnedTab);
-    // }
 
     actionCompletedHandler();
 };

@@ -338,7 +338,7 @@ You can support the author directly [here](https://charlesmknox.com/about), and 
 
 ## Repository source code update
 
-This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/en-US/firefox/addon/containers-helper/).
+This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/addon/containers-helper).
 
 ## Attributions
 
