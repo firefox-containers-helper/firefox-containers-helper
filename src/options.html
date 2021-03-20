@@ -70,7 +70,8 @@
                 </p>
                 <p>
                     <i>Note: Use caution when removing this extension from Firefox. Sync settings persist, but local
-                        settings may get reset.</i>
+                        settings may get reset. For best results, copy/paste your settings elsewhere when purging
+                        extensions.</i>
                 </p>
             </div>
         </div>
@@ -122,6 +123,39 @@
             </div>
             <div class="col-6">
                 <button type="button" id="btnResetSyncSettings" class="btn btn-danger">Reset Sync Settings</button>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col">
+                <h4>
+                    Export Containers
+                </h4>
+                <p>
+                    You can export your existing containers as a JSON or CSV string here. Click <i>Export Container</i>
+                    to get a list. You can combine the above settings with the exported containers with a text editor or
+                    spreadsheet to handle larger-scale container management.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label for="containersExportAsJSON">Containers JSON</label>
+                    <textarea class="form-control" readonly="true" id="containersExportAsJSON"
+                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label for="containersExportAsCSV">Containers CSV</label>
+                    <textarea class="form-control" readonly="true" id="containersExportAsCSV"
+                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <button type="button" id="btnExportContainers" class="btn btn-primary">Export Containers</button>
             </div>
         </div>
     </div>

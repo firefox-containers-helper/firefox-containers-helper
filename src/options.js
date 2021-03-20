@@ -72,7 +72,7 @@ const setValidationText = (messageStr, bootstrapColorClass) => {
 
     const syncValidationText = document.getElementById('syncValidationText');
     if (!syncValidationText) return;
-    let className = `badge badge-${bootstrapColorClass} mt-2`;
+    let className = `badge badge-${bootstrapColorClass} mt-4`;
     syncValidationText.innerText = messageStr;
     syncValidationText.className = className;
 }
@@ -257,11 +257,39 @@ const btnResetLocalSettingsClick = (event) => {
         resetLocalSettings();
     }
 }
+
 const btnResetSyncSettingsClick = (event) => {
     if (confirm("Are you sure you want to reset sync settings?")) {
         browser.storage.sync.clear();
         refreshSyncSettings();
     }
+}
+
+const btnExportContainersClick = (event) => {
+    browser.contextualIdentities.query({}).then((contexts) => {
+        const contextsJSON = JSON.stringify(contexts);
+        const containersExportAsJSON = document.getElementById('containersExportAsJSON');
+        if (containersExportAsJSON) {
+            containersExportAsJSON.value = contextsJSON;
+        }
+        if (contexts.length > 0) {
+            // build csv
+            const keys = Object.keys(contexts[0]);
+            keys.sort();
+            const keysQuotes = keys.map((key) => {
+                return `"${key}"`;
+            })
+            rows = contexts.map((context) => {
+                return keys.map((key) => {
+                    return `"${context[key]}"`;
+                }).join(",");
+            })
+            const containersExportAsCSV = document.getElementById('containersExportAsCSV');
+            if (containersExportAsCSV) {
+                containersExportAsCSV.value = `${keysQuotes.join(",")}\n${rows.join("\n")}`;
+            }
+        }
+    });
 }
 
 /**
@@ -274,6 +302,8 @@ const initializeDocument = (event) => {
     resetLocalSettings();
 
     refreshSyncSettings();
+
+    btnExportContainersClick();
 
     updateUI();
 
@@ -289,6 +319,7 @@ const initializeDocument = (event) => {
     document.querySelector('#alwaysGetSync').addEventListener('click', toggleAlwaysGetSyncSettings);
     document.querySelector('#btnResetLocalSettings').addEventListener('click', btnResetLocalSettingsClick);
     document.querySelector('#btnResetSyncSettings').addEventListener('click', btnResetSyncSettingsClick);
+    document.querySelector('#btnExportContainers').addEventListener('click', btnExportContainersClick);
 }
 
 document.addEventListener('DOMContentLoaded', initializeDocument);
