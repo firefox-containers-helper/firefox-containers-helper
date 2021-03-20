@@ -64,7 +64,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
 * **Deletion mode** - When checked, you can click on a container to delete it. This method of deletion is a bit quicker than the multi-account containers extension. You will be prompted for deletion more than once.
   * **Caution: This can delete all of your containers if you're not careful.**
   * Similar to above, press `shift` to bulk-delete containers returned by a query.
-* **Keyboard shortcut** to open the popup window is `alt+shift+D` (configurable). It will immediately focus the search box, so you can quickly filter for a container, press enter, and go.
+* **Keyboard shortcut** to open the popup window is `alt+shift+D` (configurable, on Mac it is `Command+Shift+E`). It will immediately focus the search box, so you can quickly filter for a container, press enter, and go.
 * **Dark and Light mode** - respects your system's dark/light mode setting, thanks to [KerfuffleV2](https://github.com/charles-m-knox/firefox-containers-helper/issues?q=is%3Apr+author%3AKerfuffleV2) in [PR #8](https://github.com/charles-m-knox/firefox-containers-helper/pull/8)
   * Note: On my Ubuntu system, changing Firefox's theme isn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
 * **Select Mode** - Like you'd intuitively expect, you can enable Select Mode press `Ctrl+Click` (`Cmd+Click` on Mac) to specifically select a couple results from the list, as well as `Ctrl+Shift+Click` (`Cmd+Shift+Click` on Mac) to traverse a range of containers.
@@ -87,7 +87,7 @@ In v0.0.11, the features introduced were:
 * **Dark and Light mode** - [Bootstrap dark mode](https://github.com/vinorodrigues/bootstrap-dark) which respects your system theme preference
   * Note: On my Ubuntu system, changing Firefox's theme wasn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
 * **Select Mode** - Allows you to precisely select only a couple results from the list by first enabling the mode and then pressing `Ctrl+Click` (`Cmd+Click` on Mac), or multiple by pressing `Ctrl+Shift+Click`
-* **Configurable Keyboard Shortcut** - Allows you to change the keyboard shortcut for showing the extension popup window, which is by default `Alt+Shift+D`. This fixes [#4](https://github.com/charles-m-knox/firefox-containers-helper/issues/4)
+* **Configurable Keyboard Shortcut** - Allows you to change the keyboard shortcut for showing the extension popup window, which is by default `Alt+Shift+D` (on Mac it is `Command+Shift+E`). This fixes [#4](https://github.com/charles-m-knox/firefox-containers-helper/issues/4)
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color
 
 *See [`CHANGELOG.md`](./CHANGELOG.md) for more changes.*

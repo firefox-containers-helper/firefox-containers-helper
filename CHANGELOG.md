@@ -2,6 +2,13 @@
 
 This changelog will be corrected in the future.
 
+## v0.0.15
+
+* fix [#14](https://github.com/charles-m-knox/firefox-containers-helper/issues/14), to use non-localized AMO links
+* fix [#15](https://github.com/charles-m-knox/firefox-containers-helper/issues/15), to enable Mac support for anything that uses the `Ctrl` key modifier to allow the `Meta` (`Cmd` key) modifier to work as well
+* minor change: set text color to white when items are selected; previously text was black and the background highlight color was also dark gray, making it hard to see
+* on Mac, the default shortcut key (`Alt+Shift+D`) is overridden by a built-in shortcut, so the new shortcut key on Mac is `Command+Shift+E`. You can change this if you want.
+
 ## v0.0.12-v0.0.14
 
 * fix [#11](https://github.com/charles-m-knox/firefox-containers-helper/issues/11), the indexing for multi-select was using the total number of containers instead of the filtered number of containers 😰
