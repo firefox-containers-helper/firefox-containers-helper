@@ -9,12 +9,19 @@
 </head>
 
 <body style="min-height: 500px;">
-    <div class="container-fluid mt-2">
+    <div class="container-fluid my-3">
         <div class="row">
             <div class="col">
                 <h3>
                     Firefox Containers Helper Preferences
                 </h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <h4>
+                    Keyboard Shortcuts
+                </h4>
                 <p>
                     You can set the keyboard shortcut that will cause the addon window to appear here. You will have to
                     type out the keyboard shortcut yourself - use key combinations such as <code>Alt+Shift+D</code>,
@@ -43,13 +50,81 @@
                 </div>
             </div>
         </div>
+        <div class="row">
+            <div class="col">
+                <h4>
+                    Local and Synchronized Settings
+                </h4>
+                <p>
+                    The local and Firefox Sync configuration settings can be reviewed here. You can modify the raw JSON
+                    settings of this addon, click <i>Save Locally</i>, and then you can push the changes to Firefox Sync
+                    by clicking <i>Save to Sync</i>. To pull settings down from Firefox Sync, you can click <i>Save to
+                        Local from Sync</i>.
+                </p>
+                <p>
+                    Synchronization between devices should be something that you can finely control. That's why, by
+                    default, saving settings to sync is <b>turned off</b>. You can enable all settings to save to
+                    Firefox Sync by checking the <i>Always set settings to Firefox Sync</i> checkbox below, and you can
+                    enable reading from Firefox Sync whenever the extension window is opened by checking the <i>Always
+                        get settings from Firefox Sync</i> checkbox below.
+                </p>
+                <p>
+                    <i>Note: Use caution when removing this extension from Firefox. Sync settings persist, but local
+                        settings may get reset.</i>
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label for="localSettingsTextArea">Local Settings</label>
+                    <textarea class="form-control" id="localSettingsTextArea"
+                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label for="syncSettingsTextArea">Synchronized Settings</label>
+                    <textarea class="form-control" readonly="true" id="syncSettingsTextArea"
+                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <button type="button" id="btnSaveLocal" class="btn btn-primary">Save Locally</button>
+                <button type="button" id="btnSaveSync" class="btn btn-primary">Save to Sync</button>
+                <button type="button" id="btnResetLocal" class="btn btn-primary">Refresh</button>
+            </div>
+            <div class="col-6">
+                <button type="button" id="btnLoadFromSync" class="btn btn-primary">Save to Local from Sync</button>
+                <button type="button" id="btnRefreshSync" class="btn btn-primary">Refresh</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <span id="syncValidationText"></span>
+            </div>
+            <div class="col-6">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="alwaysSetSync" checked="true">
+                    <label class="form-check-label" for="alwaysSetSync">Always set settings to Firefox Sync</label>
+                </div>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="alwaysGetSync" checked="false">
+                    <label class="form-check-label" for="alwaysGetSync">Always get settings from Firefox Sync</label>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-6">
+                <button type="button" id="btnResetLocalSettings" class="btn btn-danger">Reset Local Settings</button>
+            </div>
+            <div class="col-6">
+                <button type="button" id="btnResetSyncSettings" class="btn btn-danger">Reset Sync Settings</button>
+            </div>
+        </div>
     </div>
-    <!-- <form>
-        <label>Keyboard shortcut</label>
-        <input type="text" id="shortcut">
-        <button class="btn btn-primary" id="update">Update keyboard shortcut</button>
-        <button class="btn btn-secondary" id="reset">Reset keyboard shortcut</button>
-    </form> -->
     <script src="options.js"></script>
 </body>
 
