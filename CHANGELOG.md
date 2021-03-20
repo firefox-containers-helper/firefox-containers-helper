@@ -4,6 +4,9 @@ This changelog contains all relevant changes between different versions of the e
 
 ## v0.0.16
 
+* adds container JSON/CSV export feature in the options page
+  * allows you to use an external editor (spreadsheet/text editor) to help manage your containers at a larger scale
+    * complete import/export is not implemented! the feature is mainly useful for setting a large number of default URLs for containers
 * adds the ability to control whether or not settings are saved over Firefox Sync, or simply locally
   * to access this, visit the Extension Preferences page
   * by default, sync is **opt-in**, you have to enable it in order for the settings to be pushed to sync.
