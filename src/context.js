@@ -218,6 +218,26 @@ const containerListItemActiveClassNames = `${containerListItemInactiveClassNames
 const containerListItemActiveDangerClassNames = `${containerListItemActiveClassNames} bg-danger border-danger`;
 
 /**
+ * This is the set of classes to assign to a container list item url label that
+ * is currently not being hovered over or selected.
+ * Assign to `element.className` for a given element.
+ * @constant
+ * @type {string}
+ * @default
+ */
+const containerListItemUrlLabel = `text-muted small`;
+
+/**
+ * This is the set of classes to assign to a container list item url label that
+ * is currently being hovered over or selected.
+ * Assign to `element.className` for a given element.
+ * @constant
+ * @type {string}
+ * @default
+ */
+const containerListItemUrlLabelInverted = `text-light small`;
+
+/**
  * The `<div>` ID of the container list. This is where all of the queried containers will go.
  * @constant
  * @type {string}
@@ -260,11 +280,20 @@ const setSelectedListItemClassNames = () => {
     const keys = Object.keys(config.selectedContextIndices);
     for (let i = 0; i < keys.length; i++) {
         const liElement = document.getElementById(`filtered-context-${i}-li`);
-        if (liElement) {
-            if (config.selectedContextIndices[i] === 1) {
+        const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+        if (config.selectedContextIndices[i] === 1) {
+            if (liElement) {
                 liElement.className = containerListItemSelectedClassNames;
-            } else {
+            }
+            if (urlLabel) {
+                urlLabel.className = containerListItemUrlLabelInverted;
+            }
+        } else {
+            if (liElement) {
                 liElement.className = containerListItemInactiveClassNames;
+            }
+            if (urlLabel) {
+                urlLabel.className = containerListItemUrlLabel;
             }
         }
     }
@@ -296,7 +325,7 @@ const buildContainerIconElement = (context) => {
  * @returns {Element} An HTML element containing text that represents the
  * container's name and default URL, if defined.
  */
-const buildContainerLabelElement = (context) => {
+const buildContainerLabelElement = (context, i) => {
     const containerLabelDivHoldingElement = document.createElement('div');
     containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
 
@@ -304,7 +333,8 @@ const buildContainerLabelElement = (context) => {
     containerLabelElement.innerText = `${context.name}`;
 
     const containerUrlLabelElement = document.createElement('span');
-    containerUrlLabelElement.className = 'text-muted small'
+    containerUrlLabelElement.className = containerListItemUrlLabel;
+    containerUrlLabelElement.id = `filtered-context-${i}-url-label`;
     const contextDefaultUrl = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
     if (contextDefaultUrl) {
         containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
@@ -335,13 +365,24 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
                 event.target.className = containerListItemActiveDangerClassNames;
             } else {
                 event.target.className = containerListItemActiveClassNames;
+                const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabelInverted;
+                }
             }
         });
         liElement.addEventListener('mouseleave', (event) => {
+            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
             if (isContextSelected(i)) {
                 event.target.className = containerListItemSelectedClassNames;
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabelInverted;
+                }
             } else {
                 event.target.className = containerListItemInactiveClassNames;
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabel;
+                }
             }
         });
         liElement.addEventListener('click', (event) => {
@@ -357,6 +398,10 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
                 event.target.className = containerListItemActiveDangerClassNames;
             } else {
                 event.target.className = containerListItemActiveClassNames;
+                const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabel;
+                }
             }
         });
         liElement.addEventListener('blur', (event) => {
@@ -364,6 +409,10 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
                 event.target.className = containerListItemSelectedClassNames;
             } else {
                 event.target.className = containerListItemInactiveClassNames;
+                const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabel;
+                }
             }
         });
 
@@ -385,7 +434,7 @@ const buildContainerListItem = (filteredResults, context, i) => {
     liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
 
     const containerIconHolderElement = buildContainerIconElement(context);
-    const containerLabelElement = buildContainerLabelElement(context);
+    const containerLabelElement = buildContainerLabelElement(context, i);
 
     if (config.mode === MODES.DELETE) {
         const divElement = document.createElement('div');

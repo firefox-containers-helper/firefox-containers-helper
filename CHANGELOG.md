@@ -4,6 +4,7 @@ This changelog contains all relevant changes between different versions of the e
 
 ## v0.0.16
 
+* fix the awkward css styling for default url labels that are either selected or currently hovered over - gray on gray is not visible 😰
 * start propagating settings to Firefox Sync, but still using local storage as the primary source of truth
   * currently, only *pushing* settings, not reading. I want to ensure that writing to Firefox Sync is stable, and then make the transition enabling read from sync.
   * had to specify the extensions UUID in `manifest.json`, see [here](https://extensionworkshop.com/documentation/develop/extensions-and-the-add-on-id/#when-do-you-need-an-add-on-id)
