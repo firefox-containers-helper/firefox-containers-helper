@@ -15,6 +15,7 @@ This readme contains extensive information about the extension and it aims to bo
   - [Who is this intended for?](#who-is-this-intended-for)
   - [Features](#features)
   - [Examples and Screenshots](#examples-and-screenshots)
+    - [v0.0.16 Screenshots](#v0016-screenshots)
     - [v0.0.11 Examples](#v0011-examples)
       - [v0.0.11 Live Example](#v0011-live-example)
     - [v0.0.10 Examples](#v0010-examples)
@@ -69,6 +70,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
   * Note: On my Ubuntu system, changing Firefox's theme isn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
 * **Select Mode** - Like you'd intuitively expect, you can enable Select Mode press `Ctrl+Click` (`Cmd+Click` on Mac) to specifically select a couple results from the list, as well as `Ctrl+Shift+Click` (`Cmd+Shift+Click` on Mac) to traverse a range of containers.
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color.
+* **Opt-in to Synchronize using Firefox Sync** - Using the updated Preferences section, you can set the Firefox Sync settings or modify the local settings by editing them as JSON.
 
 ## Examples and Screenshots
 
@@ -79,6 +81,12 @@ If any of this is confusing, remember the basics:
 * Press `shift` and click/enter to act on ALL results (bulk open tab/delete container/set URL action)
 * Press `ctrl` and click/enter a result to open as pinned tab(s)
   * Note that entering *Select Mode* will change the behavior of `ctrl+click` (`Cmd+Click` on Mac) to specifically select one container from the list, or multiple if `shift` is also held
+
+### v0.0.16 Screenshots
+
+In v0.0.16, the features introduced were:
+
+* **Opt-in to Sync** - in the preferences page for the extension, you can fine tune the settings of the extension, and whether or not you want to push them to sync. To avoid conflicts for existing users, this is disabled by default, so you have to opt-in.
 
 ### v0.0.11 Examples
 
