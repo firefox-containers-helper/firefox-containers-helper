@@ -1,5 +1,11 @@
 "use strict";
 
+let platformModifierKey = 'Ctrl'; // windows, linux
+// https://stackoverflow.com/a/11752084
+if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+    platformModifierKey = 'Cmd'; // mac
+}
+
 // helpful links:
 // https://github.com/mdn/webextensions-examples/blob/master/favourite-colour/options.js
 // https://github.com/crazymousethief/container-plus/blob/master/context.js
@@ -169,7 +175,7 @@ const CONTEXT_ICONS = [
  */
 const helpTextMessages = [
     'Tip: Press Enter or click on a container below.',
-    'Tip: Use Ctrl(+Shift) to open pinned tab(s).',
+    `Tip: Use ${platformModifierKey}(+Shift) to open pinned tab(s).`,
     'Tip: Shift+Click to execute against every shown result'
 ];
 
@@ -190,7 +196,7 @@ const containerListItemInactiveClassNames = 'list-group-item container-list-item
  * @type {string}
  * @default
  */
-const containerListItemSelectedClassNames = 'list-group-item container-list-item d-flex justify-content-space-between align-items-center bg-secondary border-secondary';
+const containerListItemSelectedClassNames = 'list-group-item container-list-item d-flex justify-content-space-between align-items-center bg-secondary border-secondary text-white';
 
 /**
  * This is the set of classes to assign to a container list item that is
@@ -840,7 +846,7 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
     let ctrlModifier = false;
     let shiftModifier = false;
     if (event) {
-        if (event.getModifierState('Control')) {
+        if (event.getModifierState('Control') || event.getModifierState('Meta')) {
             ctrlModifier = true;
         }
         if (event.getModifierState('Shift')) {
@@ -956,26 +962,6 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
         default:
             break;
     }
-    // TODO: delete
-    // if (config.mode === MODES.SET_NAME) {
-    //     renameContexts(contextsToActOn);
-    // } else if (config.mode === MODES.DELETE) {
-    //     deleteMultipleContainers(contextsToActOn);
-    // } else if (config.mode === MODES.SET_URL) {
-    //     setMultipleDefaultUrlsWithPrompt(contextsToActOn);
-    // } else if (config.mode === MODES.SET_COLOR) {
-    //     setColorForContexts(contextsToActOn);
-    // } else if (config.mode === MODES.SET_ICON) {
-    //     setIconForContexts(contextsToActOn);
-    // } else if (config.mode === MODES.REPLACE_IN_NAME) {
-    //     findReplaceNameInContexts(contextsToActOn);
-    // } else if (config.mode === MODES.REPLACE_IN_URL) {
-    //     findReplaceUrlInContexts(contextsToActOn);
-    // } else if (config.mode === MODES.DUPLICATE) {
-    //     duplicateContexts(contextsToActOn);
-    // } else if (config.mode === MODES.OPEN) {
-    //     openMultipleContexts(contextsToActOn, shouldOpenPinnedTab);
-    // }
 
     actionCompletedHandler();
 };
@@ -1207,7 +1193,7 @@ const initializeDocument = (event) => {
         showModeHelpMessage();
         filterContainers();
         if (config.selectionMode) {
-            setHelpText("Use Ctrl+Click to select 1; Ctrl+Shift+Click for a range");
+            setHelpText(`${platformModifierKey}+Click to select 1; ${platformModifierKey}+Shift+Click for a range`);
         }
         focusSearchBox();
     });
@@ -1227,7 +1213,7 @@ const initializeDocument = (event) => {
         resetSelectedContexts();
         setSelectedListItemClassNames();
         if (config.selectionMode) {
-            setHelpText("Use Ctrl+Click to select 1; Ctrl+Shift+Click for a range");
+            setHelpText(`${platformModifierKey}+Click to select 1; ${platformModifierKey}+Shift+Click for a range`);
         } else {
             showModeHelpMessage();
         }
