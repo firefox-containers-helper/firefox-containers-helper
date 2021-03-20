@@ -67,7 +67,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
 * **Keyboard shortcut** to open the popup window is `alt+shift+D` (configurable). It will immediately focus the search box, so you can quickly filter for a container, press enter, and go.
 * **Dark and Light mode** - respects your system's dark/light mode setting, thanks to [KerfuffleV2](https://github.com/charles-m-knox/firefox-containers-helper/issues?q=is%3Apr+author%3AKerfuffleV2) in [PR #8](https://github.com/charles-m-knox/firefox-containers-helper/pull/8)
   * Note: On my Ubuntu system, changing Firefox's theme isn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
-* **Select Mode** - Like you'd intuitively expect, you can enable Select Mode press `Ctrl+Click` to specifically select a couple results from the list, as well as `Ctrl+Shift+Click` to traverse a range of containers.
+* **Select Mode** - Like you'd intuitively expect, you can enable Select Mode press `Ctrl+Click` (`Cmd+Click` on Mac) to specifically select a couple results from the list, as well as `Ctrl+Shift+Click` (`Cmd+Shift+Click` on Mac) to traverse a range of containers.
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color.
 
 ## Examples and Screenshots
@@ -78,7 +78,7 @@ If any of this is confusing, remember the basics:
 
 * Press `shift` and click/enter to act on ALL results (bulk open tab/delete container/set URL action)
 * Press `ctrl` and click/enter a result to open as pinned tab(s)
-  * Note that entering *Select Mode* will change the behavior of `ctrl+click` to specifically select one container from the list, or multiple if `shift` is also held
+  * Note that entering *Select Mode* will change the behavior of `ctrl+click` (`Cmd+Click` on Mac) to specifically select one container from the list, or multiple if `shift` is also held
 
 ### v0.0.11 Examples
 
@@ -86,7 +86,7 @@ In v0.0.11, the features introduced were:
 
 * **Dark and Light mode** - [Bootstrap dark mode](https://github.com/vinorodrigues/bootstrap-dark) which respects your system theme preference
   * Note: On my Ubuntu system, changing Firefox's theme wasn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
-* **Select Mode** - Allows you to precisely select only a couple results from the list by first enabling the mode and then pressing `Ctrl+Click`, or multiple by pressing `Ctrl+Shift+Click`
+* **Select Mode** - Allows you to precisely select only a couple results from the list by first enabling the mode and then pressing `Ctrl+Click` (`Cmd+Click` on Mac), or multiple by pressing `Ctrl+Shift+Click`
 * **Configurable Keyboard Shortcut** - Allows you to change the keyboard shortcut for showing the extension popup window, which is by default `Alt+Shift+D`. This fixes [#4](https://github.com/charles-m-knox/firefox-containers-helper/issues/4)
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color
 
@@ -97,8 +97,8 @@ In v0.0.11, the features introduced were:
 In this example, a few features are showcased:
 
 * First, notice the **dark mode theme**.
-* **Multi-select** - Select and open multiple specific tabs using `Ctrl+Click`
-* **Multi-select over a range** - Select and open multiple specific tabs using `Ctrl+Shift+Click`
+* **Multi-select** - Select and open multiple specific tabs using `Ctrl+Click` (`Cmd+Click` on Mac)
+* **Multi-select over a range** - Select and open multiple specific tabs using `Ctrl+Shift+Click` (`Cmd+Shift+Click` on Mac)
 * **Container quick-add** - Quickly add a bunch of containers by typing in a name into the search box
 
 ![v0.0.11 usage example](readme-assets/v0.0.11/v0.0.11.gif)
