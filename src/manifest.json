@@ -13,6 +13,12 @@
             "strict_min_version": "57.0"
         }
     },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{800215d6-eff0-4a62-9268-09857c048030}",
+            "strict_min_version": "57.0"
+        }
+    },
     "permissions": [
         "activeTab",
         "contextualIdentities",
