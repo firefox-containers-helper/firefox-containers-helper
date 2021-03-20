@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Containers Helper",
-    "version": "0.0.14",
+    "version": "0.0.15",
     "description": "Helps improve container management by providing container searching, deleting, renaming, duplicating, and default URLs on a per-container or bulk basis.",
     "icons": {
         "48": "icons/icon_cube.svg",
@@ -34,7 +34,8 @@
     "commands": {
         "_execute_browser_action": {
             "suggested_key": {
-                "default": "Alt+Shift+D"
+                "default": "Alt+Shift+D",
+                "mac": "Command+Shift+E"
             },
             "description": "Open containers helper panel"
         }
