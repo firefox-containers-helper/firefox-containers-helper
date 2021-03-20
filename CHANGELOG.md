@@ -1,6 +1,13 @@
 # Changelog
 
-This changelog will be corrected in the future.
+This changelog contains all relevant changes between different versions of the extension.
+
+## v0.0.16
+
+* start propagating settings to Firefox Sync, but still using local storage as the primary source of truth
+  * currently, only *pushing* settings, not reading. I want to ensure that writing to Firefox Sync is stable, and then make the transition enabling read from sync.
+  * had to specify the extensions UUID in `manifest.json`, see [here](https://extensionworkshop.com/documentation/develop/extensions-and-the-add-on-id/#when-do-you-need-an-add-on-id)
+* add `1.` through `9.` to the prefix of the mode selection menu to make power users even more powerful (you can just press `3` on your keyboard to get the action you want)
 
 ## v0.0.15
 

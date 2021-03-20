@@ -475,6 +475,7 @@ const focusSearchBox = () => {
  */
 const writeContainerDefaultUrlsToStorage = () => {
     browser.storage.local.set({ "containerDefaultUrls": config.containerDefaultUrls });
+    browser.storage.sync.set({ "containerDefaultUrls": config.containerDefaultUrls });
 }
 
 /**
@@ -631,9 +632,9 @@ const updateContexts = (contextsToUpdate, fieldToUpdate, valueToSet) => {
     let updatedContexts = [];
     const newValues = {};
     newValues[fieldToUpdate] = valueToSet;
-    contextsToUpdate.forEach((contextToRename) => {
+    contextsToUpdate.forEach((contextToUpdate) => {
         browser.contextualIdentities.update(
-            contextToRename.cookieStoreId,
+            contextToUpdate.cookieStoreId,
             newValues
         ).then(
             (updatedContext) => {
@@ -903,6 +904,10 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
             "selectedContextIndices": config.selectedContextIndices,
             "lastSelectedContextIndex": config.lastSelectedContextIndex,
         });
+        browser.storage.sync.set({
+            "selectedContextIndices": config.selectedContextIndices,
+            "lastSelectedContextIndex": config.lastSelectedContextIndex,
+        });
         setSelectedListItemClassNames();
         return;
     }
@@ -1034,6 +1039,11 @@ const filterContainers = (event) => {
         "selectedContextIndices": config.selectedContextIndices,
         "lastSelectedContextIndex": config.lastSelectedContextIndex,
     });
+    browser.storage.sync.set({
+        "lastQuery": userQuery,
+        "selectedContextIndices": config.selectedContextIndices,
+        "lastSelectedContextIndex": config.lastSelectedContextIndex,
+    });
 
     config.lastQuery = userQuery;
 
@@ -1092,6 +1102,7 @@ const setConfigParam = (parameter) => {
 
     document.querySelector(`#${parameter}`).checked = config[parameter];
     browser.storage.local.set(extensionStorageConfigStore);
+    browser.storage.sync.set(extensionStorageConfigStore);
 }
 
 /**
@@ -1173,9 +1184,8 @@ const setMode = (newMode) => {
     config.mode = newMode;
 
     // push to storage
-    browser.storage.local.set({
-        mode: config.mode
-    });
+    browser.storage.local.set({ mode: config.mode });
+    browser.storage.sync.set({ mode: config.mode });
 
     showModeHelpMessage();
 };
