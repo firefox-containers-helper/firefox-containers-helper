@@ -102,6 +102,24 @@ const config = {
      * @default
      */
     lastSelectedContextIndex: -1,
+
+    /**
+     * alwaysGetSync controls whether or not the settings are always loaded
+     * from Firefox sync, or from local storage (default false)
+     * @example false
+     * @type {boolean}
+     * @default
+     */
+    alwaysGetSync: false,
+
+    /**
+     * alwaysSetSync controls whether or not the settings are always pushed
+     * to Firefox sync as well to local storage (always).
+     * @example true
+     * @type {boolean}
+     * @default
+     */
+    alwaysSetSync: false,
 };
 
 /**
@@ -218,6 +236,26 @@ const containerListItemActiveClassNames = `${containerListItemInactiveClassNames
 const containerListItemActiveDangerClassNames = `${containerListItemActiveClassNames} bg-danger border-danger`;
 
 /**
+ * This is the set of classes to assign to a container list item url label that
+ * is currently not being hovered over or selected.
+ * Assign to `element.className` for a given element.
+ * @constant
+ * @type {string}
+ * @default
+ */
+const containerListItemUrlLabel = `text-muted small`;
+
+/**
+ * This is the set of classes to assign to a container list item url label that
+ * is currently being hovered over or selected.
+ * Assign to `element.className` for a given element.
+ * @constant
+ * @type {string}
+ * @default
+ */
+const containerListItemUrlLabelInverted = `text-light small`;
+
+/**
  * The `<div>` ID of the container list. This is where all of the queried containers will go.
  * @constant
  * @type {string}
@@ -260,11 +298,20 @@ const setSelectedListItemClassNames = () => {
     const keys = Object.keys(config.selectedContextIndices);
     for (let i = 0; i < keys.length; i++) {
         const liElement = document.getElementById(`filtered-context-${i}-li`);
-        if (liElement) {
-            if (config.selectedContextIndices[i] === 1) {
+        const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+        if (config.selectedContextIndices[i] === 1) {
+            if (liElement) {
                 liElement.className = containerListItemSelectedClassNames;
-            } else {
+            }
+            if (urlLabel) {
+                urlLabel.className = containerListItemUrlLabelInverted;
+            }
+        } else {
+            if (liElement) {
                 liElement.className = containerListItemInactiveClassNames;
+            }
+            if (urlLabel) {
+                urlLabel.className = containerListItemUrlLabel;
             }
         }
     }
@@ -296,7 +343,7 @@ const buildContainerIconElement = (context) => {
  * @returns {Element} An HTML element containing text that represents the
  * container's name and default URL, if defined.
  */
-const buildContainerLabelElement = (context) => {
+const buildContainerLabelElement = (context, i) => {
     const containerLabelDivHoldingElement = document.createElement('div');
     containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
 
@@ -304,7 +351,8 @@ const buildContainerLabelElement = (context) => {
     containerLabelElement.innerText = `${context.name}`;
 
     const containerUrlLabelElement = document.createElement('span');
-    containerUrlLabelElement.className = 'text-muted small'
+    containerUrlLabelElement.className = containerListItemUrlLabel;
+    containerUrlLabelElement.id = `filtered-context-${i}-url-label`;
     const contextDefaultUrl = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
     if (contextDefaultUrl) {
         containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
@@ -335,13 +383,24 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
                 event.target.className = containerListItemActiveDangerClassNames;
             } else {
                 event.target.className = containerListItemActiveClassNames;
+                const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabelInverted;
+                }
             }
         });
         liElement.addEventListener('mouseleave', (event) => {
+            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
             if (isContextSelected(i)) {
                 event.target.className = containerListItemSelectedClassNames;
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabelInverted;
+                }
             } else {
                 event.target.className = containerListItemInactiveClassNames;
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabel;
+                }
             }
         });
         liElement.addEventListener('click', (event) => {
@@ -357,6 +416,10 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
                 event.target.className = containerListItemActiveDangerClassNames;
             } else {
                 event.target.className = containerListItemActiveClassNames;
+                const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabel;
+                }
             }
         });
         liElement.addEventListener('blur', (event) => {
@@ -364,6 +427,10 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
                 event.target.className = containerListItemSelectedClassNames;
             } else {
                 event.target.className = containerListItemInactiveClassNames;
+                const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+                if (urlLabel) {
+                    urlLabel.className = containerListItemUrlLabel;
+                }
             }
         });
 
@@ -385,7 +452,7 @@ const buildContainerListItem = (filteredResults, context, i) => {
     liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
 
     const containerIconHolderElement = buildContainerIconElement(context);
-    const containerLabelElement = buildContainerLabelElement(context);
+    const containerLabelElement = buildContainerLabelElement(context, i);
 
     if (config.mode === MODES.DELETE) {
         const divElement = document.createElement('div');
@@ -475,6 +542,9 @@ const focusSearchBox = () => {
  */
 const writeContainerDefaultUrlsToStorage = () => {
     browser.storage.local.set({ "containerDefaultUrls": config.containerDefaultUrls });
+    if (config.alwaysSetSync === true) {
+        browser.storage.sync.set({ "containerDefaultUrls": config.containerDefaultUrls });
+    }
 }
 
 /**
@@ -631,9 +701,9 @@ const updateContexts = (contextsToUpdate, fieldToUpdate, valueToSet) => {
     let updatedContexts = [];
     const newValues = {};
     newValues[fieldToUpdate] = valueToSet;
-    contextsToUpdate.forEach((contextToRename) => {
+    contextsToUpdate.forEach((contextToUpdate) => {
         browser.contextualIdentities.update(
-            contextToRename.cookieStoreId,
+            contextToUpdate.cookieStoreId,
             newValues
         ).then(
             (updatedContext) => {
@@ -903,6 +973,12 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
             "selectedContextIndices": config.selectedContextIndices,
             "lastSelectedContextIndex": config.lastSelectedContextIndex,
         });
+        if (config.alwaysSetSync === true) {
+            browser.storage.sync.set({
+                "selectedContextIndices": config.selectedContextIndices,
+                "lastSelectedContextIndex": config.lastSelectedContextIndex,
+            });
+        }
         setSelectedListItemClassNames();
         return;
     }
@@ -1034,6 +1110,13 @@ const filterContainers = (event) => {
         "selectedContextIndices": config.selectedContextIndices,
         "lastSelectedContextIndex": config.lastSelectedContextIndex,
     });
+    if (config.alwaysSetSync === true) {
+        browser.storage.sync.set({
+            "lastQuery": userQuery,
+            "selectedContextIndices": config.selectedContextIndices,
+            "lastSelectedContextIndex": config.lastSelectedContextIndex,
+        });
+    }
 
     config.lastQuery = userQuery;
 
@@ -1092,6 +1175,9 @@ const setConfigParam = (parameter) => {
 
     document.querySelector(`#${parameter}`).checked = config[parameter];
     browser.storage.local.set(extensionStorageConfigStore);
+    if (config.alwaysSetSync === true) {
+        browser.storage.sync.set(extensionStorageConfigStore);
+    }
 }
 
 /**
@@ -1173,9 +1259,10 @@ const setMode = (newMode) => {
     config.mode = newMode;
 
     // push to storage
-    browser.storage.local.set({
-        mode: config.mode
-    });
+    browser.storage.local.set({ mode: config.mode });
+    if (config.alwaysSetSync === true) {
+        browser.storage.sync.set({ mode: config.mode });
+    }
 
     showModeHelpMessage();
 };
@@ -1187,15 +1274,32 @@ const setMode = (newMode) => {
  * @returns {void}
  */
 const initializeDocument = (event) => {
-    // initialize the "stay open" boolean state
-    browser.storage.local.get((data) => {
-        processExtensionSettings(data);
-        showModeHelpMessage();
-        filterContainers();
-        if (config.selectionMode) {
-            setHelpText(`${platformModifierKey}+Click to select 1; ${platformModifierKey}+Shift+Click for a range`);
+    browser.storage.sync.get((data) => {
+        // if there is data available in sync, process it first
+        if (data.alwaysSetSync === true) {
+            // done
+            processExtensionSettings(data);
+            showModeHelpMessage();
+            filterContainers();
+            if (config.selectionMode) {
+                setHelpText(`${platformModifierKey}+Click to select 1; ${platformModifierKey}+Shift+Click for a range`);
+            }
+            focusSearchBox();
+        } else {
+            // if the user explicitly does not want to use sync,
+            // then get the local storage data
+            browser.storage.local.get((data) => {
+                if (data) {
+                    processExtensionSettings(data);
+                    showModeHelpMessage();
+                    filterContainers();
+                    if (config.selectionMode) {
+                        setHelpText(`${platformModifierKey}+Click to select 1; ${platformModifierKey}+Shift+Click for a range`);
+                    }
+                    focusSearchBox();
+                }
+            });
         }
-        focusSearchBox();
     });
 
     // prevents the Search button from causing page navigation/popup flashes
