@@ -89,11 +89,11 @@ In v0.0.16, the features introduced were:
 * **Opt-in to Sync** - in the preferences page for the extension, you can fine tune the settings of the extension, and whether or not you want to push them to sync. To avoid conflicts for existing users, this is disabled by default, so you have to opt-in.
 * **Container Export** as CSV or JSON, **no import at this time**, useful for setting a large number of default URLs at once by combining the exported data with the local/sync settings, facilitated by some cleverness with a text editor/spreadsheet.
 
-Settings section in the options page:
+Settings section in the options page - dark mode:
 
-![Settings](readme-assets/v0.0.16/sync_local_settings.png)
+![Settings](readme-assets/v0.0.16/sync_local_settings_dark.png)
 
-Export containers section in the options page:
+Export containers section in the options page (the top of the screenshot is outdated now):
 
 ![Export containers](readme-assets/v0.0.16/export_containers.png)
 
