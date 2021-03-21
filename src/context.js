@@ -1276,9 +1276,9 @@ const setMode = (newMode) => {
 const initializeDocument = (event) => {
     browser.storage.sync.get((data) => {
         // if there is data available in sync, process it first
-        processExtensionSettings(data);
-        if (config.alwaysGetSync === true) {
+        if (data.alwaysSetSync === true) {
             // done
+            processExtensionSettings(data);
             showModeHelpMessage();
             filterContainers();
             if (config.selectionMode) {
