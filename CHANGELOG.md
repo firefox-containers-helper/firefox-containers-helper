@@ -8,13 +8,12 @@ This changelog contains all relevant changes between different versions of the e
   * allows you to use an external editor (spreadsheet/text editor) to help manage your containers at a larger scale
     * complete import/export is not implemented! the feature is mainly useful for setting a large number of default URLs for containers
 * adds the ability to control whether or not settings are saved over Firefox Sync, or simply locally
+  * resolves [#3](https://github.com/charles-m-knox/firefox-containers-helper/issues/3)
   * to access this, visit the Extension Preferences page
   * by default, sync is **opt-in**, you have to enable it in order for the settings to be pushed to sync.
     * settings will continue to persist locally otherwise
-* fix the awkward css styling for default url labels that are either selected or currently hovered over - gray on gray is not visible 😰
-* start propagating settings to Firefox Sync, but still using local storage as the primary source of truth
-  * currently, only *pushing* settings, not reading. I want to ensure that writing to Firefox Sync is stable, and then make the transition enabling read from sync.
   * had to specify the extensions UUID in `manifest.json`, see [here](https://extensionworkshop.com/documentation/develop/extensions-and-the-add-on-id/#when-do-you-need-an-add-on-id)
+* fix the awkward css styling for default url labels that are either selected or currently hovered over - gray on gray is not visible 😰
 * add `1.` through `9.` to the prefix of the mode selection menu to make power users even more powerful (you can just press `3` on your keyboard to get the action you want)
 
 ## v0.0.15
