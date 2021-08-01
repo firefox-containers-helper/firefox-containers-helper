@@ -50,7 +50,77 @@
                 </div>
             </div>
         </div>
+        <div class="row mt-3">
+            <div class="col">
+                <h4>
+                    Import Containers
+                </h4>
+                <p>
+                    You can import your existing containers from a JSON string here. Click <i>Import
+                        Containers</i>
+                    to get a list. Note that importing containers will simply
+                    add new containers. If you wish to set the containers to only the ones being imported, you can use
+                    the bulk deletion functionality offered in the normal extension popup window to delete containers
+                    first, and then you can import here. Each container should have the following string properties:
+                <ul>
+                    <li><code>color</code> <i>(defaults to <code>toolbar</code> color)</i></li>
+                    <li><code>icon</code> <i>(defaults to <code>circle</code> icon)</i></li>
+                    <li><code>name</code> <i>(required)</i></li>
+                    <li><code>defaultUrl</code> <i>(optional)</i></li>
+                </ul>
+                </p>
+            </div>
+        </div>
         <div class="row">
+            <div class="col-12">
+                <div class="form-group">
+                    <label for="containersImportAsJSON">Containers JSON</label>
+                    <textarea class="form-control" id="containersImportAsJSON"
+                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <button type="button" id="btnImportContainersJSON" class="btn btn-block btn-primary">Import
+                    Containers from JSON</button>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col">
+                <h4>
+                    Export Containers
+                </h4>
+                <p>
+                    You can export your existing containers as a JSON or CSV string here. Click <i>Export Containers</i>
+                    to get a list. You can combine the above settings with the exported containers with a text editor or
+                    spreadsheet to handle larger-scale container management.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label for="containersExportAsJSON">Containers JSON</label>
+                    <textarea class="form-control" readonly="true" id="containersExportAsJSON"
+                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label for="containersExportAsCSV">Containers CSV</label>
+                    <textarea class="form-control" readonly="true" id="containersExportAsCSV"
+                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <button type="button" id="btnExportContainers" class="btn btn-block btn-primary">Export
+                    Containers</button>
+            </div>
+        </div>
+        <div class="row mt-3">
             <div class="col">
                 <h4>
                     Local and Synchronized Settings
@@ -126,40 +196,6 @@
             <div class="col-6">
                 <button type="button" id="btnResetSyncSettings" class="btn btn-block btn-danger">Reset Sync
                     Settings</button>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col">
-                <h4>
-                    Export Containers
-                </h4>
-                <p>
-                    You can export your existing containers as a JSON or CSV string here. Click <i>Export Container</i>
-                    to get a list. You can combine the above settings with the exported containers with a text editor or
-                    spreadsheet to handle larger-scale container management.
-                </p>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-6">
-                <div class="form-group">
-                    <label for="containersExportAsJSON">Containers JSON</label>
-                    <textarea class="form-control" readonly="true" id="containersExportAsJSON"
-                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="form-group">
-                    <label for="containersExportAsCSV">Containers CSV</label>
-                    <textarea class="form-control" readonly="true" id="containersExportAsCSV"
-                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <button type="button" id="btnExportContainers" class="btn btn-block btn-primary">Export
-                    Containers</button>
             </div>
         </div>
     </div>

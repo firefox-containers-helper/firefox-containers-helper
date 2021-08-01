@@ -292,6 +292,94 @@ const btnExportContainersClick = (event) => {
     });
 }
 
+const btnImportContainersClick = (event) => {
+    const containersImportAsJSON = document.getElementById('containersImportAsJSON');
+    let containersToImport = "";
+    try {
+        containersToImport = JSON.parse(containersImportAsJSON.value);
+    } catch (e) {
+        if (e) {
+            alert(`Failed to parse input containers JSON string: ${JSON.stringify(e)}`);
+        } else {
+            alert(`Failed to parse input containers JSON string.`);
+        }
+        return;
+    }
+
+    if (!Array.isArray(containersToImport)) {
+        alert('The "Import Containers" text input field must be valid JSON, and it must be an array of objects.');
+        return;
+    }
+
+    if (containersToImport.length === 0) {
+        alert(`The "Import Containers" text input field is valid, but you provided an empty array, so there's nothing to do.`);
+        return;
+    }
+
+    // validate that each container has a name
+    for (let i = 0; i < containersToImport.length; i++) {
+        if (!containersToImport[i].name) {
+            alert(`There is a problem with the containers you attempted to input. The container at index ${i} does not have a name, which is a required field, in order to create the container.`);
+            return;
+        }
+    }
+
+    if (!confirm(`Please confirm that you'd like to add ${containersToImport.length} containers.`)) {
+        return;
+    }
+
+    // retrieve the extension configuration from storage
+    browser.storage.local.get((data) => {
+        let alertMessage = '';
+
+        const config = data;
+
+        // create each container, then, after creation, associate the default URL
+        for (let i = 0; i < containersToImport.length; i++) {
+            const newContainer = {
+                name: containersToImport[i].name,
+                icon: containersToImport[i].icon ? containersToImport[i].icon : "circle",
+                color: containersToImport[i].color ? containersToImport[i].color : "toolbar",
+            };
+
+            browser.contextualIdentities.create(newContainer).then(
+                (createdContext) => {
+                    if (!config.containerDefaultUrls) {
+                        config.containerDefaultUrls = {};
+                    }
+                    if (containersToImport[i].defaultUrl) {
+                        // associate the default URL
+                        config.containerDefaultUrls[createdContext.cookieStoreId.toString()] = containersToImport[i].defaultUrl;
+                        alertMessage += `Imported container ${createdContext.name} with a default URL.\n`;
+                    } else {
+                        alertMessage += `Imported container ${createdContext.name}.\n`;
+                    }
+
+                    // if this is the last container, then take care of the final
+                    // chores
+                    if (i === containersToImport.length - 1) {
+                        // TODO: this is a duplicate of the function writeContainerDefaultUrlsToStorage
+                        //       from context.js, please refactor
+                        browser.storage.local.set({ "containerDefaultUrls": config.containerDefaultUrls });
+                        if (config.alwaysSetSync === true) {
+                            browser.storage.sync.set({ "containerDefaultUrls": config.containerDefaultUrls });
+                        }
+
+                        if (alertMessage) {
+                            alert(alertMessage);
+                        }
+                    }
+                },
+                (err) => {
+                    if (err) {
+                        alertMessage += `Failed to create a container named ${newContainer.name}: ${JSON.stringify(err)}\n`;
+                    }
+                }
+            )
+        }
+    });
+}
+
 /**
  * Initializes the extension data upon document load, intended to be added as
  * a callback for the event listener `DOMContentLoaded`.
@@ -320,6 +408,7 @@ const initializeDocument = (event) => {
     document.querySelector('#btnResetLocalSettings').addEventListener('click', btnResetLocalSettingsClick);
     document.querySelector('#btnResetSyncSettings').addEventListener('click', btnResetSyncSettingsClick);
     document.querySelector('#btnExportContainers').addEventListener('click', btnExportContainersClick);
+    document.querySelector('#btnImportContainersJSON').addEventListener('click', btnImportContainersClick);
 }
 
 document.addEventListener('DOMContentLoaded', initializeDocument);
