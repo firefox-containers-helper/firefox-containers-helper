@@ -2,6 +2,12 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.17
+
+* fixes [#22](https://github.com/charles-m-knox/firefox-containers-helper/issues/22) by enforcing a minimum search list height
+* "No results" text added to the container list if there are no filtered results
+* bug fix: no longer allows the enter key to trigger the selected action on the filtered containers, if there are no filtered containers
+
 ## v0.0.16
 
 * adds container JSON/CSV export feature in the options page

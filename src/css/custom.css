@@ -38,3 +38,14 @@
 body {
     min-width: 330px;
 }
+
+#container-list {
+    min-height: 174px;
+}
+
+.mono-16 {
+    font-size: 14px;
+    width: 16px;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+}

@@ -369,6 +369,26 @@ const buildContainerLabelElement = (context, i) => {
 };
 
 /**
+ * Assembles an HTML element that contains a text label for empty search results.
+ * @returns {Element} An HTML element containing text that represents the
+ * container's name and default URL, if defined.
+ */
+const buildEmptyContainerLabelElement = (label) => {
+    const containerLabelDivHoldingElement = document.createElement('div');
+    containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
+
+    const containerLabelElement = document.createElement('span');
+    containerLabelElement.innerText = `${label}`;
+
+    addEmptyEventListenersToElement(containerLabelElement);
+    addEmptyEventListenersToElement(containerLabelDivHoldingElement);
+
+    containerLabelDivHoldingElement.appendChild(containerLabelElement);
+
+    return containerLabelDivHoldingElement;
+};
+
+/**
  * Adds click and other event handlers to a container list item HTML element.
  * @param {Element} liElement The container list item that will receive all event listeners
  * @param {ContextualIdentity[]} filteredResults A list of the currently filtered set of browser.contextualIdentities
@@ -475,6 +495,31 @@ const buildContainerListItem = (filteredResults, context, i) => {
     if (err) {
         console.error(`encountered error building list item for context ${context.name}: ${err}`)
     }
+
+    return liElement;
+};
+
+/**
+ * Assembles an HTML element that represents empty search results, but appears
+ * similar to an actual search result.
+ * @param {number} i A unique value that will make the class/id of the element unique
+ * @returns {Element} An HTML element with event listeners, formatted with css as a bootstrap list item.
+ */
+const buildEmptyContainerListItem = (i) => {
+    const liElement = document.createElement('li');
+    liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
+
+    const labelElement = buildEmptyContainerLabelElement('No results');
+
+    const xIconElement = document.createElement('span');
+    xIconElement.className = 'mono-16';
+    xIconElement.innerText = "x";
+
+    liElement.appendChild(xIconElement);
+    liElement.appendChild(labelElement);
+
+    labelElement.id = `filtered-context-${i}-label`;
+    liElement.id = `filtered-context-${i}-li`;
 
     return liElement;
 };
@@ -1123,7 +1168,7 @@ const filterContainers = (event) => {
     // now query the contextual identities
     const filteredResults = [];
     browser.contextualIdentities.query({}).then((contexts) => {
-        if (contexts) {
+        if (Array.isArray(contexts)) {
             const containerList = document.getElementById(CONTAINER_LIST_DIV_ID);
 
             // prepare by clearing out the old query's HTML output
@@ -1141,12 +1186,16 @@ const filterContainers = (event) => {
                     ulElement.appendChild(liElement);
                     filteredResults.push(context);
                 }
-            })
+            });
+            if (filteredResults.length === 0) {
+                const liElement = buildEmptyContainerListItem(0);
+                ulElement.append(liElement);
+            }
 
             containerList.appendChild(ulElement);
             setSummaryText(`Showing ${filteredResults.length}/${contexts.length} containers.`);
             if (event) {
-                if (event.key === 'Enter') {
+                if (event.key === 'Enter' && filteredResults.length > 0) {
                     containerClickHandler(filteredResults, filteredResults[0], event);
                 }
                 event.preventDefault();
