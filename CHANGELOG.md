@@ -2,6 +2,12 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.18
+
+* adds ability to import containers by providing a JSON array. This feature is accessible via the Addon Preferences page.
+  * also includes ability to set default URLs for the containers
+* fixed an issue with `undefined` container targets being passed to a request to delete multiple containers
+
 ## v0.0.17
 
 * fixes [#22](https://github.com/charles-m-knox/firefox-containers-helper/issues/22) by enforcing a minimum search list height
