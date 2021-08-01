@@ -266,29 +266,41 @@ const btnResetSyncSettingsClick = (event) => {
 }
 
 const btnExportContainersClick = (event) => {
-    browser.contextualIdentities.query({}).then((contexts) => {
-        const contextsJSON = JSON.stringify(contexts);
-        const containersExportAsJSON = document.getElementById('containersExportAsJSON');
-        if (containersExportAsJSON) {
-            containersExportAsJSON.value = contextsJSON;
-        }
-        if (contexts.length > 0) {
-            // build csv
-            const keys = Object.keys(contexts[0]);
-            keys.sort();
-            const keysQuotes = keys.map((key) => {
-                return `"${key}"`;
-            })
-            rows = contexts.map((context) => {
-                return keys.map((key) => {
-                    return `"${context[key]}"`;
-                }).join(",");
-            })
-            const containersExportAsCSV = document.getElementById('containersExportAsCSV');
-            if (containersExportAsCSV) {
-                containersExportAsCSV.value = `${keysQuotes.join(",")}\n${rows.join("\n")}`;
+    // retrieve the extension configuration from storage
+    browser.storage.local.get((data) => {
+        const config = data;
+
+        browser.contextualIdentities.query({}).then((contexts) => {
+            // assemble the default url for each context
+            for (let i = 0; i < contexts.length; i++) {
+                contexts[i].defaultUrl = "";
+                if (config.containerDefaultUrls && config.containerDefaultUrls[contexts[i].cookieStoreId.toString()]) {
+                    contexts[i].defaultUrl = config.containerDefaultUrls[contexts[i].cookieStoreId.toString()];
+                }
             }
-        }
+            const contextsJSON = JSON.stringify(contexts);
+            const containersExportAsJSON = document.getElementById('containersExportAsJSON');
+            if (containersExportAsJSON) {
+                containersExportAsJSON.value = contextsJSON;
+            }
+            if (contexts.length > 0) {
+                // build csv
+                const keys = Object.keys(contexts[0]);
+                keys.sort();
+                const keysQuotes = keys.map((key) => {
+                    return `"${key}"`;
+                })
+                rows = contexts.map((context) => {
+                    return keys.map((key) => {
+                        return `"${context[key]}"`;
+                    }).join(",");
+                })
+                const containersExportAsCSV = document.getElementById('containersExportAsCSV');
+                if (containersExportAsCSV) {
+                    containersExportAsCSV.value = `${keysQuotes.join(",")}\n${rows.join("\n")}`;
+                }
+            }
+        });
     });
 }
 

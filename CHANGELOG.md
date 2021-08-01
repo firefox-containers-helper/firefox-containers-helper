@@ -7,6 +7,8 @@ This changelog contains all relevant changes between different versions of the e
 * adds ability to import containers by providing a JSON array. This feature is accessible via the Addon Preferences page.
   * also includes ability to set default URLs for the containers
 * fixed an issue with `undefined` container targets being passed to a request to delete multiple containers
+* updated verbiage in the Export Containers section
+* updated the Export Containers functionality to include the default URL for containers
 
 ## v0.0.17
 
