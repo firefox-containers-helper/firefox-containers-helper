@@ -194,7 +194,8 @@ const CONTEXT_ICONS = [
 const helpTextMessages = [
     'Tip: Press Enter or click on a container below.',
     `Tip: Use ${platformModifierKey}(+Shift) to open pinned tab(s).`,
-    'Tip: Shift+Click to execute against every shown result'
+    'Tip: Shift+Click to execute against every shown result',
+    'Tip: Bulk import/export containers via Preferences page.'
 ];
 
 /**
