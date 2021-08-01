@@ -15,6 +15,7 @@ This readme contains extensive information about the extension and it aims to bo
   - [Who is this intended for?](#who-is-this-intended-for)
   - [Features](#features)
   - [Examples and Screenshots](#examples-and-screenshots)
+    - [v0.0.18 Screenshots](#v0018-screenshots)
     - [v0.0.16 Screenshots](#v0016-screenshots)
     - [v0.0.11 Examples](#v0011-examples)
       - [v0.0.11 Live Example](#v0011-live-example)
@@ -71,6 +72,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
 * **Select Mode** - Like you'd intuitively expect, you can enable Select Mode press `Ctrl+Click` (`Cmd+Click` on Mac) to specifically select a couple results from the list, as well as `Ctrl+Shift+Click` (`Cmd+Shift+Click` on Mac) to traverse a range of containers.
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color.
 * **Opt-in to Synchronize using Firefox Sync** - Using the updated Preferences section, you can set the Firefox Sync settings or modify the local settings by editing them as JSON.
+* **Container Import/Export** - Using the Preferences section, you can use JSON to import and export containers, and set default URLs for them. This can make your life easier if you're migrating between devices and want to carry over all of your containers, for example.
 
 ## Examples and Screenshots
 
@@ -82,12 +84,23 @@ If any of this is confusing, remember the basics:
 * Press `ctrl` and click/enter a result to open as pinned tab(s)
   * Note that entering *Select Mode* will change the behavior of `ctrl+click` (`Cmd+Click` on Mac) to specifically select one container from the list, or multiple if `shift` is also held
 
+
+### v0.0.18 Screenshots
+
+In v0.0.18, the features introduced were:
+
+* **Container Import** from JSON, with the ability to bulk-create containers and simultaneously set `defaultUrl` values, facilitated by some cleverness with a text editor/spreadsheet. This feature can be accessed via the addon Preferences page.
+
+Import containers section in the options page:
+
+![Import containers](readme-assets/v0.0.18/import_containers.png)
+
 ### v0.0.16 Screenshots
 
 In v0.0.16, the features introduced were:
 
 * **Opt-in to Sync** - in the preferences page for the extension, you can fine tune the settings of the extension, and whether or not you want to push them to sync. To avoid conflicts for existing users, this is disabled by default, so you have to opt-in.
-* **Container Export** as CSV or JSON, **no import at this time**, useful for setting a large number of default URLs at once by combining the exported data with the local/sync settings, facilitated by some cleverness with a text editor/spreadsheet.
+* **Container Export** as CSV or JSON, with import being added in [`v0.0.18`](#v0018-screenshots) useful for setting a large number of default URLs at once by combining the exported data with the local/sync settings, facilitated by some cleverness with a text editor/spreadsheet.
 
 Settings section in the options page - dark mode:
 

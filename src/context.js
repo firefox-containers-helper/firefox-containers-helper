@@ -627,20 +627,33 @@ const checkDefaultUrlsForUserQuery = (context, userQuery) => {
  * @returns {void}
  */
 const deleteMultipleContainers = (contextsToDelete) => {
+    // selection mode can sometimes lead to contexts that don't exist,
+    // so we will filter out contexts that are undefined
+    let actualContextsToDelete = [];
+
     let dialogStr = `Are you sure you want to delete the following container(s)?\n\n`;
     contextsToDelete.forEach((contextToDelete) => {
+        if (!contextToDelete) {
+            return;
+        }
         // build confirmation dialog first
         dialogStr += `${contextToDelete.name}\n`;
+        actualContextsToDelete.push(contextToDelete);
     });
 
-    if (confirm(dialogStr) && confirm(`Are you absolutely sure you want to delete ${contextsToDelete.length} container(s)? This is not reversible.`)) {
+    if (actualContextsToDelete.length === 0) {
+        alert(`There aren't any valid targets to delete, so there is nothing to do.`);
+        return;
+    }
+
+    if (confirm(dialogStr) && confirm(`Are you absolutely sure you want to delete ${actualContextsToDelete.length} container(s)? This is not reversible.`)) {
         // delete every context
         let deletedContexts = [];
-        contextsToDelete.forEach((contextToDelete, i, arr) => {
+        actualContextsToDelete.forEach((contextToDelete, i, arr) => {
             browser.contextualIdentities.remove(contextToDelete.cookieStoreId).then(
                 (context) => {
                     deletedContexts.push(context);
-                    setHelpText(`Deleted ${deletedContexts.length}/${contextsToDelete.length} containers`);
+                    setHelpText(`Deleted ${deletedContexts.length}/${actualContextsToDelete.length} containers`);
                     resetSelectedContexts();
                 },
                 (error) => {
