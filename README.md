@@ -348,10 +348,9 @@ This container management extension is dangerously powerful. If you're not caref
 
 ## Future Features
 
-Open to suggestions.
+Open to suggestions. These feature aren't guaranteed - just some thoughts.
 
 * **Sorting** - Sort results according to criteria
-* **Container Import/Export** - This will be a bit tricky though, since this extension doesn't have control over url-to-container associations made in the multi-account containers extension.
 * **Saved searches** - Saving the results and possibly binding to a keystroke might be useful.
 * **Favorite/Tagged containers** - Adding a "star" capability to certain tabs so that you can filter them easier. For now, a workaround is using the naming conventions suggested in the [tips](#tips) section.
 * **Bulk regular expression actions** - Actions on containers from search results according to regular expressions might be useful.
