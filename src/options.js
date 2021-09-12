@@ -156,6 +156,14 @@ const refreshSyncSettings = () => {
         if (alwaysGetSync) {
             alwaysGetSync.checked = data.alwaysGetSync;
         }
+        const neverConfirmOpenNonHttpUrls = document.getElementById('neverConfirmForOpeningNonHttpUrls');
+        if (neverConfirmOpenNonHttpUrls) {
+            neverConfirmOpenNonHttpUrls.checked = data.neverConfirmOpenNonHttpUrls;
+        }
+        const neverConfirmSaveNonHttpUrls = document.getElementById('neverConfirmForSavingNonHttpUrls');
+        if (neverConfirmSaveNonHttpUrls) {
+            neverConfirmSaveNonHttpUrls.checked = data.neverConfirmSaveNonHttpUrls;
+        }
     });
 }
 
@@ -233,6 +241,36 @@ const toggleAlwaysGetSyncSettings = (event) => {
         });
         browser.storage.sync.set({
             "alwaysGetSync": alwaysGetSync,
+        });
+    }
+    resetLocalSettings();
+    refreshSyncSettings();
+}
+
+const toggleNeverConfirmOpenNonHttpUrlsSettings = (event) => {
+    const neverConfirmOpenCheckbox = document.getElementById("neverConfirmForOpeningNonHttpUrls");
+    if (neverConfirmOpenCheckbox) {
+        neverConfirmOpenNonHttpUrls = neverConfirmOpenCheckbox.checked;
+        browser.storage.local.set({
+            "neverConfirmOpenNonHttpUrls": neverConfirmOpenNonHttpUrls,
+        });
+        browser.storage.sync.set({
+            "neverConfirmOpenNonHttpUrls": neverConfirmOpenNonHttpUrls,
+        });
+    }
+    resetLocalSettings();
+    refreshSyncSettings();
+}
+
+const toggleNeverConfirmSavingNonHttpUrlsSettings = (event) => {
+    const neverConfirmSaveCheckbox = document.getElementById("neverConfirmForSavingNonHttpUrls");
+    if (neverConfirmSaveCheckbox) {
+        neverConfirmSaveNonHttpUrls = neverConfirmSaveCheckbox.checked;
+        browser.storage.local.set({
+            "neverConfirmSaveNonHttpUrls": neverConfirmSaveNonHttpUrls,
+        });
+        browser.storage.sync.set({
+            "neverConfirmSaveNonHttpUrls": neverConfirmSaveNonHttpUrls,
         });
     }
     resetLocalSettings();
@@ -421,6 +459,9 @@ const initializeDocument = (event) => {
     document.querySelector('#btnResetSyncSettings').addEventListener('click', btnResetSyncSettingsClick);
     document.querySelector('#btnExportContainers').addEventListener('click', btnExportContainersClick);
     document.querySelector('#btnImportContainersJSON').addEventListener('click', btnImportContainersClick);
+    document.querySelector('#neverConfirmForOpeningNonHttpUrls').addEventListener('click', toggleNeverConfirmOpenNonHttpUrlsSettings);
+    document.querySelector('#neverConfirmForSavingNonHttpUrls').addEventListener('click', toggleNeverConfirmSavingNonHttpUrlsSettings);
+
 }
 
 document.addEventListener('DOMContentLoaded', initializeDocument);

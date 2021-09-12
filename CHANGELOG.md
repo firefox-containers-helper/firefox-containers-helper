@@ -4,8 +4,9 @@ This changelog contains all relevant changes between different versions of the e
 
 ## v0.0.19
 
-* fixes an issue where users can enter URLs without the transport protocol, which causes the web extensions API to attempt to load a local file by the name of the URL provided by the user. Users will now be prompted to confirm if they enter a URL that does not have `http://` or `https://` in front of it.
-  * users are also prompted when attempting to open a URL without the above two transport protocols
+* fixes an issue where users can enter URLs without the protocol, which causes the web extensions API to attempt to load a local file by the name of the URL provided by the user. Users will now be prompted to confirm if they enter a URL that does not have `http://` or `https://` in front of it.
+  * users are also prompted when attempting to open a URL without the above two protocols
+  * added a section in the Preferences/options page where users can choose to ignore this dialog
 
 ## v0.0.18
 

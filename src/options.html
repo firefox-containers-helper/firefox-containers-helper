@@ -18,6 +18,37 @@
             </div>
         </div>
         <div class="row">
+            <div class="col-12">
+                <h4>
+                    Protocol Confirmation
+                </h4>
+                <p>
+                    When attempting to open a default container URL without a recognized protocol, Firefox may
+                    not load the page correctly. To improve user experience, a confirmation dialog asks if you'd like to
+                    save if neither <code>http://</code> nor <code>https://</code> are detected at the beginning of a
+                    URL. However, there may be scenarios where a protocol <i>other</i> than those two are
+                    desired, such as the <code>dat://</code> protocol (which can be enabled via extensions), or other
+                    protocols. Since it's not really feasible to identify all protocols that are supported by your
+                    current Firefox setup, the below settings can help you hide the confirmation dialogs permanently.
+                </p>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="neverConfirmForOpeningNonHttpUrls"
+                        checked="false">
+                    <label class="form-check-label" for="neverConfirmForOpeningNonHttpUrls">Never confirm when
+                        <b>opening</b> default URLs that do not have <code>http://</code> or <code>https://</code> at
+                        the
+                        beginning.</label>
+                </div>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="neverConfirmForSavingNonHttpUrls"
+                        checked="false">
+                    <label class="form-check-label" for="neverConfirmForSavingNonHttpUrls">Never confirm when
+                        <b>saving</b> default URLs that do not have <code>http://</code> or <code>https://</code> at the
+                        beginning.</label>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
             <div class="col">
                 <h4>
                     Keyboard Shortcuts

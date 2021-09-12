@@ -120,6 +120,24 @@ const config = {
      * @default
      */
     alwaysSetSync: false,
+
+    /**
+     * neverConfirmOpenNonHttpUrls controls whether or not users get prompted
+     * to open a URL that doesn't start with http:// or https://.
+     * @example true
+     * @type {boolean}
+     * @default
+     */
+    neverConfirmOpenNonHttpUrls: false,
+
+    /**
+     * neverConfirmSaveNonHttpUrls controls whether or not users get prompted
+     * to save a URL that doesn't start with http:// or https://.
+     * @example true
+     * @type {boolean}
+     * @default
+     */
+    neverConfirmSaveNonHttpUrls: false,
 };
 
 /**
@@ -680,11 +698,12 @@ const setMultipleDefaultUrls = (contextsToSetDefaultUrls, urlToSet) => {
             delete config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()];
             return;
         }
-        if (urlToSet.indexOf('https://') === -1 && urlToSet.indexOf('http://') === -1) {
-            if (confirm('Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.')) {
-                config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()] = urlToSet;
+        if (!config.neverConfirmSaveNonHttpUrls && urlToSet.indexOf(`https://`) !== 0 && urlToSet.indexOf(`http://`) !== 0) {
+            if (!confirm('Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension options page.')) {
+                return;
             }
         }
+        config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()] = urlToSet;
     });
     writeContainerDefaultUrlsToStorage();
 }
@@ -711,8 +730,8 @@ const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab) => {
     if (contextsToOpenAsContainers.length < 10 || confirm(`Are you sure you want to open ${contextsToOpenAsContainers.length} container tabs?`)) {
         contextsToOpenAsContainers.forEach((contextToOpenAsContainer) => {
             const urlToOpen = config.containerDefaultUrls[contextToOpenAsContainer.cookieStoreId.toString() || ""];
-            if (urlToOpen.indexOf(`http://`) === -1 && urlToOpen.indexOf(`https://`) === -1) {
-                if (!confirm(`Warning: The URL "${urlToOpen}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?`)) {
+            if (!config.neverConfirmOpenNonHttpUrls && urlToOpen.indexOf(`http://`) !== 0 && urlToOpen.indexOf(`https://`) !== 0) {
+                if (!confirm(`Warning: The URL "${urlToOpen}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`)) {
                     return;
                 }
             }
