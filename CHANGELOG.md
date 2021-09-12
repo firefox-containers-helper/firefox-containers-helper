@@ -2,6 +2,11 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.19
+
+* fixes an issue where users can enter URLs without the transport protocol, which causes the web extensions API to attempt to load a local file by the name of the URL provided by the user. Users will now be prompted to confirm if they enter a URL that does not have `http://` or `https://` in front of it.
+  * users are also prompted when attempting to open a URL without the above two transport protocols
+
 ## v0.0.18
 
 * adds ability to import containers by providing a JSON array. This feature is accessible via the Addon Preferences page.

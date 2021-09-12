@@ -248,7 +248,7 @@ const containerListItemUrlLabel = `text-muted small`;
 
 /**
  * This is the set of classes to assign to a container list item url label that
- * is currently being hovered over or selected.
+ * is currently being hovered over or selected
  * Assign to `element.className` for a given element.
  * @constant
  * @type {string}
@@ -680,7 +680,11 @@ const setMultipleDefaultUrls = (contextsToSetDefaultUrls, urlToSet) => {
             delete config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()];
             return;
         }
-        config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()] = urlToSet;
+        if (urlToSet.indexOf('https://') === -1 && urlToSet.indexOf('http://') === -1) {
+            if (confirm('Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.')) {
+                config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()] = urlToSet;
+            }
+        }
     });
     writeContainerDefaultUrlsToStorage();
 }
@@ -707,6 +711,11 @@ const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab) => {
     if (contextsToOpenAsContainers.length < 10 || confirm(`Are you sure you want to open ${contextsToOpenAsContainers.length} container tabs?`)) {
         contextsToOpenAsContainers.forEach((contextToOpenAsContainer) => {
             const urlToOpen = config.containerDefaultUrls[contextToOpenAsContainer.cookieStoreId.toString() || ""];
+            if (urlToOpen.indexOf(`http://`) === -1 && urlToOpen.indexOf(`https://`) === -1) {
+                if (!confirm(`Warning: The URL "${urlToOpen}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?`)) {
+                    return;
+                }
+            }
             browser.tabs.create(
                 {
                     "cookieStoreId": contextToOpenAsContainer.cookieStoreId,
