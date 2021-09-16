@@ -2,6 +2,11 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.20
+
+* fixes a regression introduced in`v0.0.19` where tabs without default URLs would not be able to open when the setting to ignore non-http/https values was unchecked
+* updated verbiage in the options page to remove double-negatives from the ignore http/https prompt options explanations
+
 ## v0.0.19
 
 * fixes an issue where users can enter URLs without the protocol, which causes the web extensions API to attempt to load a local file by the name of the URL provided by the user. Users will now be prompted to confirm if they enter a URL that does not have `http://` or `https://` in front of it.

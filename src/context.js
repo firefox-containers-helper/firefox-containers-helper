@@ -698,7 +698,7 @@ const setMultipleDefaultUrls = (contextsToSetDefaultUrls, urlToSet) => {
             delete config.containerDefaultUrls[contextToSetDefaultUrl.cookieStoreId.toString()];
             return;
         }
-        if (!config.neverConfirmSaveNonHttpUrls && urlToSet.indexOf(`https://`) !== 0 && urlToSet.indexOf(`http://`) !== 0) {
+        if (urlToSet && !config.neverConfirmSaveNonHttpUrls && urlToSet.indexOf(`https://`) !== 0 && urlToSet.indexOf(`http://`) !== 0) {
             if (!confirm('Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension options page.')) {
                 return;
             }
@@ -730,7 +730,7 @@ const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab) => {
     if (contextsToOpenAsContainers.length < 10 || confirm(`Are you sure you want to open ${contextsToOpenAsContainers.length} container tabs?`)) {
         contextsToOpenAsContainers.forEach((contextToOpenAsContainer) => {
             const urlToOpen = config.containerDefaultUrls[contextToOpenAsContainer.cookieStoreId.toString() || ""];
-            if (!config.neverConfirmOpenNonHttpUrls && urlToOpen.indexOf(`http://`) !== 0 && urlToOpen.indexOf(`https://`) !== 0) {
+            if (urlToOpen && !config.neverConfirmOpenNonHttpUrls && urlToOpen.indexOf(`http://`) !== 0 && urlToOpen.indexOf(`https://`) !== 0) {
                 if (!confirm(`Warning: The URL "${urlToOpen}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`)) {
                     return;
                 }
