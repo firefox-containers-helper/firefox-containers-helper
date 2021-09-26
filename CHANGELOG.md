@@ -2,6 +2,10 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.22
+
+* minor verbiage fix in options page
+
 ## v0.0.21
 
 * adds an option to override the default URL for a container with the current tab's URL if its domain/hostname/origin/host matches the current tab's URL
