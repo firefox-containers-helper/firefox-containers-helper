@@ -50,6 +50,61 @@
             </div>
         </div>
         <div class="row mt-3">
+            <div class="col-12">
+                <h4>
+                    Opening the current tab URL for containers on the same domain/port/origin
+                </h4>
+                <p>
+                    This is useful for viewing the same page quickly across different containers. If you are currently
+                    on <code>https://example.com/test1234</code> and you have a container has a default URL that matches
+                    the current tab's domain, such as <code>https://example.com/abcdef</code>, you can choose to simply
+                    use the current tab's URL of <code>https://example.com/test1234</code> when opening that container
+                    tab instead of its default URL (<code>https://example.com/abcdef</code>).
+                </p>
+                <p>
+                    If you want to match more than just the domain, you can choose to match any of the following -
+                    consider the example
+                    <code>https://example.com:12345/test/index.html</code>:
+                </p>
+                <ul>
+                    <li><code>hostname</code> - (recommended) - matches <code>example.com</code> only</li>
+                    <li><code>subdomainless</code> matches <code>example.com</code> and all domain</li>
+                    <li><code>subdomainless-port</code> matches <code>example.com</code> and all subdomains, and the
+                        port</li>
+                    <li><code>host</code> matches <code>example.com:12345</code> only (hostname and port)</li>
+                    <li><code>origin</code> matches <code>https://example.com:12345</code> only</li>
+                </ul>
+                <p>
+                    For technical information on how the hostname/host/origin are determined, please visit the MDN page
+                    for
+                    the built-in JavaScript <code>URL</code> interface, here:
+                    <a href="https://developer.mozilla.org/en-US/docs/Web/API/URL" target="_blank"
+                        rel="noopener noreferer">https://developer.mozilla.org/en-US/docs/Web/API/URL</a>
+                </p>
+                <p>
+                    <b>Warning:</b> The <code>domain</code> option may not be robust enough to satisfy all URLs
+                    in existence. It works by splitting up the <code>hostname</code> value by <code>.</code> characters,
+                    and checking just the final two values. Similarly, the <code>domain-port</code> option performs
+                    the same check, but also checks that the <code>port</code> is equal. Where possible, you should use
+                    the <code>hostname</code>, <code>host</code>, <code>origin</code>,
+                </p>
+                <div class="mt-2">
+                    <select id="openCurrentTabUrlOnMatchSelect" class="form-select"
+                        aria-label="Match hostname/host/origin">
+                        <option selected value="">Disabled (default)</option>
+                        <option value="hostname">Hostname/subdomain exact match (example.com but not www.example.com)
+                        </option>
+                        <option value="domain">Domain (*example.com, and example.com)</option>
+                        <option value="domain-port">Domain and port (*example.com:12345,
+                            and example.com:12345)
+                        </option>
+                        <option value="host">Host, exact match (example.com:12345)</option>
+                        <option value="origin">Origin, exact match (https://example.com:12345)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
             <div class="col">
                 <h4>
                     Keyboard Shortcuts

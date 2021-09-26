@@ -2,6 +2,12 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.21
+
+* adds an option to override the default URL for a container with the current tab's URL if its domain/hostname/origin/host matches the current tab's URL
+  * requested in https://github.com/charles-m-knox/firefox-containers-helper/issues/29
+* minor syntax adjustments
+
 ## v0.0.20
 
 * fixes a regression introduced in`v0.0.19` where tabs without default URLs would not be able to open when the setting to ignore non-http/https values was unchecked

@@ -164,6 +164,10 @@ const refreshSyncSettings = () => {
         if (neverConfirmSaveNonHttpUrls) {
             neverConfirmSaveNonHttpUrls.checked = data.neverConfirmSaveNonHttpUrls;
         }
+        const openCurrentTabUrlOnMatch = document.getElementById('openCurrentTabUrlOnMatchSelect');
+        if (openCurrentTabUrlOnMatch) {
+            openCurrentTabUrlOnMatch.value = data.openCurrentTabUrlOnMatch;
+        }
     });
 }
 
@@ -265,12 +269,27 @@ const toggleNeverConfirmOpenNonHttpUrlsSettings = (event) => {
 const toggleNeverConfirmSavingNonHttpUrlsSettings = (event) => {
     const neverConfirmSaveCheckbox = document.getElementById("neverConfirmForSavingNonHttpUrls");
     if (neverConfirmSaveCheckbox) {
-        neverConfirmSaveNonHttpUrls = neverConfirmSaveCheckbox.checked;
+        let neverConfirmSaveNonHttpUrls = neverConfirmSaveCheckbox.checked;
         browser.storage.local.set({
             "neverConfirmSaveNonHttpUrls": neverConfirmSaveNonHttpUrls,
         });
         browser.storage.sync.set({
             "neverConfirmSaveNonHttpUrls": neverConfirmSaveNonHttpUrls,
+        });
+    }
+    resetLocalSettings();
+    refreshSyncSettings();
+}
+
+const openCurrentTabUrlOnMatchSelectChange = (event) => {
+    const openCurrentTabUrlOnMatchSelect = document.getElementById("openCurrentTabUrlOnMatchSelect");
+    if (openCurrentTabUrlOnMatchSelect) {
+        let openCurrentTabUrlOnMatch = event.target.value;
+        browser.storage.local.set({
+            "openCurrentTabUrlOnMatch": openCurrentTabUrlOnMatch,
+        });
+        browser.storage.sync.set({
+            "openCurrentTabUrlOnMatch": openCurrentTabUrlOnMatch,
         });
     }
     resetLocalSettings();
@@ -461,6 +480,7 @@ const initializeDocument = (event) => {
     document.querySelector('#btnImportContainersJSON').addEventListener('click', btnImportContainersClick);
     document.querySelector('#neverConfirmForOpeningNonHttpUrls').addEventListener('click', toggleNeverConfirmOpenNonHttpUrlsSettings);
     document.querySelector('#neverConfirmForSavingNonHttpUrls').addEventListener('click', toggleNeverConfirmSavingNonHttpUrlsSettings);
+    document.querySelector('#openCurrentTabUrlOnMatchSelect').addEventListener('change', openCurrentTabUrlOnMatchSelectChange);
 
 }
 

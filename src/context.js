@@ -138,6 +138,21 @@ const config = {
      * @default
      */
     neverConfirmSaveNonHttpUrls: false,
+
+    /**
+     * openCurrentTabUrlOnMatch will open the current tab's URL if a container
+     * tab's default URL domain matches the current tab's URL. Can be configured
+     * to match a couple different things.
+     * See the URL() object for things that can match.
+     * @example "href"
+     * @example "origin"
+     * @example "host"
+     * @example "hostname"
+     * @example ""
+     * @type {string}
+     * @default
+     */
+    openCurrentTabUrlOnMatch: "",
 };
 
 /**
@@ -359,10 +374,13 @@ const buildContainerIconElement = (context) => {
 /**
  * Assembles an HTML element that contains a text label for a given container.
  * @param {ContextualIdentity} context - The contextualIdentity that this text element will represent
+ * @param {number} i The index of this contextualIdentity within the filteredResults array
+ * @param {tab} currentTab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
+ * @param {string} actualCurrentUrl The URL that the current tab is supposed to be loading.
  * @returns {Element} An HTML element containing text that represents the
  * container's name and default URL, if defined.
  */
-const buildContainerLabelElement = (context, i) => {
+const buildContainerLabelElement = (context, i, currentTab, actualCurrentUrl) => {
     const containerLabelDivHoldingElement = document.createElement('div');
     containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
 
@@ -374,7 +392,22 @@ const buildContainerLabelElement = (context, i) => {
     containerUrlLabelElement.id = `filtered-context-${i}-url-label`;
     const contextDefaultUrl = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
     if (contextDefaultUrl) {
-        containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
+        if (config.openCurrentTabUrlOnMatch && (currentTab || actualCurrentUrl)) {
+            // if the current tab isn't loaded yet, the url might be empty,
+            // but we are supposed to be navigating to a page
+            let currentUrl = currentTab.url;
+            if (actualCurrentUrl) {
+                currentUrl = actualCurrentUrl;
+            }
+            const overrideUrl = getCurrentTabOverrideUrl(contextDefaultUrl, currentUrl, false);
+            if (overrideUrl && overrideUrl !== contextDefaultUrl) {
+                containerUrlLabelElement.innerHTML = `<s>${contextDefaultUrl.substr(0, 40)}</s><br/>${config.openCurrentTabUrlOnMatch} match, will open in this URL:<br/>${overrideUrl.substr(0, 40)}`;
+            } else {
+                containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
+            }
+        } else {
+            containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
+        }
     }
 
     addEmptyEventListenersToElement(containerLabelElement);
@@ -484,14 +517,16 @@ const applyEventListenersToContainerListItem = (liElement, filteredResults, cont
  * @param {ContextualIdentity[]} filteredResults A list of the currently filtered set of browser.contextualIdentities
  * @param {ContextualIdentity} context The contextualIdentity that this list item will represent
  * @param {number} i The index of this contextualIdentity within the filteredResults array
+ * @param {tab} currentTab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
+ * @param {string} actualCurrentUrl The URL that the current tab is supposed to be loading.
  * @returns {Element} An HTML element with event listeners, formatted with css as a bootstrap list item.
  */
-const buildContainerListItem = (filteredResults, context, i) => {
+const buildContainerListItem = (filteredResults, context, i, currentTab, actualCurrentUrl) => {
     const liElement = document.createElement('li');
     liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
 
     const containerIconHolderElement = buildContainerIconElement(context);
-    const containerLabelElement = buildContainerLabelElement(context, i);
+    const containerLabelElement = buildContainerLabelElement(context, i, currentTab, actualCurrentUrl);
 
     if (config.mode === MODES.DELETE) {
         const divElement = document.createElement('div');
@@ -613,14 +648,16 @@ const writeContainerDefaultUrlsToStorage = () => {
 
 /**
  * Actions to perform when an action is completed.
+ * @param {string} currentUrl Optional, determines what URL should be
+ * considered as "active" when filtering containers
  * @returns {void}
  */
-const actionCompletedHandler = () => {
+const actionCompletedHandler = (currentUrl) => {
     // decide to close the extension or not at the last step
     if (config.windowStayOpenState === false) {
         window.close();
     } else {
-        filterContainers();
+        filterContainers(false, currentUrl);
     }
 }
 
@@ -720,27 +757,93 @@ const setMultipleDefaultUrlsWithPrompt = (contextsToSetDefaultUrls) => {
     }
 };
 
+// Determines whether or not to override the container's default URL with
+// the current tab's URL, based on config.openCurrentTabUrlOnMatch
+const getCurrentTabOverrideUrl = (urlToOpen, currentUrl, shouldLogErr) => {
+    try {
+        if (urlToOpen && currentUrl) {
+            const parsedCurrentUrl = new URL(currentUrl);
+            let parsedUrlToOpen = new URL(urlToOpen);
+            // just determine the top level domain and the next level domain
+            // using "tld" as a quick shorthand even though it's not technically correct
+            const tldToOpen = parsedUrlToOpen.hostname.split('.').slice(-2).join('.').toLowerCase();
+            const tldCurrent = parsedCurrentUrl.hostname.split('.').slice(-2).join('.').toLowerCase();
+            switch (config.openCurrentTabUrlOnMatch) {
+                case 'origin':
+                    if (parsedCurrentUrl.origin.toLowerCase() === parsedUrlToOpen.origin.toLowerCase()) {
+                        return currentUrl;
+                    }
+                    break;
+                case 'host':
+                    if (parsedCurrentUrl.host.toLowerCase() === parsedUrlToOpen.host.toLowerCase()) {
+                        return currentUrl;
+                    }
+                    break;
+                case 'domain':
+                    if (tldToOpen === tldCurrent) {
+                        return currentUrl;
+                    }
+                    break;
+                case 'domain-port':
+                    if (tldToOpen === tldCurrent && parsedCurrentUrl.port === parsedUrlToOpen.port) {
+                        return currentUrl;
+                    }
+                    break;
+                case 'hostname':
+                    if (parsedCurrentUrl.hostname.toLowerCase() === parsedUrlToOpen.hostname.toLowerCase()) {
+                        return currentUrl;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    } catch (err) {
+        if (shouldLogErr) {
+            console.log(
+                `warning: origin/host/hostname match attempt didn't succeed, falling back to container default url; reason: ${err}`
+            );
+        }
+    }
+
+    return "";
+}
+
 /**
  * Opens multiple container tabs according to controllable conditions.
  * @param {ContextualIdentity[]} contextsToOpenAsContainers The `contextualIdentity` array that will each open as a container tab.
  * @param {boolean} openAsPinnedTab Whether or not to open as a pinned tab.
+ * @param {tab} currentTab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
  * @returns {void}
  */
-const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab) => {
+const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab, currentTab) => {
     if (contextsToOpenAsContainers.length < 10 || confirm(`Are you sure you want to open ${contextsToOpenAsContainers.length} container tabs?`)) {
         contextsToOpenAsContainers.forEach((contextToOpenAsContainer) => {
-            const urlToOpen = config.containerDefaultUrls[contextToOpenAsContainer.cookieStoreId.toString() || ""];
+            let urlToOpen = config.containerDefaultUrls[contextToOpenAsContainer.cookieStoreId.toString() || ""];
             if (urlToOpen && !config.neverConfirmOpenNonHttpUrls && urlToOpen.indexOf(`http://`) !== 0 && urlToOpen.indexOf(`https://`) !== 0) {
                 if (!confirm(`Warning: The URL "${urlToOpen}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`)) {
                     return;
                 }
             }
+
+            // requested in
+            // https://github.com/charles-m-knox/firefox-containers-helper/issues/29
+            if (config.openCurrentTabUrlOnMatch) {
+                const overriddenUrlToOpen = getCurrentTabOverrideUrl(urlToOpen, currentTab.url, true);
+                if (overriddenUrlToOpen) {
+                    urlToOpen = overriddenUrlToOpen;
+                }
+            }
+
+            // don't even bother querying tabs if the tab url matching
+            // configuration option isn't set
             browser.tabs.create(
                 {
                     "cookieStoreId": contextToOpenAsContainer.cookieStoreId,
                     "pinned": openAsPinnedTab,
                     "url": urlToOpen
-                });
+                }
+            );
         });
     }
 };
@@ -1093,40 +1196,64 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
         }
     }
 
-    // decision tree
-    switch (config.mode) {
-        case MODES.SET_NAME:
-            renameContexts(contextsToActOn);
-            break;
-        case MODES.DELETE:
-            deleteMultipleContainers(contextsToActOn);
-            break;
-        case MODES.SET_URL:
-            setMultipleDefaultUrlsWithPrompt(contextsToActOn);
-            break;
-        case MODES.SET_COLOR:
-            setColorForContexts(contextsToActOn);
-            break;
-        case MODES.SET_ICON:
-            setIconForContexts(contextsToActOn);
-            break;
-        case MODES.REPLACE_IN_NAME:
-            findReplaceNameInContexts(contextsToActOn);
-            break;
-        case MODES.REPLACE_IN_URL:
-            findReplaceUrlInContexts(contextsToActOn);
-            break;
-        case MODES.DUPLICATE:
-            duplicateContexts(contextsToActOn);
-            break;
-        case MODES.OPEN:
-            openMultipleContexts(contextsToActOn, ctrlModifier);
-            break;
-        default:
-            break;
-    }
+    browser.tabs.query({ currentWindow: true, active: true }).then((tabs) => {
+        for (let tab of tabs) {
+            if (tab.active) {
+                let navigatedUrl = '';
+                // decision tree
+                switch (config.mode) {
+                    case MODES.SET_NAME:
+                        renameContexts(contextsToActOn);
+                        break;
+                    case MODES.DELETE:
+                        deleteMultipleContainers(contextsToActOn);
+                        break;
+                    case MODES.SET_URL:
+                        setMultipleDefaultUrlsWithPrompt(contextsToActOn);
+                        break;
+                    case MODES.SET_COLOR:
+                        setColorForContexts(contextsToActOn);
+                        break;
+                    case MODES.SET_ICON:
+                        setIconForContexts(contextsToActOn);
+                        break;
+                    case MODES.REPLACE_IN_NAME:
+                        findReplaceNameInContexts(contextsToActOn);
+                        break;
+                    case MODES.REPLACE_IN_URL:
+                        findReplaceUrlInContexts(contextsToActOn);
+                        break;
+                    case MODES.DUPLICATE:
+                        duplicateContexts(contextsToActOn);
+                        break;
+                    case MODES.OPEN:
+                        // the following code exists because in sticky popup mode,
+                        // the current tab url changes to blank at first, and
+                        // filterContainers() will not show the URL overrides.
+                        // So we have to look at the last container in the array
+                        // and force filterContainers() to treat that URL as the
+                        // active tab URL
+                        if (contextsToActOn.length && contextsToActOn[contextsToActOn.length - 1]?.cookieStoreId) {
+                            navigatedUrl = config.containerDefaultUrls[contextsToActOn[contextsToActOn.length - 1].cookieStoreId.toString() || ""];
+                            // TODO: this is refactorable logic copy/pasted from openMultipleContexts
+                            if (config.openCurrentTabUrlOnMatch) {
+                                const overriddenUrlToOpen = getCurrentTabOverrideUrl(navigatedUrl, tab.url, false);
+                                if (overriddenUrlToOpen) {
+                                    navigatedUrl = overriddenUrlToOpen;
+                                }
+                            }
+                        }
+                        openMultipleContexts(contextsToActOn, ctrlModifier, tab);
+                        break;
+                    default:
+                        break;
+                }
+                actionCompletedHandler(navigatedUrl);
+                break;
+            }
+        }
+    });
 
-    actionCompletedHandler();
 };
 
 /**
@@ -1177,9 +1304,10 @@ const isUserQueryContextNameMatch = (contextName, userQuery) => {
 /**
  * Applies the user's search query, and updates the list of containers accordingly.
  * @param {Event} event The event that called this function, such as a key press or mouse click
+ * @param {string} actualTabUrl When in sticky popup mode, when opening a new URL, the new tab page might not be loaded yet, so the tab query returns an empty URL. actualTabUrl allows a URL to be passed in in advance, so that the extension can properly show URL overrides in the UI.
  * @returns {void}
  */
-const filterContainers = (event) => {
+const filterContainers = (event, actualTabUrl) => {
     if (event) {
         event.preventDefault();
     }
@@ -1210,40 +1338,47 @@ const filterContainers = (event) => {
     // now query the contextual identities
     const filteredResults = [];
     browser.contextualIdentities.query({}).then((contexts) => {
-        if (Array.isArray(contexts)) {
-            const containerList = document.getElementById(CONTAINER_LIST_DIV_ID);
+        browser.tabs.query({ currentWindow: true, active: true }).then((tabs) => {
+            for (let tab of tabs) {
+                if (tab.active) {
+                    if (Array.isArray(contexts)) {
+                        const containerList = document.getElementById(CONTAINER_LIST_DIV_ID);
 
-            // prepare by clearing out the old query's HTML output
-            removeExistingContainerListGroupElement(containerList);
-            // now build its successor
-            const ulElement = buildContainerListGroupElement();
+                        // prepare by clearing out the old query's HTML output
+                        removeExistingContainerListGroupElement(containerList);
+                        // now build its successor
+                        const ulElement = buildContainerListGroupElement();
 
-            const lowerCaseUserQuery = userQuery.toLowerCase();
+                        const lowerCaseUserQuery = userQuery.toLowerCase();
 
-            contexts.forEach((context, i) => {
-                const lowerCaseContextName = context.name.toLowerCase();
+                        contexts.forEach((context, i) => {
+                            const lowerCaseContextName = context.name.toLowerCase();
 
-                if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery) || checkDefaultUrlsForUserQuery(context, lowerCaseUserQuery)) {
-                    const liElement = buildContainerListItem(filteredResults, context, filteredResults.length);
-                    ulElement.appendChild(liElement);
-                    filteredResults.push(context);
+                            if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery) || checkDefaultUrlsForUserQuery(context, lowerCaseUserQuery)) {
+                                const liElement = buildContainerListItem(filteredResults, context, filteredResults.length, tab, actualTabUrl);
+                                ulElement.appendChild(liElement);
+                                filteredResults.push(context);
+                            }
+                        });
+                        if (filteredResults.length === 0) {
+                            const liElement = buildEmptyContainerListItem(0);
+                            ulElement.append(liElement);
+                        }
+
+                        containerList.appendChild(ulElement);
+                        setSummaryText(`Showing ${filteredResults.length}/${contexts.length} containers.`);
+                        if (event) {
+                            if (event.key === 'Enter' && filteredResults.length > 0) {
+                                containerClickHandler(filteredResults, filteredResults[0], event);
+                            }
+                            event.preventDefault();
+                        }
+                    }
+                    setSelectedListItemClassNames();
+                    break;
                 }
-            });
-            if (filteredResults.length === 0) {
-                const liElement = buildEmptyContainerListItem(0);
-                ulElement.append(liElement);
             }
-
-            containerList.appendChild(ulElement);
-            setSummaryText(`Showing ${filteredResults.length}/${contexts.length} containers.`);
-            if (event) {
-                if (event.key === 'Enter' && filteredResults.length > 0) {
-                    containerClickHandler(filteredResults, filteredResults[0], event);
-                }
-                event.preventDefault();
-            }
-        }
-        setSelectedListItemClassNames();
+        });
     }, (error) => {
         console.error(`failed to query contextual identities: ${error}`);
     })

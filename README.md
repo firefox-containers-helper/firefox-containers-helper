@@ -73,6 +73,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color.
 * **Opt-in to Synchronize using Firefox Sync** - Using the updated Preferences section, you can set the Firefox Sync settings or modify the local settings by editing them as JSON.
 * **Container Import/Export** - Using the Preferences section, you can use JSON to import and export containers, and set default URLs for them. This can make your life easier if you're migrating between devices and want to carry over all of your containers, for example.
+* **Quickly Open Current Page in Other Containers** - Disabled by default - enable this in the addon settings page. You can automatically open the current page in other containers whose domains/hosts/origins match your current tab's URL's domain/host/origin. Read more in the addon settings page.
 
 ## Examples and Screenshots
 
