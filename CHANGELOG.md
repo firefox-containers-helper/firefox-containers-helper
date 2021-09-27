@@ -2,6 +2,10 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.23
+
+* more verbiage clarification in options page
+
 ## v0.0.22
 
 * minor verbiage fix in options page

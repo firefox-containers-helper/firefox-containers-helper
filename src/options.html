@@ -68,8 +68,8 @@
                 </p>
                 <ul>
                     <li><code>hostname</code> - (recommended) - matches <code>example.com</code> only</li>
-                    <li><code>subdomainless</code> matches <code>example.com</code> and all domain</li>
-                    <li><code>subdomainless-port</code> matches <code>example.com</code> and all subdomains, and the
+                    <li><code>domain</code> matches <code>example.com</code> and all subdomains</li>
+                    <li><code>domain-port</code> matches <code>example.com</code> and all subdomains, and the
                         port</li>
                     <li><code>host</code> matches <code>example.com:12345</code> only (hostname and port)</li>
                     <li><code>origin</code> matches <code>https://example.com:12345</code> only</li>
@@ -82,12 +82,12 @@
                         rel="noopener noreferer">https://developer.mozilla.org/en-US/docs/Web/API/URL</a>
                 </p>
                 <p>
-                    <b>Warning:</b> The <code>domain</code> option may not be robust enough to satisfy all URLs
-                    in existence. It works by splitting up the <code>hostname</code> value by <code>.</code> characters,
-                    and checking just the final two values. Similarly, the <code>domain-port</code> option performs
-                    the same check, but also checks that the <code>port</code> is equal. Where possible, you should use
-                    the <code>hostname</code>, <code>host</code>, <code>origin</code> values, as they are native
-                    to JavaScript.
+                    <b>Warning:</b> The <code>domain</code> option may not be robust enough to properly check all
+                    possible URLs that can exist. It works by splitting up the <code>hostname</code> value by
+                    <code>.</code> characters, and checking just the final two values. Similarly, the
+                    <code>domain-port</code> option performs the same check, but also checks that the <code>port</code>
+                    is equal. Where possible, you should use the <code>hostname</code>, <code>host</code>,
+                    <code>origin</code> values, as they are native to JavaScript.
                 </p>
                 <div class="mt-2">
                     <select id="openCurrentTabUrlOnMatchSelect" class="form-select"
