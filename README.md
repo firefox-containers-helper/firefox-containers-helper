@@ -37,8 +37,7 @@ This readme contains extensive information about the extension and it aims to bo
   - [Warnings](#warnings)
   - [Future Features](#future-features)
   - [Community](#community)
-    - [Supporting the Project](#supporting-the-project)
-  - [Repository source code update](#repository-source-code-update)
+  - [Repository source code changes](#repository-source-code-changes)
   - [Attributions](#attributions)
 
 ## Who is this intended for?
@@ -67,7 +66,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
   * **Caution: This can delete all of your containers if you're not careful.**
   * Similar to above, press `shift` to bulk-delete containers returned by a query.
 * **Keyboard shortcut** to open the popup window is `alt+shift+D` (configurable, on Mac it is `Command+Shift+E`). It will immediately focus the search box, so you can quickly filter for a container, press enter, and go.
-* **Dark and Light mode** - respects your system's dark/light mode setting, thanks to [KerfuffleV2](https://github.com/charles-m-knox/firefox-containers-helper/issues?q=is%3Apr+author%3AKerfuffleV2) in [PR #8](https://github.com/charles-m-knox/firefox-containers-helper/pull/8)
+* **Dark and Light mode** - respects your system's dark/light mode setting, thanks to [KerfuffleV2](https://github.com/cmcode-dev/firefox-containers-helper/issues?q=is%3Apr+author%3AKerfuffleV2) in [PR #8](https://github.com/cmcode-dev/firefox-containers-helper/pull/8)
   * Note: On my Ubuntu system, changing Firefox's theme isn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
 * **Select Mode** - Like you'd intuitively expect, you can enable Select Mode press `Ctrl+Click` (`Cmd+Click` on Mac) to specifically select a couple results from the list, as well as `Ctrl+Shift+Click` (`Cmd+Shift+Click` on Mac) to traverse a range of containers.
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color.
@@ -118,7 +117,7 @@ In v0.0.11, the features introduced were:
 * **Dark and Light mode** - [Bootstrap dark mode](https://github.com/vinorodrigues/bootstrap-dark) which respects your system theme preference
   * Note: On my Ubuntu system, changing Firefox's theme wasn't enough, I had to change my entire theme from a dark theme to a light theme to switch the preference
 * **Select Mode** - Allows you to precisely select only a couple results from the list by first enabling the mode and then pressing `Ctrl+Click` (`Cmd+Click` on Mac), or multiple by pressing `Ctrl+Shift+Click`
-* **Configurable Keyboard Shortcut** - Allows you to change the keyboard shortcut for showing the extension popup window, which is by default `Alt+Shift+D` (on Mac it is `Command+Shift+E`). This fixes [#4](https://github.com/charles-m-knox/firefox-containers-helper/issues/4)
+* **Configurable Keyboard Shortcut** - Allows you to change the keyboard shortcut for showing the extension popup window, which is by default `Alt+Shift+D` (on Mac it is `Command+Shift+E`). This fixes [#4](https://github.com/cmcode-dev/firefox-containers-helper/issues/4)
 * **Container Quick-Add** - Allows you to quickly add a new container based on what you have typed into the filter text box. Defaults to a circle icon and the toolbar color
 
 *See [`CHANGELOG.md`](./CHANGELOG.md) for more changes.*
@@ -362,13 +361,14 @@ Open to suggestions. These feature aren't guaranteed - just some thoughts.
 
 If you have suggestions, please feel free to voice them on GitHub. Thank you for using my extension and reading this far!
 
-### Supporting the Project
+<!-- ### Supporting the Project
 
-You can support the author directly [here](https://charlesmknox.com/about), and you can see supporters of the project [here](https://charlesmknox.com/about). The extension itself includes a "Donate" link as well. I am very appreciative of the community feedback and support I've received so far.
+You can support the author directly [here](https://charlesmknox.com/about), and you can see supporters of the project [here](https://charlesmknox.com/about). The extension itself includes a "Donate" link as well. I am very appreciative of the community feedback and support I've received so far. -->
 
-## Repository source code update
+## Repository source code changes
 
-This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/addon/containers-helper).
+* This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/addon/containers-helper).
+* As of 2022-01-23, this repository has moved between accounts, but is still owned by the same person. Just doing a litle cleanup.
 
 ## Attributions
 
