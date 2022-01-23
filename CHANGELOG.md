@@ -13,7 +13,7 @@ This changelog contains all relevant changes between different versions of the e
 ## v0.0.21
 
 * adds an option to override the default URL for a container with the current tab's URL if its domain/hostname/origin/host matches the current tab's URL
-  * requested in https://github.com/charles-m-knox/firefox-containers-helper/issues/29
+  * requested in https://github.com/cmcode-dev/firefox-containers-helper/issues/29
 * minor syntax adjustments
 
 ## v0.0.20
@@ -37,7 +37,7 @@ This changelog contains all relevant changes between different versions of the e
 
 ## v0.0.17
 
-* fixes [#22](https://github.com/charles-m-knox/firefox-containers-helper/issues/22) by enforcing a minimum search list height
+* fixes [#22](https://github.com/cmcode-dev/firefox-containers-helper/issues/22) by enforcing a minimum search list height
 * "No results" text added to the container list if there are no filtered results
 * bug fix: no longer allows the enter key to trigger the selected action on the filtered containers, if there are no filtered containers
 
@@ -47,7 +47,7 @@ This changelog contains all relevant changes between different versions of the e
   * allows you to use an external editor (spreadsheet/text editor) to help manage your containers at a larger scale
     * complete import/export is not implemented! the feature is mainly useful for setting a large number of default URLs for containers
 * adds the ability to control whether or not settings are saved over Firefox Sync, or simply locally
-  * resolves [#3](https://github.com/charles-m-knox/firefox-containers-helper/issues/3)
+  * resolves [#3](https://github.com/cmcode-dev/firefox-containers-helper/issues/3)
   * to access this, visit the Extension Preferences page
   * by default, sync is **opt-in**, you have to enable it in order for the settings to be pushed to sync.
     * settings will continue to persist locally otherwise
@@ -57,25 +57,25 @@ This changelog contains all relevant changes between different versions of the e
 
 ## v0.0.15
 
-* fix [#14](https://github.com/charles-m-knox/firefox-containers-helper/issues/14), to use non-localized AMO links
-* fix [#15](https://github.com/charles-m-knox/firefox-containers-helper/issues/15), to enable Mac support for anything that uses the `Ctrl` key modifier to allow the `Meta` (`Cmd` key) modifier to work as well
+* fix [#14](https://github.com/cmcode-dev/firefox-containers-helper/issues/14), to use non-localized AMO links
+* fix [#15](https://github.com/cmcode-dev/firefox-containers-helper/issues/15), to enable Mac support for anything that uses the `Ctrl` key modifier to allow the `Meta` (`Cmd` key) modifier to work as well
 * minor change: set text color to white when items are selected; previously text was black and the background highlight color was also dark gray, making it hard to see
 * on Mac, the default shortcut key (`Alt+Shift+D`) is overridden by a built-in shortcut, so the new shortcut key on Mac is `Command+Shift+E`. You can change this if you want.
 
 ## v0.0.12-v0.0.14
 
-* fix [#11](https://github.com/charles-m-knox/firefox-containers-helper/issues/11), the indexing for multi-select was using the total number of containers instead of the filtered number of containers 😰
+* fix [#11](https://github.com/cmcode-dev/firefox-containers-helper/issues/11), the indexing for multi-select was using the total number of containers instead of the filtered number of containers 😰
 * re-add "+" button for containers since it's actually fine
 * added stern warning to the readme about NEVER disabling or deleting all of your container extensions in Firefox, or else they'll get completely reset
 
 ## v0.0.11
 
-* dark mode and light mode added in [#8](https://github.com/charles-m-knox/firefox-containers-helper/pull/8)
+* dark mode and light mode added in [#8](https://github.com/cmcode-dev/firefox-containers-helper/pull/8)
   * Thanks to https://github.com/KerfuffleV2 for this contribution!
-* configurable keyboard shortcut added (see [#4](https://github.com/charles-m-knox/firefox-containers-helper/issues/4))
+* configurable keyboard shortcut added (see [#4](https://github.com/cmcode-dev/firefox-containers-helper/issues/4))
 * adds *Select Mode*, as requested by the project's [first supporter](https://charlesmknox.com/supporters/#bob-haines)!
-  * resolves [#6](https://github.com/charles-m-knox/firefox-containers-helper/issues/6)
-* fix [#9](https://github.com/charles-m-knox/firefox-containers-helper/issues/9)... no longer drops all casing to lowercase when using "replace in name" mode, sorry about that!
+  * resolves [#6](https://github.com/cmcode-dev/firefox-containers-helper/issues/6)
+* fix [#9](https://github.com/cmcode-dev/firefox-containers-helper/issues/9)... no longer drops all casing to lowercase when using "replace in name" mode, sorry about that!
 * "replace in name" used to be case-insensitive, but I believe it's better to have case-sensitive replacing
   * Please file an issue and talk with me if you disagree or believe there should be a better approach! Thank you! 🙂
 * added a small "Donate" link to my personal site with my personal avatar, I appreciate your support everyone 🙂

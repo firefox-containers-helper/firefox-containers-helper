@@ -361,10 +361,6 @@ Open to suggestions. These feature aren't guaranteed - just some thoughts.
 
 If you have suggestions, please feel free to voice them on GitHub. Thank you for using my extension and reading this far!
 
-<!-- ### Supporting the Project
-
-You can support the author directly [here](https://charlesmknox.com/about), and you can see supporters of the project [here](https://charlesmknox.com/about). The extension itself includes a "Donate" link as well. I am very appreciative of the community feedback and support I've received so far. -->
-
 ## Repository source code changes
 
 * This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/addon/containers-helper).

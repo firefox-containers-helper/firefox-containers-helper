@@ -827,7 +827,7 @@ const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab, curre
             }
 
             // requested in
-            // https://github.com/charles-m-knox/firefox-containers-helper/issues/29
+            // https://github.com/cmcode-dev/firefox-containers-helper/issues/29
             if (config.openCurrentTabUrlOnMatch) {
                 const overriddenUrlToOpen = getCurrentTabOverrideUrl(urlToOpen, currentTab.url, true);
                 if (overriddenUrlToOpen) {
