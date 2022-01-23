@@ -73,7 +73,7 @@ This changelog contains all relevant changes between different versions of the e
 * dark mode and light mode added in [#8](https://github.com/cmcode-dev/firefox-containers-helper/pull/8)
   * Thanks to https://github.com/KerfuffleV2 for this contribution!
 * configurable keyboard shortcut added (see [#4](https://github.com/cmcode-dev/firefox-containers-helper/issues/4))
-* adds *Select Mode*, as requested by the project's [first supporter](https://charlesmknox.com/supporters/#bob-haines)!
+* adds *Select Mode*, as requested by a project supporter!
   * resolves [#6](https://github.com/cmcode-dev/firefox-containers-helper/issues/6)
 * fix [#9](https://github.com/cmcode-dev/firefox-containers-helper/issues/9)... no longer drops all casing to lowercase when using "replace in name" mode, sorry about that!
 * "replace in name" used to be case-insensitive, but I believe it's better to have case-sensitive replacing
