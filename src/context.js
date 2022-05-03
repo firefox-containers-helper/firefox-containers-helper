@@ -59,6 +59,14 @@ const config = {
     selectionMode: false,
 
     /**
+     * openCurrentPage will force every filtered container to open the current
+     * tab's URL.
+     * @type {boolean}
+     * @default
+     */
+    openCurrentPage: false,
+
+    /**
      * mode is the current mode the user is operating in, such as
      * deleteContainersOnClick or setDefaultUrlsOnClick.
      * @type {string}
@@ -408,6 +416,23 @@ const buildContainerLabelElement = (context, i, currentTab, actualCurrentUrl) =>
         } else {
             containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
         }
+
+    }
+
+    // similar to the above - if the "openCurrentPage" config option has been selected,
+    // then we should override all URL's, as a finality
+    if (config.openCurrentPage && (currentTab || actualCurrentUrl)) {
+        // TODO: bit of refactoring would be nice since I just copy/pasted
+        // this from above
+
+        // if the current tab isn't loaded yet, the url might be empty,
+        // but we are supposed to be navigating to a page
+        let currentUrl = currentTab.url;
+        if (actualCurrentUrl) {
+            currentUrl = actualCurrentUrl;
+        }
+
+        containerUrlLabelElement.innerHTML = `${currentUrl.substr(0, 40)}${currentUrl.length > 40 ? '...' : ''}`;
     }
 
     addEmptyEventListenersToElement(containerLabelElement);
@@ -835,6 +860,12 @@ const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab, curre
                 }
             }
 
+            // requested in
+            // https://github.com/cmcode-dev/firefox-containers-helper/issues/31
+            if (config.openCurrentPage) {
+                urlToOpen = currentTab.url;
+            }
+
             // don't even bother querying tabs if the tab url matching
             // configuration option isn't set
             browser.tabs.create(
@@ -1242,6 +1273,11 @@ const containerClickHandler = (filteredContexts, singleContext, event) => {
                                     navigatedUrl = overriddenUrlToOpen;
                                 }
                             }
+                            // override the URL if the user has elected to open the current page
+                            // for all filtered tabs
+                            if (config.openCurrentPage) {
+                                navigatedUrl = tab.url;
+                            }
                         }
                         openMultipleContexts(contextsToActOn, ctrlModifier, tab);
                         break;
@@ -1428,6 +1464,8 @@ const processExtensionSettings = (data) => {
                 document.getElementById(`windowStayOpenState`).checked = config[configKey];
             case "selectionMode":
                 document.getElementById(`selectionMode`).checked = config[configKey];
+            case "openCurrentPage":
+                document.getElementById(`openCurrentPage`).checked = config[configKey];
             case "containerDefaultUrls":
                 // do nothing at this time, because there are no special
                 // UI elements to update
@@ -1547,6 +1585,15 @@ const initializeDocument = (event) => {
         } else {
             showModeHelpMessage();
         }
+    });
+    document.querySelector("#openCurrentPage").addEventListener("click", () => {
+        setConfigParam("openCurrentPage");
+        if (config.openCurrentPage) {
+            setHelpText(`Every container will open your current tab's URL.`);
+        } else {
+            showModeHelpMessage();
+        }
+        filterContainers();
     });
     document.querySelector("#addNewContainer").addEventListener("click", (event) => {
         addContext();

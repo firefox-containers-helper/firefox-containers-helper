@@ -2,6 +2,11 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.24
+
+* adds "Override with current tab's URL" feature requested in https://github.com/cmcode-dev/firefox-containers-helper/issues/31
+* adds warning to the Preferences page about firefox sync quota limitations
+
 ## v0.0.23
 
 * more verbiage clarification in options page

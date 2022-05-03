@@ -15,6 +15,7 @@ This readme contains extensive information about the extension and it aims to bo
   - [Who is this intended for?](#who-is-this-intended-for)
   - [Features](#features)
   - [Examples and Screenshots](#examples-and-screenshots)
+    - [v0.0.24 Screenshot](#v0024-screenshot)
     - [v0.0.18 Screenshots](#v0018-screenshots)
     - [v0.0.16 Screenshots](#v0016-screenshots)
     - [v0.0.11 Examples](#v0011-examples)
@@ -73,6 +74,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
 * **Opt-in to Synchronize using Firefox Sync** - Using the updated Preferences section, you can set the Firefox Sync settings or modify the local settings by editing them as JSON.
 * **Container Import/Export** - Using the Preferences section, you can use JSON to import and export containers, and set default URLs for them. This can make your life easier if you're migrating between devices and want to carry over all of your containers, for example.
 * **Quickly Open Current Page in Other Containers** - Disabled by default - enable this in the addon settings page. You can automatically open the current page in other containers whose domains/hosts/origins match your current tab's URL's domain/host/origin. Read more in the addon settings page.
+* **Open the current tab's page in all containers** - Allows you to check a box and open the current URL in every filtered container, if you'd like.
 
 ## Examples and Screenshots
 
@@ -84,6 +86,11 @@ If any of this is confusing, remember the basics:
 * Press `ctrl` and click/enter a result to open as pinned tab(s)
   * Note that entering *Select Mode* will change the behavior of `ctrl+click` (`Cmd+Click` on Mac) to specifically select one container from the list, or multiple if `shift` is also held
 
+### v0.0.24 Screenshot
+
+In v0.0.24, the ability to open every filtered container with the current tab's URL was added:
+
+![Override with the current tab's URL](readme-assets/v0.0.24/override_with_current_tab_url.png)
 
 ### v0.0.18 Screenshots
 
@@ -346,6 +353,8 @@ This container management extension is dangerously powerful. If you're not caref
 
 **Major warning:** if you delete all the extension on your browser that leverage containers, Firefox *will* reset them all. I discovered this the hard way when releasing v0.0.11-v0.0.14 - it caused a bit of panic when I was debugging and kept seeing my containers getting blown away.
 
+**A note about Firefox Sync**: You will eventually hit a Firefox Sync quota if you have something like 100+ containers. The extension will silently (or loudly) start throwing errors and not behaving. I recommend not using Firefox Sync for this extension.
+
 ## Future Features
 
 Open to suggestions. These feature aren't guaranteed - just some thoughts.
@@ -364,7 +373,7 @@ If you have suggestions, please feel free to voice them on GitHub. Thank you for
 ## Repository source code changes
 
 * This repository used to be hosted on GitLab. For all releases before and including v0.0.10, please use the [GitLab releases page](https://gitlab.com/icode331/firefox-containers-helper), or use the [official Firefox Addons Store URL](https://addons.mozilla.org/addon/containers-helper).
-* As of 2022-01-23, this repository has moved between accounts, but is still owned by the same person. Just doing a litle cleanup.
+* As of 2022-01-23, this repository has moved between accounts, but is still owned by the same person. Just doing a little cleanup.
 
 ## Attributions
 
