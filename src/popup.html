@@ -10,6 +10,23 @@
 
 <body>
     <div class="container-fluid mt-3" id="mainDivContainer">
+        <div class="modal modal-backdrop modal-hide" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalTitle"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Modal title</h5>
+                    </div>
+                    <div class="modal-body">
+                        <span id="modalBodyText">Filler text.</span>
+                    </div>
+                    <div class="modal-footer">
+                        <!-- <button type="button" id="btnModalSecondary" class="btn btn-secondary">Close</button> -->
+                        <button type="button" id="btnModalPrimary" class="btn btn-primary">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <form id="searchContainerForm">
             <div class="form-group form-row">
                 <div class="col-12">
@@ -45,7 +62,7 @@
                         <option value="name-a">Sort by Name Ascending</option>
                         <option value="name-d">Sort by Name Descending</option>
                         <option value="url-a">Sort by URL Ascending</option>
-                        <option value="url-d">Sort by URL Ascending</option>
+                        <option value="url-d">Sort by URL Descending</option>
                     </select>
                 </div>
             </div>

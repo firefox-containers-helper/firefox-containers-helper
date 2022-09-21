@@ -2,6 +2,12 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.28
+
+* Container names no longer are limited to 25 characters. This was previously an API limitation that now seems to have been removed at some point, thank you Mozilla! As a result, the "Set Name" option now allows you to set a name longer than 25 characters. The "+" button did not have this same length check, so its behavior has not been changed.
+* Replaced all javascript "alert" calls with proper modals. This is part of an incremental effort to replace all native JS dialogs such as "confirm", "prompt" and "alert" with proper CSS-enabled modals.
+* Fix https://github.com/cmcode-dev/firefox-containers-helper/issues/40 - the Sort by URL Descending menu option is now correct.
+
 ## v0.0.27
 
 * fixes https://github.com/cmcode-dev/firefox-containers-helper/issues/33 - in some scenarios, the selected items are preserved when they should be reset. Now, the behavior has been updated to de-select all containers when a delete or duplicate action takes place.

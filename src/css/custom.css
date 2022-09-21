@@ -49,3 +49,22 @@ body {
     font-family: 'Courier New', Courier, monospace;
     text-align: center;
 }
+
+.modal-show {
+    display: block;
+    padding-right: 0px;
+}
+
+.modal-hide {
+    display: none;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1040;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.5);
+}

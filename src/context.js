@@ -64,7 +64,6 @@ const CONTEXT_COLORS = [
     "toolbar",
 ];
 
-
 /**
  * All allowable container (context) icons.
  * TODO: jsdoc this as enum?
@@ -87,7 +86,6 @@ const CONTEXT_ICONS = [
     "chill",
     "fence",
 ];
-
 
 /**
  * Random list of help messages to show in the Help Text area.
@@ -175,6 +173,14 @@ const SORT_MODE_URL_ASC = 'url-a';
 const SORT_MODE_URL_DESC = 'url-d';
 const SORT_MODE_NONE = 'none';
 const SORT_MODE_NONE_REVERSE = 'none-r';
+const MODAL_ID = "modal";
+const MODAL_BODY_TEXT_ID = "modalBodyText"
+const MODAL_TITLE_TEXT_ID = "modalTitle"
+const MODAL_CLASS_SHOW = 'modal-show'
+const MODAL_CLASS_OPEN = 'modal-open'
+const MODAL_CLASS_HIDE = 'modal-hide'
+const MODAL_BTN_SECONDARY = 'btnModalSecondary';
+const MODAL_BTN_PRIMARY = 'btnModalPrimary';
 
 /**
  * All configuration options for this web extension are stored in this object.
@@ -307,6 +313,64 @@ const config = {
      */
     openCurrentTabUrlOnMatch: "",
 };
+
+const hideAlertEvent = (event) => {
+    hideAlert();
+}
+
+const hideAlert = () => {
+    const modal = document.getElementById(MODAL_ID);
+    modal.classList.remove(MODAL_CLASS_SHOW);
+    modal.classList.add(MODAL_CLASS_HIDE);
+    const modalText = document.getElementById(MODAL_BODY_TEXT_ID);
+    modalText.innerText = '';
+    const modalTitle = document.getElementById(MODAL_TITLE_TEXT_ID);
+    modalTitle.innerText = '';
+}
+
+/**
+ * Shows a simple modal with the provided alert message. Clears out any
+ * existing event handlers for the primary & secondary input buttons.
+ *
+ * @param {string} msg The message to show in the modal. Text-only for safety.
+ * @param {string} title The message to show in the modal. Text-only for safety.
+ */
+const showAlert = (msg, title) => {
+    const txt = document.getElementById(MODAL_BODY_TEXT_ID);
+    const titleElement = document.getElementById(MODAL_TITLE_TEXT_ID);
+    const btnModalPrimary = document.getElementById(MODAL_BTN_PRIMARY);
+    // const btnModalSecondary = document.getElementById(MODAL_BTN_SECONDARY);
+    const modal = document.getElementById(MODAL_ID);
+
+    if (!txt || !titleElement || !btnModalPrimary /* || !btnModalSecondary */) {
+        console.debug('missing element by id for show alert modal');
+        return
+    }
+
+    txt.innerText = msg;
+    titleElement.innerText = title;
+
+    // TODO: these currently serve as boilerplate for future upcoming work
+    // regarding migrating confirm/prompt/alert dialogs with multiple buttons,
+    // so they will stay commented out for now
+    // btnModalSecondary.classList.remove(MODAL_CLASS_SHOW);
+    // btnModalSecondary.classList.add(MODAL_CLASS_HIDE);
+
+    // remove all existing event listeners from both primary and secondary
+    // buttons
+    // const newBtnModalSecondary = btnModalSecondary.cloneNode(true);
+    const newBtnModalPrimary = btnModalPrimary.cloneNode(true);
+
+    // btnModalSecondary.parentNode.appendChild(newBtnModalSecondary);
+    btnModalPrimary.parentNode.appendChild(newBtnModalPrimary);
+    // btnModalSecondary.parentNode.removeChild(btnModalSecondary);
+    btnModalPrimary.parentNode.removeChild(btnModalPrimary);
+
+    modal.classList.remove(MODAL_CLASS_HIDE);
+    modal.classList.add(MODAL_CLASS_SHOW, MODAL_CLASS_OPEN);
+
+    newBtnModalPrimary.addEventListener('click', hideAlertEvent);
+}
 
 /**
  * Quickly checks to see if a context is selected, via the selection mode
@@ -726,9 +790,11 @@ const deleteMultipleContainers = (contextsToDelete) => {
     });
 
     if (actualContextsToDelete.length === 0) {
-        alert(`There aren't any valid targets to delete, so there is nothing to do.`);
+        showAlert(`There aren't any valid targets to delete, so there is nothing to do.`, 'Nothing to Delete');
         return;
     }
+
+    const errors = [];
 
     if (confirm(dialogStr) && confirm(`Are you absolutely sure you want to delete ${actualContextsToDelete.length} container(s)? This is not reversible.`)) {
         // delete every context
@@ -742,11 +808,15 @@ const deleteMultipleContainers = (contextsToDelete) => {
                 },
                 (error) => {
                     if (error) {
-                        alert(`Error deleting container ${context.name}: ${error}`);
+                        errors.append(`Error deleting container ${context.name}: ${error}`);
                     }
                 }
             );
         });
+
+        if (errors.length > 0) {
+            showAlert(errors.join('\n'), 'Deletion Error(s)');
+        }
         return;
     }
 };
@@ -890,10 +960,6 @@ const openMultipleContexts = async (contextsToOpenAsContainers, openAsPinnedTab,
 const renameContexts = (contextsToRename) => {
     const userInput = prompt(`Rename ${contextsToRename.length} container(s) to:`);
     if (userInput) {
-        if (userInput.length > 25) {
-            alert('Container names must be no more than 25 characters.');
-            return;
-        }
         let updatedContexts = [];
         contextsToRename.forEach((contextToRename) => {
             browser.contextualIdentities.update(
@@ -906,7 +972,7 @@ const renameContexts = (contextsToRename) => {
                 },
                 (err) => {
                     if (err) {
-                        alert(`Failed to update containers: ${JSON.stringify(err)}`);
+                        showAlert(`Failed to update containers: ${JSON.stringify(err)}`, 'Container Rename Error');
                     }
                 }
             );
@@ -936,7 +1002,7 @@ const updateContexts = (contextsToUpdate, fieldToUpdate, valueToSet) => {
             },
             (err) => {
                 if (err) {
-                    alert(`Failed to update containers: ${JSON.stringify(err)}`);
+                    showAlert(`Failed to update containers: ${JSON.stringify(err)}`, 'Container Update Error');
                 }
             }
         );
@@ -1001,7 +1067,7 @@ const findReplaceNameInContexts = (contextsToUpdate) => {
                         },
                         (err) => {
                             if (err) {
-                                alert(`Failed to update containers: ${JSON.stringify(err)}`);
+                                showAlert(`Failed to update container(s): ${JSON.stringify(err)}`, 'Container Rename Error');
                             }
                         }
                     );
@@ -1077,7 +1143,7 @@ const duplicateContexts = (contextsToDuplicate) => {
                 },
                 (err) => {
                     if (err) {
-                        alert(`Failed to duplicate one or more containers: ${JSON.stringify(err)}`);
+                        showAlert(`Failed to duplicate one or more containers: ${JSON.stringify(err)}`, 'Duplication Error');
                     }
                 }
             );
@@ -1108,12 +1174,12 @@ const addContext = () => {
             },
             (err) => {
                 if (err) {
-                    alert(`Failed to create a container named ${containerName}: ${JSON.stringify(err)}`);
+                    showAlert(`Failed to create a container named ${containerName}: ${JSON.stringify(err)}`, 'Creation Error');
                 }
             }
         );
     } else {
-        alert("You must specify a container name in the input field.")
+        showAlert("You must specify a container name in the input field.", 'No Name Provided');
     }
 };
 
