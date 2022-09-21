@@ -4,7 +4,7 @@ This changelog contains all relevant changes between different versions of the e
 
 ## v0.0.27
 
-* fixes https://github.com/cmcode-dev/firefox-containers-helper/issues/33 - in some scenarios, the selected items are preserved when they should be reset
+* fixes https://github.com/cmcode-dev/firefox-containers-helper/issues/33 - in some scenarios, the selected items are preserved when they should be reset. Now, the behavior has been updated to de-select all containers when a delete or duplicate action takes place.
 
 ## v0.0.26
 
