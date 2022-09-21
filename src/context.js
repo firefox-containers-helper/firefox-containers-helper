@@ -841,9 +841,9 @@ const getCurrentTabOverrideUrl = (urlToOpen, currentUrl, shouldLogErr) => {
  * @param {tab} currentTab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
  * @returns {void}
  */
-const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab, currentTab) => {
+const openMultipleContexts = async (contextsToOpenAsContainers, openAsPinnedTab, currentTab) => {
     if (contextsToOpenAsContainers.length < 10 || confirm(`Are you sure you want to open ${contextsToOpenAsContainers.length} container tabs?`)) {
-        contextsToOpenAsContainers.forEach((contextToOpenAsContainer) => {
+        contextsToOpenAsContainers.forEach(async (contextToOpenAsContainer) => {
             let urlToOpen = config.containerDefaultUrls[contextToOpenAsContainer.cookieStoreId.toString() || ""];
             if (urlToOpen && !config.neverConfirmOpenNonHttpUrls && urlToOpen.indexOf(`http://`) !== 0 && urlToOpen.indexOf(`https://`) !== 0) {
                 if (!confirm(`Warning: The URL "${urlToOpen}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`)) {
@@ -866,7 +866,7 @@ const openMultipleContexts = (contextsToOpenAsContainers, openAsPinnedTab, curre
                 urlToOpen = currentTab.url;
             }
 
-            // don't even bother querying tabs if the tab url matching
+            // don't even bother querying tabs if the "tab url matching"
             // configuration option isn't set
             browser.tabs.create(
                 {
@@ -1087,21 +1087,25 @@ const duplicateContexts = (contextsToDuplicate) => {
  * @returns {void}
  */
 const addContext = () => {
-    if (config.lastQuery) {
+    // make sure not to use config.lastQuery here, because it gets trimmed/
+    // lowercased. This was a bug identified in:
+    // https://github.com/cmcode-dev/firefox-containers-helper/issues/37
+    const containerName = document.querySelector("#searchContainerInput").value;
+    if (containerName) {
         const newContext = {
             color: "toolbar",
             icon: "circle",
-            name: config.lastQuery,
+            name: containerName,
         };
         browser.contextualIdentities.create(newContext).then(
             (createdContext) => {
                 filterContainers();
-                setHelpText(`Added a container named ${config.lastQuery}`);
+                setHelpText(`Added a container named ${containerName}`);
                 resetSelectedContexts();
             },
             (err) => {
                 if (err) {
-                    alert(`Failed to create a container named ${config.lastQuery}: ${JSON.stringify(err)}`);
+                    alert(`Failed to create a container named ${containerName}: ${JSON.stringify(err)}`);
                 }
             }
         );
@@ -1132,7 +1136,7 @@ const resetSelectedContexts = () => {
  * @param {Event} event The event that called this function, such as a key press or mouse click
  * @returns {void}
  */
-const containerClickHandler = (filteredContexts, singleContext, event) => {
+const containerClickHandler = async (filteredContexts, singleContext, event) => {
     // start by processing a few options based on event data
     let ctrlModifier = false;
     let shiftModifier = false;

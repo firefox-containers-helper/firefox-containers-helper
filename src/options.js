@@ -36,7 +36,7 @@ async function resetShortcut() {
 }
 
 // This is a shameless copy of deep equality comparison from StackOverflow.
-// Disclaimer: Deep equality is impossible to completely asses. Also,
+// Disclaimer: Deep equality is impossible to completely assess. Also,
 // I've written my own deep equality implementations in JavaScript before,
 // but it's smarter and more pragmatic to crowd source, so long as
 // the code is reviewed and passes test cases.
