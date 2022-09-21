@@ -201,7 +201,7 @@ const config = {
      * @type {string}
      * @default
      */
-    sort: SORT_MODE_URL_DESC,
+    sort: SORT_MODE_NONE,
 
     /**
      * openCurrentPage will force every filtered container to open the current

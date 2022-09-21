@@ -2,6 +2,10 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.26
+
+* the default sort was set to "URL ascending"; resetting it back to the default
+
 ## v0.0.25
 
 * addresses some items from https://github.com/cmcode-dev/firefox-containers-helper/issues/37:
