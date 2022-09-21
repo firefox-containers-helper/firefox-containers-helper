@@ -15,6 +15,7 @@ This readme contains extensive information about the extension and it aims to bo
   - [Who is this intended for?](#who-is-this-intended-for)
   - [Features](#features)
   - [Examples and Screenshots](#examples-and-screenshots)
+    - [v0.0.25 Screenshot](#v0025-screenshot)
     - [v0.0.24 Screenshot](#v0024-screenshot)
     - [v0.0.18 Screenshots](#v0018-screenshots)
     - [v0.0.16 Screenshots](#v0016-screenshots)
@@ -86,6 +87,19 @@ If any of this is confusing, remember the basics:
 * Press `shift` and click/enter to act on ALL results (bulk open tab/delete container/set URL action)
 * Press `ctrl` and click/enter a result to open as pinned tab(s)
   * Note that entering *Select Mode* will change the behavior of `ctrl+click` (`Cmd+Click` on Mac) to specifically select one container from the list, or multiple if `shift` is also held
+
+### v0.0.25 Screenshot
+
+In v0.0.25, the ability to sort the currently shown list of containers has been added. The sort methods are as follows:
+
+* Sort by Container Name (asc/desc)
+* Sort by Container URL (asc/desc)
+* Default sort, and reversing the default sort
+  * Containers can be reordered in other Firefox extensions, and have their own inherent sort.
+
+**Important**: Sorting results does not actually modify the order of your containers. It just changes the order of the results shown in the extension popup.
+
+![Sort the current view](readme-assets/v0.0.25/sortable.png)
 
 ### v0.0.24 Screenshot
 
