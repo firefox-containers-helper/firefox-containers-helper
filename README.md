@@ -55,6 +55,7 @@ With [Total Cookie Protection](https://blog.mozilla.org/security/2021/02/23/tota
   * Press `enter` to open the first result in the list (or the only result, if just one result remains).
   * Simultaneously press `ctrl` and either `click` or `enter` to open the result(s) in a pinned state.
   * Combine above shortcuts with `shift` to open all filtered containers at once.
+  * Sort the list of containers shown in the extension popup by their name, default URL, or the default sort order.
 * **Set a Default URL for containers** - Any time you use this extension to open a tab, you can configure the tab to open a specific URL by default.
   * The URL settings are stored as part of the extension itself, and are independent of the Multi-Account Containers addon. It will not affect any existing settings, and will not change the behavior of which URLs are opened in which containers by default.
   * Similar to above, press `shift` to bulk-set-default URLs for the current query.
