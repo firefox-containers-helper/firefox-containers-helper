@@ -12,14 +12,6 @@ if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
 // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/contextualIdentities/ContextualIdentity
 
 /**
- * All configuration options for this web extension are stored in this object.
- * @typedef {Object} Configuration
- * @property {boolean} windowStayOpenState
- * @property {string} mode
- * @property {Object} containerDefaultUrls
- */
-
-/**
  * A contextual identity represents a container definition.
  * The following documentation was copied from the Mozilla documentation on 11/19/2020.
  * This typedef documentation uses text that is largely the property of Mozilla and is not intended to infringe on any of the licenses of MDN or Mozilla.
@@ -33,135 +25,6 @@ if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
  * @property {string} name Name of the identity. This will be shown in the URL bar for tabs belonging to this identity. Note that names don't have to be unique.
  */
 
-/**
- * All configuration options for this web extension are stored in this object.
- * @namespace
- * @property {boolean} windowStayOpenState
- * @property {string} mode
- * @property {string} lastQuery
- * @property {object} containerDefaultUrls
- */
-const config = {
-    /**
-     * windowStayOpenState is what keeps the window open while the user
-     * clicks on a container tab.
-     * @type {boolean}
-     * @default
-     */
-    windowStayOpenState: true,
-
-    /**
-     * selectionMode is what allows the user to individually click or
-     * shift+click to select ranges of containers from the list.
-     * @type {boolean}
-     * @default
-     */
-    selectionMode: false,
-
-    /**
-     * openCurrentPage will force every filtered container to open the current
-     * tab's URL.
-     * @type {boolean}
-     * @default
-     */
-    openCurrentPage: false,
-
-    /**
-     * mode is the current mode the user is operating in, such as
-     * deleteContainersOnClick or setDefaultUrlsOnClick.
-     * @type {string}
-     * @default
-     */
-    mode: "openOnClick",
-
-
-    /**
-     * lastQuery is the last thing that the user entered in the search box
-     * @type {string}
-     * @default
-     */
-    lastQuery: "",
-
-
-    /**
-     * containerDefaultUrls is a key-value pair of container ID's to
-     * default URLs to open for each container ID.
-     * @example {"container-name-01":"https://site.com"}
-     * @type {object}
-     * @default
-     */
-    containerDefaultUrls: {},
-
-    /**
-     * selectedContextIndices keeps track of every context that is selected
-     * in selection mode - this is simply an object with every key as a counter,
-     * and every value as a 1 or 0 depending on whether or not the corresponding
-     * filtered context (container) is selected
-     * @example {0: 1, 1: 1, 2: 0, 3: 1}
-     * @type {object}
-     * @default
-     */
-    selectedContextIndices: {},
-
-    /**
-     * lastSelectedContextIndex keeps track of the item that was last selected
-     * @example 3
-     * @type {number}
-     * @default
-     */
-    lastSelectedContextIndex: -1,
-
-    /**
-     * alwaysGetSync controls whether or not the settings are always loaded
-     * from Firefox sync, or from local storage (default false)
-     * @example false
-     * @type {boolean}
-     * @default
-     */
-    alwaysGetSync: false,
-
-    /**
-     * alwaysSetSync controls whether or not the settings are always pushed
-     * to Firefox sync as well to local storage (always).
-     * @example true
-     * @type {boolean}
-     * @default
-     */
-    alwaysSetSync: false,
-
-    /**
-     * neverConfirmOpenNonHttpUrls controls whether or not users get prompted
-     * to open a URL that doesn't start with http:// or https://.
-     * @example true
-     * @type {boolean}
-     * @default
-     */
-    neverConfirmOpenNonHttpUrls: false,
-
-    /**
-     * neverConfirmSaveNonHttpUrls controls whether or not users get prompted
-     * to save a URL that doesn't start with http:// or https://.
-     * @example true
-     * @type {boolean}
-     * @default
-     */
-    neverConfirmSaveNonHttpUrls: false,
-
-    /**
-     * openCurrentTabUrlOnMatch will open the current tab's URL if a container
-     * tab's default URL domain matches the current tab's URL. Can be configured
-     * to match a couple different things.
-     * See the URL() object for things that can match.
-     * @example "href"
-     * @example "origin"
-     * @example "host"
-     * @example "hostname"
-     * @example ""
-     * @type {string}
-     * @default
-     */
-    openCurrentTabUrlOnMatch: "",
-};
 
 /**
  * All functional modes.
@@ -304,6 +167,146 @@ const containerListItemUrlLabelInverted = `text-light small`;
  * @default
  */
 const CONTAINER_LIST_DIV_ID = 'container-list';
+
+// Make sure to update these in the popup.html page as well!
+const SORT_MODE_NAME_ASC = 'name-a';
+const SORT_MODE_NAME_DESC = 'name-d';
+const SORT_MODE_URL_ASC = 'url-a';
+const SORT_MODE_URL_DESC = 'url-d';
+const SORT_MODE_NONE = 'none';
+const SORT_MODE_NONE_REVERSE = 'none-r';
+
+/**
+ * All configuration options for this web extension are stored in this object.
+ */
+const config = {
+    /**
+     * windowStayOpenState is what keeps the window open while the user
+     * clicks on a container tab.
+     * @type {boolean}
+     * @default
+     */
+    windowStayOpenState: true,
+
+    /**
+     * selectionMode is what allows the user to individually click or
+     * shift+click to select ranges of containers from the list.
+     * @type {boolean}
+     * @default
+     */
+    selectionMode: false,
+
+    /**
+     * sort is what allows containers in the filtered list to be sorted.
+     * @type {string}
+     * @default
+     */
+    sort: SORT_MODE_URL_DESC,
+
+    /**
+     * openCurrentPage will force every filtered container to open the current
+     * tab's URL.
+     * @type {boolean}
+     * @default
+     */
+    openCurrentPage: false,
+
+    /**
+     * mode is the current mode the user is operating in, such as
+     * deleteContainersOnClick or setDefaultUrlsOnClick.
+     * @type {string}
+     * @default
+     */
+    mode: "openOnClick",
+
+
+    /**
+     * lastQuery is the last thing that the user entered in the search box
+     * @type {string}
+     * @default
+     */
+    lastQuery: "",
+
+
+    /**
+     * containerDefaultUrls is a key-value pair of container ID's to
+     * default URLs to open for each container ID.
+     * @example {"container-name-01":"https://site.com"}
+     * @type {object}
+     * @default
+     */
+    containerDefaultUrls: {},
+
+    /**
+     * selectedContextIndices keeps track of every context that is selected
+     * in selection mode - this is simply an object with every key as a counter,
+     * and every value as a 1 or 0 depending on whether or not the corresponding
+     * filtered context (container) is selected
+     * @example {0: 1, 1: 1, 2: 0, 3: 1}
+     * @type {object}
+     * @default
+     */
+    selectedContextIndices: {},
+
+    /**
+     * lastSelectedContextIndex keeps track of the item that was last selected
+     * @example 3
+     * @type {number}
+     * @default
+     */
+    lastSelectedContextIndex: -1,
+
+    /**
+     * alwaysGetSync controls whether or not the settings are always loaded
+     * from Firefox sync, or from local storage (default false)
+     * @example false
+     * @type {boolean}
+     * @default
+     */
+    alwaysGetSync: false,
+
+    /**
+     * alwaysSetSync controls whether or not the settings are always pushed
+     * to Firefox sync as well to local storage (always).
+     * @example true
+     * @type {boolean}
+     * @default
+     */
+    alwaysSetSync: false,
+
+    /**
+     * neverConfirmOpenNonHttpUrls controls whether or not users get prompted
+     * to open a URL that doesn't start with http:// or https://.
+     * @example true
+     * @type {boolean}
+     * @default
+     */
+    neverConfirmOpenNonHttpUrls: false,
+
+    /**
+     * neverConfirmSaveNonHttpUrls controls whether or not users get prompted
+     * to save a URL that doesn't start with http:// or https://.
+     * @example true
+     * @type {boolean}
+     * @default
+     */
+    neverConfirmSaveNonHttpUrls: false,
+
+    /**
+     * openCurrentTabUrlOnMatch will open the current tab's URL if a container
+     * tab's default URL domain matches the current tab's URL. Can be configured
+     * to match a couple different things.
+     * See the URL() object for things that can match.
+     * @example "href"
+     * @example "origin"
+     * @example "host"
+     * @example "hostname"
+     * @example ""
+     * @type {string}
+     * @default
+     */
+    openCurrentTabUrlOnMatch: "",
+};
 
 /**
  * Quickly checks to see if a context is selected, via the selection mode
@@ -1375,31 +1378,76 @@ const filterContainers = (event, actualTabUrl) => {
 
     config.lastQuery = userQuery;
 
-    // now query the contextual identities
-    const filteredResults = [];
     browser.contextualIdentities.query({}).then((contexts) => {
         browser.tabs.query({ currentWindow: true, active: true }).then((tabs) => {
             for (let tab of tabs) {
                 if (tab.active) {
                     if (Array.isArray(contexts)) {
+
+                        /** @type {ContextualIdentity} */
+                        const filteredResults = [];
+
                         const containerList = document.getElementById(CONTAINER_LIST_DIV_ID);
 
                         // prepare by clearing out the old query's HTML output
                         removeExistingContainerListGroupElement(containerList);
+
                         // now build its successor
                         const ulElement = buildContainerListGroupElement();
 
                         const lowerCaseUserQuery = userQuery.toLowerCase();
 
-                        contexts.forEach((context, i) => {
-                            const lowerCaseContextName = context.name.toLowerCase();
+                        // in order to enable sorting, we have to do multiple
+                        // passes at the contexts array.
 
-                            if (!userQuery || isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery) || checkDefaultUrlsForUserQuery(context, lowerCaseUserQuery)) {
-                                const liElement = buildContainerListItem(filteredResults, context, filteredResults.length, tab, actualTabUrl);
-                                ulElement.appendChild(liElement);
+                        // first, apply filtering directly:
+                        contexts.forEach((context) => {
+                            const lowerCaseContextName = context.name.toLowerCase();
+                            const queryNameMatch = isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery);
+                            const queryUrlMatch = checkDefaultUrlsForUserQuery(context, lowerCaseUserQuery);
+                            const emptyQuery = !userQuery;
+
+                            if (emptyQuery || queryNameMatch || queryUrlMatch) {
                                 filteredResults.push(context);
                             }
+                        })
+
+                        // second, sort according to the user-configured sort:
+                        filteredResults.sort((a, b) => {
+                            const urlA = (config.containerDefaultUrls[a.cookieStoreId.toString() || ""] || "").toLowerCase();
+                            const urlB = (config.containerDefaultUrls[b.cookieStoreId.toString() || ""] || "").toLowerCase();
+                            const nameA = a.name.toLowerCase();
+                            const nameB = b.name.toLowerCase();
+                            switch (config.sort) {
+                                case SORT_MODE_NAME_ASC:
+                                    return nameA > nameB;
+                                case SORT_MODE_NAME_DESC:
+                                    return nameA < nameB;
+                                case SORT_MODE_URL_ASC:
+                                    return urlA > urlB;
+                                case SORT_MODE_URL_DESC:
+                                    return urlA < urlB;
+                                default:
+                                    return 0;
+                            }
+                        })
+
+                        if (config.sort === SORT_MODE_NONE_REVERSE) {
+                            filteredResults.reverse();
+                        }
+
+                        // finally, propagate the sorted results to the UI:
+                        filteredResults.forEach((context, i) => {
+                            const liElement = buildContainerListItem(
+                                filteredResults,
+                                context,
+                                i,
+                                tab,
+                                actualTabUrl
+                            );
+                            ulElement.appendChild(liElement);
                         });
+
                         if (filteredResults.length === 0) {
                             const liElement = buildEmptyContainerListItem(0);
                             ulElement.append(liElement);
@@ -1462,14 +1510,17 @@ const processExtensionSettings = (data) => {
         // key, such as updating UI elements
         switch (configKey) {
             case "mode":
-                document.getElementById(`modeSelect`).value = config[configKey];
+                document.getElementById('modeSelect').value = config[configKey];
+                break;
+            case "sort":
+                document.getElementById('sortModeSelect').value = config[configKey];
                 break;
             case "windowStayOpenState":
-                document.getElementById(`windowStayOpenState`).checked = config[configKey];
+                document.getElementById('windowStayOpenState').checked = config[configKey];
             case "selectionMode":
-                document.getElementById(`selectionMode`).checked = config[configKey];
+                document.getElementById('selectionMode').checked = config[configKey];
             case "openCurrentPage":
-                document.getElementById(`openCurrentPage`).checked = config[configKey];
+                document.getElementById('openCurrentPage').checked = config[configKey];
             case "containerDefaultUrls":
                 // do nothing at this time, because there are no special
                 // UI elements to update
@@ -1533,6 +1584,22 @@ const setMode = (newMode) => {
     }
 
     showModeHelpMessage();
+};
+
+/**
+ * When the user changes the current sort mode, this function sets the stored
+ * configuration value accordingly.
+ * @param {string} newSort The mode to set.
+ * @returns {void}
+ */
+const setSortMode = (newSort) => {
+    config.sort = newSort;
+
+    // push to storage
+    browser.storage.local.set({ sort: config.sort });
+    if (config.alwaysSetSync === true) {
+        browser.storage.sync.set({ sort: config.sort });
+    }
 };
 
 /**
@@ -1605,6 +1672,13 @@ const initializeDocument = (event) => {
 
     document.querySelector("#modeSelect").addEventListener("change", (event) => {
         setMode(event.target.value);
+        event.preventDefault();
+    });
+
+    document.querySelector("#sortModeSelect").addEventListener("change", (event) => {
+        setSortMode(event.target.value);
+        resetSelectedContexts();
+        filterContainers();
         event.preventDefault();
     });
 }

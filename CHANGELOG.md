@@ -2,6 +2,14 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.25
+
+* addresses some items from https://github.com/cmcode-dev/firefox-containers-helper/issues/37:
+  * fixes issue with containers that are added via the `+` button having lowercase names
+  * adds "soft" sorting by website asc/desc, container name asc/desc, or default unsorted/reverse
+    * this does not actually change the sorting of your containers within Firefox; there is no API method that allows this that I'm aware of (see discussion in https://github.com/cmcode-dev/firefox-containers-helper/issues/37#issuecomment-1232317252)
+* minor code fixes/cleanup
+
 ## v0.0.24
 
 * adds "Override with current tab's URL" feature requested in https://github.com/cmcode-dev/firefox-containers-helper/issues/31
