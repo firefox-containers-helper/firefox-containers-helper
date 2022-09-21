@@ -37,6 +37,7 @@
 
 body {
     min-width: 330px;
+    height: 600px;
 }
 
 #container-list {
