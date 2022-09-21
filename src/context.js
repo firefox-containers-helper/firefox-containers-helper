@@ -1245,6 +1245,7 @@ const containerClickHandler = async (filteredContexts, singleContext, event) => 
                         break;
                     case MODES.DELETE:
                         deleteMultipleContainers(contextsToActOn);
+                        resetSelectedContexts();
                         break;
                     case MODES.SET_URL:
                         setMultipleDefaultUrlsWithPrompt(contextsToActOn);
@@ -1263,6 +1264,7 @@ const containerClickHandler = async (filteredContexts, singleContext, event) => 
                         break;
                     case MODES.DUPLICATE:
                         duplicateContexts(contextsToActOn);
+                        resetSelectedContexts();
                         break;
                     case MODES.OPEN:
                         // the following code exists because in sticky popup mode,
