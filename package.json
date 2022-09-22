@@ -1,0 +1,26 @@
+{
+  "name": "firefox-containers-helper",
+  "version": "0.0.29",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmcode-dev/firefox-containers-helper.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cmcode-dev/firefox-containers-helper/issues"
+  },
+  "homepage": "https://github.com/cmcode-dev/firefox-containers-helper#readme",
+  "devDependencies": {
+    "@types/firefox-webext-browser": "^94.0.1",
+    "typescript": "^4.8.3"
+  }
+}

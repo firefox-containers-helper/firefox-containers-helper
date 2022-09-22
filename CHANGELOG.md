@@ -2,6 +2,10 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.0.29
+
+
+
 ## v0.0.28
 
 * Container names no longer are limited to 25 characters. This was previously an API limitation that now seems to have been removed at some point, thank you Mozilla! As a result, the "Set Name" option now allows you to set a name longer than 25 characters. The "+" button did not have this same length check, so its behavior has not been changed.

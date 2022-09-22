@@ -50,6 +50,14 @@ body {
     text-align: center;
 }
 
+.element-show {
+    display: block;
+}
+
+.element-hide {
+    display: none;
+}
+
 .modal-show {
     display: block;
     padding-right: 0px;

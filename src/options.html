@@ -8,6 +8,41 @@
 </head>
 
 <body style="min-height: 500px;">
+    <div class="modal modal-backdrop modal-hide" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" id="modalAlertContent">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAlertTitle">Alert</h5>
+                </div>
+                <div class="modal-body"><span id="modalAlertText"></span></div>
+                <div class="modal-footer">
+                    <button type="button" id="btnModalAlertOK" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+            <div class="modal-content" id="modalConfirmContent">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalConfirmTitle">Confirm?</h5>
+                </div>
+                <div class="modal-body"><span id="modalConfirmText"></span></div>
+                <div class="modal-footer">
+                    <button type="button" id="btnModalConfirmCancel" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="btnModalConfirmSecondary" class="btn btn-secondary">No</button>
+                    <button type="button" id="btnModalConfirmPrimary" class="btn btn-primary">Yes</button>
+                </div>
+            </div>
+            <div class="modal-content" id="modalPromptContent">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPromptTitle">Prompt</h5>
+                </div>
+                <div class="modal-body" id="modalPromptBody"></div>
+                <div class="modal-footer">
+                    <button type="button" id="btnModalPromptCancel" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="btnModalPromptOK" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="container-fluid my-3">
         <div class="row">
             <div class="col">
