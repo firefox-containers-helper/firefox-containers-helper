@@ -2,4 +2,10 @@
 
 rm -rf dist/
 
-mkdir dist/
+npm run-script build
+
+# mkdir dist/
+
+# tsc
+
+# cp -a src/{css,icons,LICENSE,manifest.json,*.html} dist/

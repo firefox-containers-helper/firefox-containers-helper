@@ -123,15 +123,17 @@ const setModalPromptTitle = (txt: string) => {
  * parent's children. Note that the order of elements may not be fully
  * preserved, so be careful.
  */
-const replaceElement = (el: HTMLElement | null) => {
-    if (!el || !el.parentElement) return;
+const replaceElement = (el: HTMLElement | null): HTMLElement | null => {
+    if (!el || !el.parentElement) return null;
 
     const nEl = el.cloneNode(true);
 
     el.parentElement.appendChild(nEl);
     el.parentElement.removeChild(el);
 
-    return nEl;
+    const elem = document.getElementById(el.id);
+
+    return elem;
 }
 
 /**
@@ -144,9 +146,9 @@ const replaceElement = (el: HTMLElement | null) => {
  * @param id The DOM ID corresponding to the element to be replaced.
  * @return {HTMLElement} The newly cloned element.
  */
-const replaceElementById = (id: string) => {
+const replaceElementById = (id: string): HTMLElement | null => {
     const el = document.getElementById(id);
-    if (!el) return;
+    if (!el) return null;
 
     return replaceElement(el);
 }
@@ -253,17 +255,13 @@ const setModalType = (type: string) => {
  * Alert modal only. If changing this code, please preserve the order in which
  * the buttons are replaced via `replaceElement`.
  *
- * @param primary The callback to fire when clicking the primary button
- * @param secondary The callback to fire when clicking the secondary button
- * @param cancel The callback to fire when clicking the cancel button
- * @return {HTMLElement[]} OK button HTML element as a single-valued array
+ * @param ok The callback to fire when clicking the OK button.
  */
-const setModalAlertCallback = (ok: any) => {
-    const okBtn = replaceElement(getModalBtnAlertOK());
-    if (okBtn) {
-        okBtn.addEventListener('click', ok);
-    }
+const setModalAlertCallback = (ok: () => void): (HTMLElement | null)[] => {
+    const okBtn = replaceModalBtnAlertOK();
+    if (!okBtn) return [null];
 
+    okBtn.addEventListener('click', ok);
     return [okBtn];
 }
 
@@ -275,9 +273,10 @@ const setModalAlertCallback = (ok: any) => {
  * @param primary The callback to fire when clicking the primary button
  * @param secondary The callback to fire when clicking the secondary button
  * @param cancel The callback to fire when clicking the cancel button
- * @return {HTMLElement[]} Primary, secondary, and cancel button HTML elements
+ * @return Nullable Primary, secondary, and cancel button HTML elements inside
+ * an array
  */
-const setModalConfirmCallbacks = (primary: any, secondary: any, cancel: any) => {
+const setModalConfirmCallbacks = (primary: () => void, secondary: () => void, cancel: () => void): (HTMLElement | null)[] => {
     const cancelBtn = replaceElement(getModalBtnConfirmCancel());
     if (cancelBtn) {
         cancelBtn.addEventListener('click', cancel);
@@ -301,9 +300,9 @@ const setModalConfirmCallbacks = (primary: any, secondary: any, cancel: any) => 
  *
  * @param ok The callback to fire when clicking the primary button
  * @param cancel The callback to fire when clicking the cancel button
- * @return {HTMLElement[]} OK and Cancel button HTML elements
+ * @return Nullable OK and Cancel button HTML elements in an array
  */
-const setModalPromptCallbacks = (ok: any, cancel: any) => {
+const setModalPromptCallbacks = (ok: () => void, cancel: () => void): (HTMLElement | null)[] => {
     const cancelBtn = replaceElement(getModalBtnPromptCancel());
     if (cancelBtn) {
         cancelBtn.addEventListener('click', cancel);
@@ -316,80 +315,18 @@ const setModalPromptCallbacks = (ok: any, cancel: any) => {
     return [okBtn, cancelBtn];
 }
 
-// --
-
-// /**
-//  * Completely resets the content of the modal, which means
-//  * that the alert, confirm, and prompt contents will be
-//  * reset and hidden, in addition to the modal itself.
-//  */
-// const resetModal = () => {
-//     const alertContent = getModalAlertContent();
-//     const confirmContent = getModalConfirmContent();
-//     const promptContent = getModalPromptContent();
-//     hideElement(alertContent);
-//     hideElement(confirmContent);
-//     hideElement(promptContent);
-// }
-
-// export const hideAlertEvent = (event) => {
-//     hideAlert();
-// }
-
-// export const hideAlert = () => {
-//     const modal = document.getElementById(MODAL_ID);
-//     modal.classList.remove(MODAL_CLASS_SHOW);
-//     modal.classList.add(MODAL_CLASS_HIDE);
-//     const modalText = document.getElementById(MODAL_BODY_TEXT_ID);
-//     modalText.innerText = '';
-//     const modalTitle = document.getElementById(MODAL_TITLE_TEXT_ID);
-//     modalTitle.innerText = '';
-// }
-
-// export const hideAllModalContent = () => {
-//     hideElement(document.getElementById(MODAL_ALERT_CONTENT));
-//     hideElement(document.getElementById(MODAL_CONFIRM_CONTENT));
-//     hideElement(document.getElementById(MODAL_PROMPT_CONTENT));
-// }
 
 /**
  * Shows a simple modal with the provided alert message. Clears out any
  * existing event handlers for the primary & secondary input buttons.
  *
- * @param {string} msg The message to show in the modal. Text-only for safety.
- * @param {string} title The message to show in the modal. Text-only for safety.
+ * @param msg The message to show in the modal. Text-only for safety.
+ * @param title The message to show in the modal. Text-only for safety.
  */
-export const showAlert = (msg: any, title: any) => {
+export const showAlert = (msg: string, title: string) => {
     setModalType(MODAL_TYPE_ALERT);
-    setModalAlertCallback(hideElement);
+    setModalAlertCallback(hideModal);
     setModalAlertText(msg);
     setModalAlertTitle(title);
     showModal();
-
-    // const txt = document.getElementById(MODAL_BODY_TEXT_ID);
-    // const titleElement = document.getElementById(MODAL_TITLE_TEXT_ID);
-    // const btnModalAlertOK = document.getElementById(MODAL_BTN_PRIMARY);
-    // const modal = document.getElementById(MODAL_ID);
-
-    // if (!txt || !titleElement || !btnModalAlertOK) {
-    //     console.debug('missing element by id for show alert modal');
-    //     return
-    // }
-
-    // hideAllModalContent();
-
-    // txt.innerText = msg;
-    // titleElement.innerText = title;
-
-    // // remove all existing event listeners from both primary and secondary
-    // // buttons
-    // const newBtnModalAlertOK = btnModalAlertOK.cloneNode(true);
-    // btnModalAlertOK.parentNode.appendChild(newBtnModalAlertOK);
-    // btnModalAlertOK.parentNode.removeChild(btnModalAlertOK);
-
-    // hideModal();
-
-    // newBtnModalAlertOK.addEventListener('click', hideAlertEvent);
-
-    // showElement(document.getElementById(MODAL_ALERT_CONTENT));
 }

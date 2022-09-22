@@ -1,6 +1,6 @@
 {
     "$schema": "https://json.schemastore.org/tsconfig",
-    "display": "Node 18",
+    "display": "Custom for Browser Extension",
     "include": [
         "src/*"
     ],
@@ -13,6 +13,7 @@
         "outDir": "./dist",
         "module": "commonjs",
         "target": "es2022",
+        "noEmit": false,
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,

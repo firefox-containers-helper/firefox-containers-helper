@@ -54,13 +54,19 @@
         <div class="row">
             <div class="col-12">
                 <h4>
-                    A warning about Firefox Sync
+                    Do not delete this extension without Firefox Sync or manual export!
                 </h4>
                 <p>
-                    Firefox Sync is a great utility, but there is a limit on the amount of data that this extension can
-                    store when using Firefox Sync. <b>It is recommended to not use Firefox Sync if you store more than
-                        100 containers.</b> Otherwise, the extension may silently fail or have other erroneous behavior,
-                    once it hits the storage limit. You can export and import containers below.
+                    Firefox Sync is a great utility, but <a
+                        href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/storage/sync#storage_quotas_for_sync_data"
+                        target="_blank" rel="noopener noreferer">
+                        there is a limit on the amount of data that this extension can
+                        store when using Firefox Sync</a>.
+                    <b>It is recommended to not use Firefox Sync if you store
+                        more than 100 containers.</b> Otherwise, the extension may silently fail or have other erroneous
+                    behavior once it hits the storage limit. However, if you <i>don't</i> push this extension's settings
+                    to Firefox Sync, and then remove the extension, all settings will probably be removed. To mitigate
+                    this, you can export and import containers below.
                 </p>
             </div>
         </div>

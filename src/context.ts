@@ -444,10 +444,20 @@ const focusSearchBox = () => {
 /**
  * Persists container default URL configuration data to extension storage.
  */
-const writeContainerDefaultUrlsToStorage = () => {
-    browser.storage.local.set({ "containerDefaultUrls": config.containerDefaultUrls });
-    if (config.alwaysSetSync === true) {
-        browser.storage.sync.set({ "containerDefaultUrls": config.containerDefaultUrls });
+const writeContainerDefaultUrlsToStorage = async () => {
+    try {
+        await browser.storage.local.set({ "containerDefaultUrls": config.containerDefaultUrls });
+
+        if (config.alwaysSetSync === true) {
+            await browser.storage.sync.set({ "containerDefaultUrls": config.containerDefaultUrls });
+        }
+    } catch (err) {
+        if (err) {
+            showAlert(`Error saving container URLs: ${JSON.stringify(err)}`, 'Save Error');
+            return;
+        }
+        showAlert(`An unknown error occurred when saving container URLs.`, 'Save Error');
+        return;
     }
 }
 
@@ -554,7 +564,7 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
 };
 
 /** Associates a default URL to each container. */
-const setMultipleDefaultUrls = (contexts: browser.contextualIdentities.ContextualIdentity[], url: string) => {
+const setMultipleDefaultUrls = async (contexts: browser.contextualIdentities.ContextualIdentity[], url: string) => {
     if (!url) {
         showAlert('Please provide a non-empty URL, or type "none" without quotes to clear URL values.', 'Invalid Input');
         return;
@@ -579,18 +589,18 @@ const setMultipleDefaultUrls = (contexts: browser.contextualIdentities.Contextua
         config.containerDefaultUrls[context.cookieStoreId.toString()] = url;
     }
 
-    writeContainerDefaultUrlsToStorage();
+    await writeContainerDefaultUrlsToStorage();
 }
 
 /**
  * Requests a default URL from the user, and assigns that URL to every given container.
  */
-const setMultipleDefaultUrlsWithPrompt = (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const setMultipleDefaultUrlsWithPrompt = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const question = `What should the default URL be for ${contexts.length} container(s)?\n\nType "none" (without quotes) to clear the saved default URL value(s).`;
     const url = prompt(question);
 
     if (url) {
-        setMultipleDefaultUrls(contexts, url);
+        await setMultipleDefaultUrls(contexts, url);
     }
 };
 
@@ -600,7 +610,11 @@ const setMultipleDefaultUrlsWithPrompt = (contexts: browser.contextualIdentities
  * @param pinned Whether or not to open as a pinned tab.
  * @param tab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
  */
-const openMultipleContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[], pinned: boolean, tab: browser.tabs.Tab) => {
+const openMultipleContexts = async (
+    contexts: browser.contextualIdentities.ContextualIdentity[],
+    pinned: boolean,
+    tab: browser.tabs.Tab,
+) => {
     const question = `Are you sure you want to open ${contexts.length} container tabs?`;
     const isMany = contexts.length >= 10;
 
@@ -613,21 +627,23 @@ const openMultipleContexts = async (contexts: browser.contextualIdentities.Conte
 
     // iterate through the list to check if there is at least one URL that
     // uses a non-HTTP protocol
+    // for (const context of contexts) {
+    //     let url = config.containerDefaultUrls[context.cookieStoreId];
+
+    //     const noHTTPS = url.indexOf(`https://`) !== 0;
+    //     const noHTTP = url.indexOf(`http://`) !== 0;
+
+    //     if (requireHTTP && noHTTPS && noHTTP) {
+    //         const q = `Warning: The URL "${url}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`;
+    //         if (!confirm(q)) return;
+    //         break; // only need to prompt the user once
+    //     }
+    // }
+
+    let shouldPrompt = true;
+
     for (const context of contexts) {
-        let url = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
-
-        const noHTTPS = url.indexOf(`https://`) !== 0;
-        const noHTTP = url.indexOf(`http://`) !== 0;
-
-        if (requireHTTP && noHTTPS && noHTTP) {
-            const q = `Warning: The URL "${url}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`;
-            if (!confirm(q)) return;
-            break; // only need to prompt the user once
-        }
-    }
-
-    for (const context of contexts) {
-        let url = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
+        let url = config.containerDefaultUrls[context.cookieStoreId] || "";
 
         // requested in
         // https://github.com/cmcode-dev/firefox-containers-helper/issues/29
@@ -649,19 +665,33 @@ const openMultipleContexts = async (contexts: browser.contextualIdentities.Conte
         const newTab: Partial<browser.tabs.Tab> = {
             "cookieStoreId": context.cookieStoreId,
             "pinned": pinned,
-            "url": url,
         };
 
         try {
+            const empty = url === "";
+            const noHTTPS = url.indexOf(`https://`) !== 0;
+            const noHTTP = url.indexOf(`http://`) !== 0;
+
+            if (shouldPrompt && !empty && requireHTTP && noHTTPS && noHTTP) {
+                const q = `Warning: The URL "${url}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`;
+                if (!confirm(q)) return;
+                // only need to prompt the user once
+                shouldPrompt = false;
+            }
+
+            if (!empty) {
+                newTab.url = url;
+            }
+
             await browser.tabs.create(newTab);
         } catch (err) {
             if (err) {
                 // TODO: localization refactor
-                showAlert(`Failed to open container ${context.name} with URL ${url}: ${JSON.stringify(err)}`, 'Error Opening Tab');
+                showAlert(`Failed to open container '${context.name}' with URL ${url}: ${JSON.stringify(err)}`, 'Error Opening Tab');
                 return;
             }
             // TODO: localization refactor
-            showAlert(`Failed to open container ${context.name} with URL ${url} due to an unknown error.`, 'Error Opening Tab');
+            showAlert(`Failed to open container '${context.name}' with URL ${url} due to an unknown error.`, 'Error Opening Tab');
             return;
         }
     }
@@ -730,11 +760,12 @@ const updateContexts = async (contexts: browser.contextualIdentities.ContextualI
 };
 
 /** Sets the color of one or more contexts simultaneously. */
-const setColorForContexts = (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const setColorForContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const msg = `Choose a color for ${contexts.length} containers from the following list:\n\n${CONTEXT_COLORS.join("\n")}`;
     const color = prompt(msg);
     if (!color) {
-        showAlert('Please provide a non-empty, valid color value.', 'Invalid Color');
+        // TODO: !color is indistinguishable from the user pressing "cancel" at prompt
+        // showAlert('Please provide a non-empty, valid color value.', 'Invalid Color');
         return;
     }
 
@@ -743,16 +774,17 @@ const setColorForContexts = (contexts: browser.contextualIdentities.ContextualId
         return;
     }
 
-    updateContexts(contexts, "color", color);
+    await updateContexts(contexts, "color", color);
 };
 
 /** Sets the icon of one or more contexts simultaneously. */
-const setIconForContexts = (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const setIconForContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const msg = `Choose an icon for ${contexts.length} containers from the following list:\n\n${CONTEXT_ICONS.join("\n")}`;
     const icon = prompt(msg);
 
     if (!icon) {
-        showAlert('Please provide a non-empty, valid icon value.', 'Invalid Icon');
+        // TODO: !icon is indistinguishable from the user pressing "cancel" at prompt
+        // showAlert('Please provide a non-empty, valid icon value.', 'Invalid Icon');
         return;
     }
 
@@ -761,7 +793,7 @@ const setIconForContexts = (contexts: browser.contextualIdentities.ContextualIde
         return;
     }
 
-    updateContexts(contexts, "icon", icon);
+    await updateContexts(contexts, "icon", icon);
 };
 
 /**
@@ -770,41 +802,52 @@ const setIconForContexts = (contexts: browser.contextualIdentities.ContextualIde
  * @param fieldToUpdate The field to set for the context(s)
  * @param valueToSet The value to assign to the context(s)' `fieldToUpdate` property
  */
-const findReplaceNameInContexts = (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const findStr = prompt(`(1/3) What case-sensitive string in ${contexts.length} container name(s) would you like to search for?`);
     if (!findStr) return;
-    const replaceStr = prompt("(2/3) What string would you like to replace it with?");
-    if (findStr && replaceStr !== null) {
-        const userConfirm = confirm(`(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container(s)?`);
-        if (userConfirm) {
-            let updatedContexts = [];
-            setHelpText(`Updated ${updatedContexts.length} containers`); // in case the operation fails
-            contexts.forEach((contextToUpdate) => {
-                // if we want to add case-insensitivity back later, uncomment this
-                // const lowerContextName = contextToUpdate.name.toLowerCase();
-                // if (lowerContextName.indexOf(findStr) !== -1) {
-                if (contextToUpdate.name.indexOf(findStr) !== -1) {
-                    const newNameStr = contextToUpdate.name.replaceAll(findStr, replaceStr);
-                    browser.contextualIdentities.update(
-                        contextToUpdate.cookieStoreId,
-                        { "name": newNameStr }
-                    ).then(
-                        (updatedContext) => {
-                            updatedContexts.push(updatedContext);
-                            setHelpText(`Updated ${updatedContexts.length} containers`);
-                        },
-                        (err) => {
-                            if (err) {
-                                showAlert(`Failed to update container(s): ${JSON.stringify(err)}`, 'Container Rename Error');
-                            }
-                        }
-                    );
-                }
-            });
-        }
-    }
-};
 
+    const replaceStr = prompt("(2/3) What string would you like to replace it with?");
+
+    if (!findStr || replaceStr === null) return;
+
+    const userConfirm = confirm(`(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container(s)?`);
+
+    if (!userConfirm) return;
+
+    const updated = [];
+
+    setHelpText(`Updated ${updated.length} containers`); // in case the operation fails
+
+    try {
+        for (const context of contexts) {
+            // if we want to add case-insensitivity back later, uncomment this
+            // const lowerContextName = contextToUpdate.name.toLowerCase();
+            // if (lowerContextName.indexOf(findStr) !== -1) {
+            // }
+
+            if (context.name.indexOf(findStr) === -1) continue;
+
+            const rename = context.name.replaceAll(findStr, replaceStr);
+
+            const update = await browser.contextualIdentities.update(
+                context.cookieStoreId,
+                { "name": rename }
+            );
+
+            updated.push(update);
+
+            setHelpText(`Updated ${updated.length} containers`);
+        };
+    } catch (err) {
+        if (err) {
+            showAlert(`Failed to rename container(s): ${JSON.stringify(err)}`, 'Rename Error');
+            return;
+        }
+
+        showAlert(`Failed to rename container(s) due to an unknown error.`, 'Rename Error');
+        return;
+    }
+}
 
 /**
  * Executes a find & replace against either a container name or predefined URL.
@@ -813,35 +856,55 @@ const findReplaceNameInContexts = (contexts: browser.contextualIdentities.Contex
 const findReplaceUrlInContexts = (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const findStr = prompt(`(1/3) What case-insensitive string in ${contexts.length} container default URL(s) would you like to search for?`);
     if (!findStr) return;
+
     const replaceStr = prompt("(2/3) What string would you like to replace it with?");
-    if (findStr && replaceStr !== null) {
-        const userConfirm = confirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container(s)?`);
-        if (userConfirm) {
-            let updatedContexts = [];
-            setHelpText(`Updated ${updatedContexts.length} containers`);
-            contexts.forEach((contextToUpdate) => {
-                // retrieve the lowercase URL for the container by first
-                // retrieving its unique ID
-                const contextId = contextToUpdate.cookieStoreId;
-                const defaultUrlForContext = config.containerDefaultUrls[contextId];
-                // check if there is actually a default URL set for this container
-                if (defaultUrlForContext) {
-                    // there is a default URL, so proceed to find, replace &
-                    // update it
-                    const lowerContextUrl = defaultUrlForContext.toLowerCase();
-                    if (lowerContextUrl.indexOf(findStr) !== -1) {
-                        const newUrlStr = lowerContextUrl.replaceAll(findStr, replaceStr);
-                        config.containerDefaultUrls[contextId] = newUrlStr;
-                        updatedContexts.push(contextToUpdate);
-                    }
+    if (!findStr || replaceStr === null) return;
+
+    const userConfirm = confirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container(s)?`);
+
+    if (!userConfirm) return;
+
+    const updated = [];
+
+    setHelpText(`Updated ${updated.length} containers`); // in case the operation fails
+
+    try {
+        for (const context of contexts) {
+            // retrieve the lowercase URL for the container by first
+            // retrieving its unique ID
+            const contextId = context.cookieStoreId;
+
+            const defaultUrlForContext = config.containerDefaultUrls[contextId];
+
+            // check if there is actually a default URL set for this container
+            if (defaultUrlForContext) {
+                // there is a default URL, so proceed to find, replace &
+                // update it
+                const lowered = defaultUrlForContext.toLowerCase();
+
+                if (lowered.indexOf(findStr) !== -1) {
+                    const newUrlStr = lowered.replaceAll(findStr, replaceStr);
+
+                    config.containerDefaultUrls[contextId] = newUrlStr;
+
+                    updated.push(context);
                 }
-            });
-            // only update storage if needed
-            if (updatedContexts.length > 0) {
-                writeContainerDefaultUrlsToStorage();
-                setHelpText(`Updated ${updatedContexts.length} containers`);
             }
         }
+
+        // only update storage if needed
+        if (updated.length > 0) {
+            writeContainerDefaultUrlsToStorage();
+            setHelpText(`Updated ${updated.length} containers`);
+        }
+    } catch (err) {
+        if (err) {
+            showAlert(`Failed to rename container URL(s): ${JSON.stringify(err)}`, 'Rename Error');
+            return;
+        }
+
+        showAlert(`Failed to rename container URL(s) due to an unknown error.`, 'Rename Error');
+        return;
     }
 };
 
@@ -1035,94 +1098,139 @@ const containerClickHandler = async (
         return;
     }
 
-    let contextsToActOn: browser.contextualIdentities.ContextualIdentity[] = [];
+    let contexts: browser.contextualIdentities.ContextualIdentity[] = [];
     if (isAnyContextSelected()) {
         const keys = Object.keys(config.selectedContextIndices);
         for (let i = 0; i < keys.length; i++) {
             if (config.selectedContextIndices[i] === 1) {
-                contextsToActOn.push(filteredContexts[i]);
+                contexts.push(filteredContexts[i]);
             }
         }
     } else {
         // determine how many containers to modify
         if (shiftModifier) {
             filteredContexts.forEach((filteredContext) => {
-                contextsToActOn.push(filteredContext);
+                contexts.push(filteredContext);
             });
         } else {
             if (singleContext) {
-                contextsToActOn.push(singleContext);
+                contexts.push(singleContext);
             } else {
-                contextsToActOn.push(filteredContexts[0]);
+                contexts.push(filteredContexts[0]);
             }
         }
     }
 
-    browser.tabs.query({ currentWindow: true, active: true }).then((tabs) => {
-        for (let tab of tabs) {
-            if (tab.active) {
-                let navigatedUrl = '';
-                // decision tree
-                switch (config.mode) {
-                    case MODES.SET_NAME:
-                        renameContexts(contextsToActOn);
-                        break;
-                    case MODES.DELETE:
-                        deleteMultipleContainers(contextsToActOn);
-                        resetSelectedContexts();
-                        break;
-                    case MODES.SET_URL:
-                        setMultipleDefaultUrlsWithPrompt(contextsToActOn);
-                        break;
-                    case MODES.SET_COLOR:
-                        setColorForContexts(contextsToActOn);
-                        break;
-                    case MODES.SET_ICON:
-                        setIconForContexts(contextsToActOn);
-                        break;
-                    case MODES.REPLACE_IN_NAME:
-                        findReplaceNameInContexts(contextsToActOn);
-                        break;
-                    case MODES.REPLACE_IN_URL:
-                        findReplaceUrlInContexts(contextsToActOn);
-                        break;
-                    case MODES.DUPLICATE:
-                        duplicateContexts(contextsToActOn);
-                        resetSelectedContexts();
-                        break;
-                    case MODES.OPEN:
-                        // the following code exists because in sticky popup mode,
-                        // the current tab url changes to blank at first, and
-                        // filterContainers() will not show the URL overrides.
-                        // So we have to look at the last container in the array
-                        // and force filterContainers() to treat that URL as the
-                        // active tab URL
-                        if (contextsToActOn.length && contextsToActOn[contextsToActOn.length - 1]?.cookieStoreId) {
-                            navigatedUrl = config.containerDefaultUrls[contextsToActOn[contextsToActOn.length - 1].cookieStoreId.toString() || ""];
-                            // TODO: this is refactorable logic copy/pasted from openMultipleContexts
-                            if (config.openCurrentTabUrlOnMatch) {
-                                const overriddenUrlToOpen = getCurrentTabOverrideUrl(navigatedUrl, tab.url || "", config.openCurrentTabUrlOnMatch);
-                                if (overriddenUrlToOpen) {
-                                    navigatedUrl = overriddenUrlToOpen;
-                                }
-                            }
-                            // override the URL if the user has elected to open the current page
-                            // for all filtered tabs
-                            if (config.openCurrentPage) {
-                                navigatedUrl = tab.url || "";
-                            }
-                        }
-                        openMultipleContexts(contextsToActOn, ctrlModifier, tab);
-                        break;
-                    default:
-                        break;
-                }
-                actionCompletedHandler(navigatedUrl);
-                break;
-            }
-        }
-    });
+    try {
 
+        const tabs = await browser.tabs.query({ currentWindow: true, active: true });
+        for (const tab of tabs) {
+            if (!tab.active) continue;
+
+            let navigatedUrl = '';
+
+            // decision tree
+            switch (config.mode) {
+                case MODES.SET_NAME:
+                    await renameContexts(contexts);
+                    break;
+                case MODES.DELETE:
+                    await deleteMultipleContainers(contexts);
+                    resetSelectedContexts();
+                    break;
+                case MODES.SET_URL:
+                    await setMultipleDefaultUrlsWithPrompt(contexts);
+                    break;
+                case MODES.SET_COLOR:
+                    await setColorForContexts(contexts);
+                    break;
+                case MODES.SET_ICON:
+                    await setIconForContexts(contexts);
+                    break;
+                case MODES.REPLACE_IN_NAME:
+                    await findReplaceNameInContexts(contexts);
+                    break;
+                case MODES.REPLACE_IN_URL:
+                    await findReplaceUrlInContexts(contexts);
+                    break;
+                case MODES.DUPLICATE:
+                    await duplicateContexts(contexts);
+                    resetSelectedContexts();
+                    break;
+                case MODES.OPEN:
+                    // the following code exists because in sticky popup mode,
+                    // the current tab url changes to blank at first, and
+                    // filterContainers() will not show the URL overrides.
+                    // So we have to look at the last container in the array
+                    // and force filterContainers() to treat that URL as the
+                    // active tab URL
+                    if (!contexts.length) {
+                        showAlert('There are no containers to open.', 'Warning');
+                        actionCompletedHandler(navigatedUrl);
+                        return;
+                    }
+
+                    // validate that each container has some sensible validity
+                    for (const context of contexts) {
+                        if (!context?.cookieStoreId) {
+                            showAlert(`A container you attempted to open has an invalid configuration: ${JSON.stringify(context)}`, 'Cannot Open Container');
+                            actionCompletedHandler(navigatedUrl);
+                            return;
+                        }
+                    }
+
+                    const last = contexts[contexts.length - 1];
+
+                    // the last container opened will be used as the last URL;
+                    // this will be passed into the actionCompletedHandler. I had
+                    // to choose something to put here, and the last URL makes the
+                    // most sense.
+                    navigatedUrl = config.containerDefaultUrls[last.cookieStoreId];
+
+                    // TODO: this is refactorable logic copy/pasted from openMultipleContexts
+                    if (config.openCurrentTabUrlOnMatch && tab.url) {
+                        const overriddenUrlToOpen = getCurrentTabOverrideUrl(
+                            navigatedUrl,
+                            tab.url,
+                            config.openCurrentTabUrlOnMatch,
+                        );
+
+                        if (overriddenUrlToOpen) {
+                            navigatedUrl = overriddenUrlToOpen;
+                        }
+                    }
+
+                    // override the URL if the user has elected to open the current page
+                    // for all filtered tabs
+                    if (config.openCurrentPage && tab.url) {
+                        navigatedUrl = tab.url;
+                    }
+
+                    await openMultipleContexts(contexts, ctrlModifier, tab);
+                    break;
+                default:
+                    break;
+            }
+            actionCompletedHandler(navigatedUrl);
+            break;
+        }
+    } catch (err) {
+        if (err) {
+            // TODO: localization refactor
+            showAlert(
+                `Failed to execute on one or more containers: ${JSON.stringify(err)}`,
+                'Execution Error',
+            )
+            return;
+        }
+
+        // TODO: localization refactor
+        showAlert(
+            `Failed to execute on one or more containers due to an unknown error.`,
+            'Execution Error',
+        )
+        return;
+    }
 };
 
 /**
@@ -1131,14 +1239,12 @@ const containerClickHandler = async (
  * @param containerListElement The empty (by default, before population) `<div>` on the `popup.html` page that holds the entire container list element collection. Retrieve by using document.getElementById(CONTAINER_LIST_DIV_ID)
  */
 const removeExistingContainerListGroupElement = (containerListElement: HTMLElement) => {
-    const existingUlElement = document.getElementById('containerListGroup');
-    if (existingUlElement) {
-        try {
-            containerListElement.removeChild(existingUlElement);
-        } catch (ex) {
-            console.error(`failed to remove existing list element from document: ${ex}`);
-        }
+    const list = document.getElementById('containerListGroup');
+    if (!list) {
+        return;
     }
+
+    containerListElement.removeChild(list);
 };
 
 /**
@@ -1174,7 +1280,10 @@ const isUserQueryContextNameMatch = (contextName: string, userQuery: string): bo
  * @param event The event that called this function, such as a key press or mouse click
  * @param actualTabUrl When in sticky popup mode, when opening a new URL, the new tab page might not be loaded yet, so the tab query returns an empty URL. actualTabUrl allows a URL to be passed in in advance, so that the extension can properly show URL overrides in the UI.
  */
-const filterContainers = async (event: Event | KeyboardEvent | MouseEvent | null, actualTabUrl: string | null) => {
+const filterContainers = async (
+    event: Event | KeyboardEvent | MouseEvent | null,
+    actualTabUrl: string | null,
+) => {
     if (event) {
         event.preventDefault();
     }
@@ -1218,10 +1327,8 @@ const filterContainers = async (event: Event | KeyboardEvent | MouseEvent | null
             const results: browser.contextualIdentities.ContextualIdentity[] = [];
 
             const containerList = document.getElementById(CONTAINER_LIST_DIV_ID);
-
             if (!containerList) {
-                showAlert('Failed to find the container list HTML element.', 'HTML Error');
-                return;
+                throw `Failed to find ${CONTAINER_LIST_DIV_ID} HTML element`;
             }
 
             // prepare by clearing out the old query's HTML output
@@ -1272,8 +1379,8 @@ const filterContainers = async (event: Event | KeyboardEvent | MouseEvent | null
             }
 
             // finally, propagate the sorted results to the UI:
-            for (let i = 0; i < contexts.length; i++) {
-                const context = contexts[i];
+            for (let i = 0; i < results.length; i++) {
+                const context = results[i];
 
                 const liElement = buildContainerListItem(
                     results,

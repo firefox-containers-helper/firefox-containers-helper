@@ -19,7 +19,8 @@
         "contextualIdentities",
         "cookies",
         "tabs",
-        "storage"
+        "storage",
+        "unlimitedStorage"
     ],
     "browser_action": {
         "browser_style": true,
