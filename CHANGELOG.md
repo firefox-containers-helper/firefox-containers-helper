@@ -8,6 +8,7 @@ This changelog contains all relevant changes between different versions of the e
   * Uses webpack to compile the result
   * Refactored a lot of functions to use more structure async/await syntax
 * Fixed verbiage in various places across the options page and extension popup
+* Implemented "Confirm" modals instead of using the native JavaScript confirm() function
 * Added alert modals to options page and popup page
   * Options page had to have its maximum height capped in order for the modal to work correctly. The page simply scrolls differently now.
 * Other minor fixes

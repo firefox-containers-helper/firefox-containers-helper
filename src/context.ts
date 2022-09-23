@@ -1,4 +1,4 @@
-import { showAlert } from "./modules/modals";
+import { showAlert, showConfirm } from "./modules/modals";
 import { ExtensionConfig } from './types';
 import {
     CONTEXT_ICONS,
@@ -503,9 +503,13 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
     // so we will filter out contexts that are undefined
     const toDelete: browser.contextualIdentities.ContextualIdentity[] = [];
 
-    let deleteAllStr = `Are you sure you want to delete the following container(s)?\n\n`;
+    let deleteAllStr = `Are you sure you want to delete ${contexts.length} container(s)?\n\n`;
 
-    for (const ctx of contexts) {
+    // limit the dialog to only showing so many lines
+    const maxLines = 5;
+    for (let i = 0; i < Math.min(maxLines, contexts.length); i++) {
+        const ctx = contexts[i];
+
         if (!ctx) {
             continue;
         }
@@ -513,6 +517,10 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
         // build confirmation dialog first
         deleteAllStr += `${ctx.name}\n`;
         toDelete.push(ctx);
+    }
+
+    if (contexts.length > maxLines) {
+        deleteAllStr += `\n...${contexts.length - maxLines} more not shown.`;
     }
 
     if (toDelete.length === 0) {
@@ -525,11 +533,11 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
         return;
     }
 
-    if (!confirm(deleteAllStr)) return;
+    if (!await showConfirm(deleteAllStr, 'Delete Containers?')) return;
 
     const deleteLenStr = `Are you absolutely sure you want to delete ${toDelete.length} container(s)? This is not reversible.`;
 
-    if (!confirm(deleteLenStr)) return;
+    if (!await showConfirm(deleteLenStr, 'Confirm Delete?')) return;
 
     // proceed to delete every context
     const deleted = [];
@@ -539,7 +547,7 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
             const d = await browser.contextualIdentities.remove(context.cookieStoreId);
             deleted.push(d);
 
-            setHelpText(`Deleted ${deleted.length}/${toDelete.length} containers`);
+            setHelpText(`Deleted ${deleted.length}/${toDelete.length} container(s)`);
 
             // TODO: investigate if these needs to be called repeatedly or only just once
             resetSelectedContexts();
@@ -561,6 +569,8 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
             return;
         }
     }
+
+    showAlert(`Deleted ${deleted.length}/${toDelete.length} container(s).`, 'Completed');
 };
 
 /** Associates a default URL to each container. */
@@ -578,7 +588,7 @@ const setMultipleDefaultUrls = async (contexts: browser.contextualIdentities.Con
     // TODO: localization refactor
     const question = 'Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension options page.';
 
-    if (requireHTTP && noHTTPS && noHTTP && !confirm(question)) return;
+    if (requireHTTP && noHTTPS && noHTTP && !await showConfirm(question, 'Allow Any Protocol?')) return;
 
     for (const context of contexts) {
         if (clear) {
@@ -618,7 +628,7 @@ const openMultipleContexts = async (
     const question = `Are you sure you want to open ${contexts.length} container tabs?`;
     const isMany = contexts.length >= 10;
 
-    if (isMany && !confirm(question)) return;
+    if (isMany && !await showConfirm(question, 'Open Many?')) return;
 
     if (contexts.length === 0) return;
 
@@ -674,7 +684,7 @@ const openMultipleContexts = async (
 
             if (shouldPrompt && !empty && requireHTTP && noHTTPS && noHTTP) {
                 const q = `Warning: The URL "${url}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`;
-                if (!confirm(q)) return;
+                if (!await showConfirm(q, 'Allow Any Protocol?')) return;
                 // only need to prompt the user once
                 shouldPrompt = false;
             }
@@ -810,7 +820,7 @@ const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.
 
     if (!findStr || replaceStr === null) return;
 
-    const userConfirm = confirm(`(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container(s)?`);
+    const userConfirm = await showConfirm(`(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container(s)?`, 'Confirm Rename');
 
     if (!userConfirm) return;
 
@@ -853,14 +863,14 @@ const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.
  * Executes a find & replace against either a container name or predefined URL.
  * @param contexts The `contextualIdentities` to change.
  */
-const findReplaceUrlInContexts = (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const findReplaceUrlInContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const findStr = prompt(`(1/3) What case-insensitive string in ${contexts.length} container default URL(s) would you like to search for?`);
     if (!findStr) return;
 
     const replaceStr = prompt("(2/3) What string would you like to replace it with?");
     if (!findStr || replaceStr === null) return;
 
-    const userConfirm = confirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container(s)?`);
+    const userConfirm = await showConfirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container(s)?`, 'Confirm URL Replace');
 
     if (!userConfirm) return;
 
@@ -910,48 +920,51 @@ const findReplaceUrlInContexts = (contexts: browser.contextualIdentities.Context
 
 /** Duplicates one or more contexts. */
 const duplicateContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    if (contexts.length <= 1 || confirm(`Are you sure you want to duplicate ${contexts.length} containers?`)) {
-        let duplicated: browser.contextualIdentities.ContextualIdentity[] = [];
-        for (const context of contexts) {
-            const newContext = {
-                color: context.color,
-                icon: context.icon,
-                name: context.name
-            };
+    const question = `Are you sure you want to duplicate ${contexts.length} containers?`;
 
-            try {
-                const created = await browser.contextualIdentities.create(newContext);
-                duplicated.push(created);
+    // only ask if there are multiple containers to duplicate
+    if (contexts.length > 1 && !await showConfirm(question, 'Confirm Duplicate')) return;
 
-                // if the containers have default URL associations, we need to update those too
-                const urlToSet = config.containerDefaultUrls[context.cookieStoreId] || "none";
+    let duplicated: browser.contextualIdentities.ContextualIdentity[] = [];
+    for (const context of contexts) {
+        const newContext = {
+            color: context.color,
+            icon: context.icon,
+            name: context.name
+        };
 
-                setMultipleDefaultUrls([created], urlToSet);
+        try {
+            const created = await browser.contextualIdentities.create(newContext);
+            duplicated.push(created);
 
-                setHelpText(`Duplicated ${duplicated.length} containers`);
+            // if the containers have default URL associations, we need to update those too
+            const urlToSet = config.containerDefaultUrls[context.cookieStoreId] || "none";
 
-                // when duplicating, the selected containers need to be deselected,
-                // since the indices have changed
-                resetSelectedContexts();
-            } catch (err) {
-                setHelpText(`Duplicated ${duplicated.length} containers`);
-                if (!err) {
-                    // TODO: localization refactor
-                    showAlert(
-                        `An unknown error occurred when attempting to duplicate the container ${context.name}.`,
-                        'Duplication Error',
-                    )
-                    return;
-                }
+            setMultipleDefaultUrls([created], urlToSet);
+
+            setHelpText(`Duplicated ${duplicated.length} container(s)`);
+
+            // when duplicating, the selected containers need to be deselected,
+            // since the indices have changed
+            resetSelectedContexts();
+        } catch (err) {
+            setHelpText(`Duplicated ${duplicated.length} container(s))`);
+            if (!err) {
                 // TODO: localization refactor
                 showAlert(
-                    `An error occurred when attempting to duplicate the container ${context.name}: ${JSON.stringify(err)}`,
+                    `An unknown error occurred when attempting to duplicate the container ${context.name}.`,
                     'Duplication Error',
                 )
                 return;
             }
+            // TODO: localization refactor
+            showAlert(
+                `An error occurred when attempting to duplicate the container ${context.name}: ${JSON.stringify(err)}`,
+                'Duplication Error',
+            )
+            return;
         }
-    };
+    }
 };
 
 /** Adds a brand new context (container). */

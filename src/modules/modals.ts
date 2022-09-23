@@ -242,6 +242,7 @@ const setModalType = (type: string) => {
             break;
         case MODAL_TYPE_CONFIRM:
             showElement(mc);
+            break;
         case MODAL_TYPE_PROMPT:
             showElement(mp);
             break;
@@ -315,7 +316,6 @@ const setModalPromptCallbacks = (ok: () => void, cancel: () => void): (HTMLEleme
     return [okBtn, cancelBtn];
 }
 
-
 /**
  * Shows a simple modal with the provided alert message. Clears out any
  * existing event handlers for the primary & secondary input buttons.
@@ -330,4 +330,31 @@ export const showAlert = (msg: string, title: string) => {
     setModalAlertTitle(title);
     scrollToTop();
     showModal();
+}
+
+/**
+ * Shows a simple modal with the provided alert message. Clears out any
+ * existing event handlers for the primary & secondary input buttons.
+ *
+ * @param msg The message to show in the modal. Text-only for safety.
+ * @param title The message to show in the modal. Text-only for safety.
+ * @return A promise containing `true`/`false` for yes/no, or `null` for cancel.
+ */
+export const showConfirm = async (msg: string, title: string): Promise<boolean | null> => {
+    setModalType(MODAL_TYPE_CONFIRM);
+
+    const promise = new Promise((resolve: (v: boolean | null) => void) => {
+        setModalConfirmCallbacks(
+            () => { hideModal(); return resolve(true); },
+            () => { hideModal(); return resolve(false); },
+            () => { hideModal(); return resolve(null); },
+        );
+    });
+
+    setModalConfirmText(msg);
+    setModalConfirmTitle(title);
+    scrollToTop();
+    showModal();
+
+    return await promise;
 }
