@@ -82,3 +82,7 @@ export const getCurrentTabOverrideUrl = (url: string, current: string, match: Ur
 
     return "";
 }
+
+export const scrollToTop = () => {
+    window.scrollTo(0, 0);
+}

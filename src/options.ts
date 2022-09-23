@@ -695,9 +695,9 @@ const btnImportContainersClick = async () => {
             if (container.defaultUrl) {
                 // associate the default URL
                 config.containerDefaultUrls[created.cookieStoreId.toString()] = container.defaultUrl;
-                msgs.push(`Imported container ${created.name} with a default URL.\n`);
+                msgs.push(`Imported container ${created.name} with a default URL.`);
             } else {
-                msgs.push(`Imported container ${created.name}.\n`);
+                msgs.push(`Imported container ${created.name}.`);
             }
         }
 

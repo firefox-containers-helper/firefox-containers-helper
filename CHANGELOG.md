@@ -2,9 +2,15 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
-## v0.0.29
+## v0.1.0
 
-
+* Rewrote the extension in TypeScript so that I could deliver a higher quality extension
+  * Uses webpack to compile the result
+  * Refactored a lot of functions to use more structure async/await syntax
+* Fixed verbiage in various places across the options page and extension popup
+* Added alert modals to options page and popup page
+  * Options page had to have its maximum height capped in order for the modal to work correctly. The page simply scrolls differently now.
+* Other minor fixes
 
 ## v0.0.28
 

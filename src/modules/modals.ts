@@ -1,6 +1,6 @@
 // -- constants
 
-import { hideElement, showElement } from "./helpers";
+import { hideElement, scrollToTop, showElement } from "./helpers";
 
 // modal types
 export const MODAL_TYPE_ALERT = 'modal-type-alert';
@@ -328,5 +328,6 @@ export const showAlert = (msg: string, title: string) => {
     setModalAlertCallback(hideModal);
     setModalAlertText(msg);
     setModalAlertTitle(title);
+    scrollToTop();
     showModal();
 }
