@@ -1,4 +1,4 @@
-import { showAlert, showConfirm } from "./modules/modals";
+import { showAlert, showConfirm, showPrompt } from "./modules/modals";
 import { ExtensionConfig } from './types';
 import {
     CONTEXT_ICONS,
@@ -607,7 +607,7 @@ const setMultipleDefaultUrls = async (contexts: browser.contextualIdentities.Con
  */
 const setMultipleDefaultUrlsWithPrompt = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const question = `What should the default URL be for ${contexts.length} container(s)?\n\nType "none" (without quotes) to clear the saved default URL value(s).`;
-    const url = prompt(question);
+    const url = await showPrompt(question, 'Provide URL');
 
     if (url) {
         await setMultipleDefaultUrls(contexts, url);
@@ -712,7 +712,7 @@ const openMultipleContexts = async (
  * @param contexts The containers to change
  */
 const renameContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const rename = prompt(`Rename ${contexts.length} container(s) to:`);
+    const rename = await showPrompt(`Rename ${contexts.length} container(s) to:`, 'Rename');
     if (!rename) return;
 
     const updated: browser.contextualIdentities.ContextualIdentity[] = [];
@@ -772,7 +772,7 @@ const updateContexts = async (contexts: browser.contextualIdentities.ContextualI
 /** Sets the color of one or more contexts simultaneously. */
 const setColorForContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const msg = `Choose a color for ${contexts.length} containers from the following list:\n\n${CONTEXT_COLORS.join("\n")}`;
-    const color = prompt(msg);
+    const color = await showPrompt(msg, 'Choose Color');
     if (!color) {
         // TODO: !color is indistinguishable from the user pressing "cancel" at prompt
         // showAlert('Please provide a non-empty, valid color value.', 'Invalid Color');
@@ -790,7 +790,7 @@ const setColorForContexts = async (contexts: browser.contextualIdentities.Contex
 /** Sets the icon of one or more contexts simultaneously. */
 const setIconForContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const msg = `Choose an icon for ${contexts.length} containers from the following list:\n\n${CONTEXT_ICONS.join("\n")}`;
-    const icon = prompt(msg);
+    const icon = await showPrompt(msg, 'Choose Icon');
 
     if (!icon) {
         // TODO: !icon is indistinguishable from the user pressing "cancel" at prompt
@@ -813,14 +813,20 @@ const setIconForContexts = async (contexts: browser.contextualIdentities.Context
  * @param valueToSet The value to assign to the context(s)' `fieldToUpdate` property
  */
 const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const findStr = prompt(`(1/3) What case-sensitive string in ${contexts.length} container name(s) would you like to search for?`);
+    const q1 = `(1/3) What case-sensitive string in ${contexts.length} container name(s) would you like to search for?`;
+
+
+    const findStr = await showPrompt(q1, 'Search String');
     if (!findStr) return;
 
-    const replaceStr = prompt("(2/3) What string would you like to replace it with?");
+    const q2 = '(2/3) What string would you like to replace it with?';
+    const replaceStr = await showPrompt(q2, 'Replace String');
 
     if (!findStr || replaceStr === null) return;
 
-    const userConfirm = await showConfirm(`(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container(s)?`, 'Confirm Rename');
+    const q3 = `(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container(s)?`;
+
+    const userConfirm = await showConfirm(q3, 'Confirm');
 
     if (!userConfirm) return;
 
@@ -864,13 +870,19 @@ const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.
  * @param contexts The `contextualIdentities` to change.
  */
 const findReplaceUrlInContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const findStr = prompt(`(1/3) What case-insensitive string in ${contexts.length} container default URL(s) would you like to search for?`);
+    const q1 = `(1/3) What case-insensitive string in ${contexts.length} container default URL(s) would you like to search for?`;
+
+    const findStr = await showPrompt(q1, 'Search String');
     if (!findStr) return;
 
-    const replaceStr = prompt("(2/3) What string would you like to replace it with?");
+    const q2 = '(2/3) What string would you like to replace it with?';
+
+    const replaceStr = await showPrompt(q2, 'Replace String');
     if (!findStr || replaceStr === null) return;
 
-    const userConfirm = await showConfirm(`(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container(s)?`, 'Confirm URL Replace');
+    const q3 = `(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container(s)?`
+
+    const userConfirm = await showConfirm(q3, 'Confirm URL Replace');
 
     if (!userConfirm) return;
 

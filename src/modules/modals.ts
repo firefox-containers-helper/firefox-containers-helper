@@ -31,9 +31,10 @@ export const MODAL_PROMPT_CONTENT = 'modalPromptContent';
 // modal text spans
 export const MODAL_ALERT_TEXT = 'modalAlertText';
 export const MODAL_CONFIRM_TEXT = 'modalConfirmText';
+export const MODAL_PROMPT_TEXT = 'modalPromptText';
 
-// dynamic modal prompt body
-export const MODAL_PROMPT_BODY = 'modalPromptBody';
+// modal prompt input
+export const MODAL_PROMPT_INPUT = 'modalPromptInput';
 
 // modal titles
 export const MODAL_ALERT_TITLE = 'modalAlertTitle';
@@ -61,14 +62,21 @@ const getModalPromptContent = () => document.getElementById(MODAL_PROMPT_CONTENT
 // modal text spans
 const getModalAlertText = () => document.getElementById(MODAL_ALERT_TEXT);
 const getModalConfirmText = () => document.getElementById(MODAL_CONFIRM_TEXT);
+const getModalPromptText = () => document.getElementById(MODAL_PROMPT_TEXT);
 
-// dynamic modal prompt body
-const getModalPromptBody = () => document.getElementById(MODAL_PROMPT_BODY);
+// modal prompt input
+const getModalPromptInput = () => document.getElementById(MODAL_PROMPT_INPUT);
 
 // modal titles
 const getModalAlertTitle = () => document.getElementById(MODAL_ALERT_TITLE);
 const getModalConfirmTitle = () => document.getElementById(MODAL_CONFIRM_TITLE);
 const getModalPromptTitle = () => document.getElementById(MODAL_PROMPT_TITLE);
+
+const getModalPromptInputText = (): string => {
+    const el = getModalPromptInput();
+    if (!el) return '';
+    return (el as HTMLInputElement).value;
+}
 
 // setter functions
 
@@ -84,22 +92,23 @@ const setModalConfirmText = (txt: string) => {
     el.innerText = txt;
 }
 
-/**
- * Sets the `innerHTML` of the modal prompt's body.
- */
-const setModalPromptBody = (html: string) => {
-    const el = getModalPromptBody();
+const setModalPromptText = (txt: string) => {
+    const el = getModalPromptText();
     if (!el) return;
-    el.innerHTML = html;
+    el.innerText = txt;
 }
 
+const setModalPromptInputText = (text: string) => {
+    const el = getModalPromptInput();
+    if (!el) return;
+    (el as HTMLInputElement).value = text;
+}
 
 const setModalAlertTitle = (txt: string) => {
     const el = getModalAlertTitle();
     if (!el) return;
     el.innerText = txt;
 }
-
 
 const setModalConfirmTitle = (txt: string) => {
     const el = getModalConfirmTitle();
@@ -198,8 +207,8 @@ const resetModalPromptTitle = () => {
 }
 
 /** Removes the contents of the "prompt" modal's main content area. */
-const resetModalPromptBody = () => {
-    const el = getModalPromptBody();
+const resetModalPromptInput = () => {
+    const el = getModalPromptInput();
     if (!el) return;
     el.replaceChildren('');
 }
@@ -333,7 +342,7 @@ export const showAlert = (msg: string, title: string) => {
 }
 
 /**
- * Shows a simple modal with the provided alert message. Clears out any
+ * Shows a confirm modal with the provided message. Clears out any
  * existing event handlers for the primary & secondary input buttons.
  *
  * @param msg The message to show in the modal. Text-only for safety.
@@ -356,5 +365,52 @@ export const showConfirm = async (msg: string, title: string): Promise<boolean |
     scrollToTop();
     showModal();
 
+    return await promise;
+}
+
+/**
+ * Shows a prompt modal with the provided message. Clears out any
+ * existing event handlers for the primary & secondary input buttons.
+ *
+ * @param msg The message to show in the modal. Text-only for safety.
+ * @param title The message to show in the modal. Text-only for safety.
+ * @return A promise containing `true`/`false` for yes/no, or `null` for cancel.
+ */
+export const showPrompt = async (msg: string, title: string): Promise<string | null> => {
+    setModalType(MODAL_TYPE_PROMPT);
+
+    // replaceElement(getModalPromptText());
+    const promptInput = replaceElement(getModalPromptInput());
+
+    if (!promptInput) {
+        throw 'Error: Prompt input field is not available.';
+    }
+
+    const promise = new Promise((resolve: (v: string | null) => void) => {
+        const completed = () => { hideModal(); return resolve(getModalPromptInputText()); };
+
+        promptInput?.addEventListener('keydown', (ev: KeyboardEvent) => {
+            if (ev.key === 'Enter') {
+                console.debug('yep');
+                completed();
+                ev.preventDefault();
+                ev.stopImmediatePropagation();
+            }
+        })
+
+        setModalPromptCallbacks(
+            completed,
+            () => { hideModal(); return resolve(null); },
+        );
+    });
+
+
+    setModalPromptText(msg);
+    setModalPromptTitle(title);
+    setModalPromptInputText('');
+    scrollToTop();
+    showModal();
+
+    promptInput.focus();
     return await promise;
 }
