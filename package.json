@@ -1,6 +1,6 @@
 {
   "name": "firefox-containers-helper",
-  "version": "0.0.29",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "directories": {

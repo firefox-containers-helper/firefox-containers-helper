@@ -25,6 +25,9 @@ import {
     containerListItemActiveClassNames
 } from "./modules/classes";
 import { getCurrentTabOverrideUrl } from "./modules/helpers";
+import {
+    buildContainerListGroupElement,
+} from './modules/elements';
 
 let config: ExtensionConfig = {
     windowStayOpenState: true,
@@ -228,7 +231,7 @@ const applyEventListenersToContainerListItem = (
 
             const target = event.target as HTMLElement;
 
-            if (config.mode === MODES.DELETE) {
+            if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
                 target.className = containerListItemActiveDangerClassNames;
                 return;
             }
@@ -271,7 +274,7 @@ const applyEventListenersToContainerListItem = (
 
             const target = event.target as HTMLElement;
 
-            if (config.mode === MODES.DELETE) {
+            if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
                 target.className = containerListItemActiveDangerClassNames;
                 return;
             }
@@ -327,7 +330,7 @@ const buildContainerListItem = (
     const containerIconHolderElement = buildContainerIconElement(context);
     const containerLabelElement = buildContainerLabelElement(context, i, currentTab, actualCurrentUrl);
 
-    if (config.mode === MODES.DELETE) {
+    if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
         const divElement = document.createElement('div');
         divElement.className = "d-flex justify-content-center align-items-center align-content-center";
         divElement.id = `filtered-context-${i}-div`;
@@ -406,7 +409,7 @@ const addEmptyEventListenersToElement = (element: HTMLElement) => {
  * Sets a message inside the "warning" text element.
  * @param message The HTML string to put inside the warning text element.
  */
-const setHelpText = (message: string) => {
+const help = (message: string) => {
     let msg = message;
     if (!message) {
         // TODO: make this more clean
@@ -424,7 +427,7 @@ const setHelpText = (message: string) => {
  * Sets a message inside the "summary" text element, such as "Showing x/y containers"
  * @param message The HTML string to put inside the summary text element.
  */
-const setSummaryText = (message: string) => {
+const bottomHelp = (message: string) => {
     const summary = document.getElementById('summaryText');
     if (!summary) return;
 
@@ -473,7 +476,7 @@ const actionCompletedHandler = (currentUrl: string) => {
         return;
     }
 
-    filterContainers(null, currentUrl);
+    filter(null, currentUrl);
 }
 
 /**
@@ -497,13 +500,17 @@ const checkDefaultUrlsForUserQuery = (context: browser.contextualIdentities.Cont
 /**
  * Asks if the user wants to delete multiple containers, and executes if the user says so.
  * @param contexts The `contextualIdentity` array to possibly be deleted.
+ * @param prompt If false, no modals are shown.
+ * @return number The number of deleted containers
  */
-const deleteMultipleContainers = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const del = async (contexts: browser.contextualIdentities.ContextualIdentity[], prompt: boolean = true): Promise<number> => {
     // selection mode can sometimes lead to contexts that don't exist,
     // so we will filter out contexts that are undefined
     const toDelete: browser.contextualIdentities.ContextualIdentity[] = [];
 
-    let deleteAllStr = `Are you sure you want to delete ${contexts.length} container(s)?\n\n`;
+    const containers = `container${contexts.length === 1 ? '' : 's'}`;
+
+    let deleteAllStr = `Are you sure you want to delete ${contexts.length} ${containers} ?\n\n`;
 
     // limit the dialog to only showing so many lines
     const maxLines = 5;
@@ -530,27 +537,27 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
             'Nothing to Delete',
         );
 
-        return;
+        return 0;
     }
 
-    if (!await showConfirm(deleteAllStr, 'Delete Containers?')) return;
+    if (prompt && !await showConfirm(deleteAllStr, 'Delete Containers?')) return 0;
 
-    const deleteLenStr = `Are you absolutely sure you want to delete ${toDelete.length} container(s)? This is not reversible.`;
+    const deleteLenStr = `Are you absolutely sure you want to delete ${contexts.length} ${containers}? This is not reversible.`;
 
-    if (!await showConfirm(deleteLenStr, 'Confirm Delete?')) return;
+    if (prompt && !await showConfirm(deleteLenStr, 'Confirm Delete?')) return 0;
 
     // proceed to delete every context
     const deleted = [];
 
-    for (const context of toDelete) {
+    for (const context of contexts) {
         try {
             const d = await browser.contextualIdentities.remove(context.cookieStoreId);
             deleted.push(d);
 
-            setHelpText(`Deleted ${deleted.length}/${toDelete.length} container(s)`);
+            help(`Deleted ${deleted.length}/${contexts.length} ${containers}`);
 
             // TODO: investigate if these needs to be called repeatedly or only just once
-            resetSelectedContexts();
+            deselect();
         } catch (err) {
             if (!err) {
                 showAlert(
@@ -558,7 +565,7 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
                     'Deletion Error',
                 )
 
-                return;
+                return deleted.length;
             }
 
             showAlert(
@@ -566,15 +573,18 @@ const deleteMultipleContainers = async (contexts: browser.contextualIdentities.C
                 'Deletion Error',
             );
 
-            return;
+            return deleted.length;
         }
     }
 
-    showAlert(`Deleted ${deleted.length}/${toDelete.length} container(s).`, 'Completed');
+    if (prompt) {
+        showAlert(`Deleted ${deleted.length}/${contexts.length} ${containers}.`, 'Completed');
+    }
+    return deleted.length;
 };
 
 /** Associates a default URL to each container. */
-const setMultipleDefaultUrls = async (contexts: browser.contextualIdentities.ContextualIdentity[], url: string) => {
+const setUrls = async (contexts: browser.contextualIdentities.ContextualIdentity[], url: string, allowAnyProtocol: boolean = false) => {
     if (!url) {
         showAlert('Please provide a non-empty URL, or type "none" without quotes to clear URL values.', 'Invalid Input');
         return;
@@ -588,15 +598,28 @@ const setMultipleDefaultUrls = async (contexts: browser.contextualIdentities.Con
     // TODO: localization refactor
     const question = 'Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension options page.';
 
-    if (requireHTTP && noHTTPS && noHTTP && !await showConfirm(question, 'Allow Any Protocol?')) return;
+    if (!allowAnyProtocol && requireHTTP && noHTTPS && noHTTP && !await showConfirm(question, 'Allow Any Protocol?')) return;
+
+    const s = contexts.length === 1 ? '' : 's';
+
+    let i = 0; // just for consistency
 
     for (const context of contexts) {
+        i++;
+
+        const m = `Updated URL for ${i}/${contexts.length} container${s}`;
+
         if (clear) {
             delete config.containerDefaultUrls[context.cookieStoreId.toString()];
+
+            help(m);
+
             continue;
         }
 
         config.containerDefaultUrls[context.cookieStoreId.toString()] = url;
+
+        help(m);
     }
 
     await writeContainerDefaultUrlsToStorage();
@@ -605,12 +628,14 @@ const setMultipleDefaultUrls = async (contexts: browser.contextualIdentities.Con
 /**
  * Requests a default URL from the user, and assigns that URL to every given container.
  */
-const setMultipleDefaultUrlsWithPrompt = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const question = `What should the default URL be for ${contexts.length} container(s)?\n\nType "none" (without quotes) to clear the saved default URL value(s).`;
+const setUrlsPrompt = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+    const s = contexts.length === 1 ? '' : 's';
+
+    const question = `What should the default URL be for ${contexts.length} container${s}?\n\nType "none" (without quotes) to clear the saved default URL value${s}.`;
     const url = await showPrompt(question, 'Provide URL');
 
     if (url) {
-        await setMultipleDefaultUrls(contexts, url);
+        await setUrls(contexts, url);
     }
 };
 
@@ -620,7 +645,7 @@ const setMultipleDefaultUrlsWithPrompt = async (contexts: browser.contextualIden
  * @param pinned Whether or not to open as a pinned tab.
  * @param tab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
  */
-const openMultipleContexts = async (
+const open = async (
     contexts: browser.contextualIdentities.ContextualIdentity[],
     pinned: boolean,
     tab: browser.tabs.Tab,
@@ -711,8 +736,10 @@ const openMultipleContexts = async (
  * Renames one or more contexts.
  * @param contexts The containers to change
  */
-const renameContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const rename = await showPrompt(`Rename ${contexts.length} container(s) to:`, 'Rename');
+const rename = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+    const s = contexts.length === 1 ? '' : 's';
+
+    const rename = await showPrompt(`Rename ${contexts.length} container${s} to:`, 'Rename');
     if (!rename) return;
 
     const updated: browser.contextualIdentities.ContextualIdentity[] = [];
@@ -725,7 +752,7 @@ const renameContexts = async (contexts: browser.contextualIdentities.ContextualI
             );
 
             updated.push(update);
-            setHelpText(`Renamed ${updated.length} containers`);
+            help(`Renamed ${updated.length} containers`);
         } catch (err) {
             if (err) {
                 showAlert(`Failed to rename container ${context.name}: ${JSON.stringify(err)}`, 'Container Rename Error');
@@ -740,11 +767,11 @@ const renameContexts = async (contexts: browser.contextualIdentities.ContextualI
 
 /**
  * Updates one or more contexts simultaneously.
- * @param contexts The container(s) to change
- * @param key The field to set for the context(s)
- * @param value The value to assign to the context(s)' `key` property
+ * @param contexts The containers to change
+ * @param key The field to set for the contexts
+ * @param value The value to assign to the contexts' `key` property
  */
-const updateContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[], key: string, value: string) => {
+const update = async (contexts: browser.contextualIdentities.ContextualIdentity[], key: string, value: string) => {
     const updated: browser.contextualIdentities.ContextualIdentity[] = [];
 
     const updates: any = {};
@@ -757,7 +784,7 @@ const updateContexts = async (contexts: browser.contextualIdentities.ContextualI
                 updates
             );
             updated.push(update);
-            setHelpText(`Updated ${updated.length} containers`);
+            help(`Updated ${updated.length} containers`);
         } catch (err) {
             if (err) {
                 showAlert(`Failed to update container ${context.name}: ${JSON.stringify(err)}`, 'Container Update Error');
@@ -770,7 +797,7 @@ const updateContexts = async (contexts: browser.contextualIdentities.ContextualI
 };
 
 /** Sets the color of one or more contexts simultaneously. */
-const setColorForContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const setColors = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const msg = `Choose a color for ${contexts.length} containers from the following list:\n\n${CONTEXT_COLORS.join("\n")}`;
     const color = await showPrompt(msg, 'Choose Color');
     if (!color) {
@@ -784,11 +811,11 @@ const setColorForContexts = async (contexts: browser.contextualIdentities.Contex
         return;
     }
 
-    await updateContexts(contexts, "color", color);
+    await update(contexts, "color", color);
 };
 
 /** Sets the icon of one or more contexts simultaneously. */
-const setIconForContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+const setIcons = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const msg = `Choose an icon for ${contexts.length} containers from the following list:\n\n${CONTEXT_ICONS.join("\n")}`;
     const icon = await showPrompt(msg, 'Choose Icon');
 
@@ -803,18 +830,19 @@ const setIconForContexts = async (contexts: browser.contextualIdentities.Context
         return;
     }
 
-    await updateContexts(contexts, "icon", icon);
+    await update(contexts, "icon", icon);
 };
 
 /**
  * Executes a find & replace against either a container name or predefined URL.
  * @param contexts The `contextualIdentities` to change.
- * @param fieldToUpdate The field to set for the context(s)
- * @param valueToSet The value to assign to the context(s)' `fieldToUpdate` property
+ * @param fieldToUpdate The field to set for the contexts
+ * @param valueToSet The value to assign to the context' `fieldToUpdate` property
  */
-const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const q1 = `(1/3) What case-sensitive string in ${contexts.length} container name(s) would you like to search for?`;
+const replaceInName = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+    const s = contexts.length === 1 ? '' : 's';
 
+    const q1 = `(1/3) What case-sensitive string in ${contexts.length} container name${s} would you like to search for?`;
 
     const findStr = await showPrompt(q1, 'Search String');
     if (!findStr) return;
@@ -824,7 +852,7 @@ const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.
 
     if (!findStr || replaceStr === null) return;
 
-    const q3 = `(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container(s)?`;
+    const q3 = `(3/3) Replace the case-sensitive string "${findStr}" with "${replaceStr}" in the name of ${contexts.length} container${s}?`;
 
     const userConfirm = await showConfirm(q3, 'Confirm');
 
@@ -832,7 +860,7 @@ const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.
 
     const updated = [];
 
-    setHelpText(`Updated ${updated.length} containers`); // in case the operation fails
+    help(`Updated ${updated.length} containers`); // in case the operation fails
 
     try {
         for (const context of contexts) {
@@ -852,15 +880,15 @@ const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.
 
             updated.push(update);
 
-            setHelpText(`Updated ${updated.length} containers`);
+            help(`Updated ${updated.length} containers`);
         };
     } catch (err) {
         if (err) {
-            showAlert(`Failed to rename container(s): ${JSON.stringify(err)}`, 'Rename Error');
+            showAlert(`Failed to rename container${s}: ${JSON.stringify(err)}`, 'Rename Error');
             return;
         }
 
-        showAlert(`Failed to rename container(s) due to an unknown error.`, 'Rename Error');
+        showAlert(`Failed to rename container${s} due to an unknown error.`, 'Rename Error');
         return;
     }
 }
@@ -869,8 +897,10 @@ const findReplaceNameInContexts = async (contexts: browser.contextualIdentities.
  * Executes a find & replace against either a container name or predefined URL.
  * @param contexts The `contextualIdentities` to change.
  */
-const findReplaceUrlInContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const q1 = `(1/3) What case-insensitive string in ${contexts.length} container default URL(s) would you like to search for?`;
+const replaceInUrls = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+    const s = contexts.length === 1 ? '' : 's';
+
+    const q1 = `(1/3) What case-insensitive string in ${contexts.length} container default URL${s}} would you like to search for?`;
 
     const findStr = await showPrompt(q1, 'Search String');
     if (!findStr) return;
@@ -880,7 +910,7 @@ const findReplaceUrlInContexts = async (contexts: browser.contextualIdentities.C
     const replaceStr = await showPrompt(q2, 'Replace String');
     if (!findStr || replaceStr === null) return;
 
-    const q3 = `(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container(s)?`
+    const q3 = `(3/3) Replace the case-insensitive string "${findStr}" with "${replaceStr}" in the default URL of ${contexts.length} container${s}}?`
 
     const userConfirm = await showConfirm(q3, 'Confirm URL Replace');
 
@@ -888,7 +918,7 @@ const findReplaceUrlInContexts = async (contexts: browser.contextualIdentities.C
 
     const updated = [];
 
-    setHelpText(`Updated ${updated.length} containers`); // in case the operation fails
+    help(`Updated ${updated.length} containers`); // in case the operation fails
 
     try {
         for (const context of contexts) {
@@ -917,25 +947,30 @@ const findReplaceUrlInContexts = async (contexts: browser.contextualIdentities.C
         // only update storage if needed
         if (updated.length > 0) {
             writeContainerDefaultUrlsToStorage();
-            setHelpText(`Updated ${updated.length} containers`);
+            help(`Updated ${updated.length} containers`);
         }
     } catch (err) {
         if (err) {
-            showAlert(`Failed to rename container URL(s): ${JSON.stringify(err)}`, 'Rename Error');
+            showAlert(`Failed to rename container URL${s}}: ${JSON.stringify(err)}`, 'Rename Error');
             return;
         }
 
-        showAlert(`Failed to rename container URL(s) due to an unknown error.`, 'Rename Error');
+        showAlert(`Failed to rename container URL${s}} due to an unknown error.`, 'Rename Error');
         return;
     }
 };
 
-/** Duplicates one or more contexts. */
-const duplicateContexts = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+/**
+ * Duplicates one or more contexts.
+ * @param prompt If false, no modals are shown.
+ */
+const duplicate = async (contexts: browser.contextualIdentities.ContextualIdentity[], prompt: boolean = true): Promise<number> => {
+    const s = contexts.length === 1 ? '' : 's';
+
     const question = `Are you sure you want to duplicate ${contexts.length} containers?`;
 
     // only ask if there are multiple containers to duplicate
-    if (contexts.length > 1 && !await showConfirm(question, 'Confirm Duplicate')) return;
+    if (contexts.length > 1 && prompt && !await showConfirm(question, 'Confirm Duplicate')) return 0;
 
     let duplicated: browser.contextualIdentities.ContextualIdentity[] = [];
     for (const context of contexts) {
@@ -952,35 +987,38 @@ const duplicateContexts = async (contexts: browser.contextualIdentities.Contextu
             // if the containers have default URL associations, we need to update those too
             const urlToSet = config.containerDefaultUrls[context.cookieStoreId] || "none";
 
-            setMultipleDefaultUrls([created], urlToSet);
+            setUrls([created], urlToSet, true);
 
-            setHelpText(`Duplicated ${duplicated.length} container(s)`);
+            help(`Duplicated ${duplicated.length}/${contexts.length} container${s}`);
 
             // when duplicating, the selected containers need to be deselected,
             // since the indices have changed
-            resetSelectedContexts();
+            deselect();
         } catch (err) {
-            setHelpText(`Duplicated ${duplicated.length} container(s))`);
+            help(`Duplicated ${duplicated.length}/${contexts.length} container${s})`);
+
             if (!err) {
                 // TODO: localization refactor
                 showAlert(
                     `An unknown error occurred when attempting to duplicate the container ${context.name}.`,
                     'Duplication Error',
                 )
-                return;
+                return duplicated.length;
             }
             // TODO: localization refactor
             showAlert(
                 `An error occurred when attempting to duplicate the container ${context.name}: ${JSON.stringify(err)}`,
                 'Duplication Error',
             )
-            return;
+            return duplicated.length;
         }
+
     }
+    return duplicated.length;
 };
 
 /** Adds a brand new context (container). */
-const addContext = async () => {
+const add = async () => {
     // make sure not to use config.lastQuery here, because it gets trimmed/
     // lowercased. This was a bug identified in:
     // https://github.com/cmcode-dev/firefox-containers-helper/issues/37
@@ -1006,9 +1044,9 @@ const addContext = async () => {
 
     try {
         const created = await browser.contextualIdentities.create(newContext);
-        filterContainers(null, null);
-        setHelpText(`Added a container named ${containerName}`);
-        resetSelectedContexts();
+        filter(null, null);
+        help(`Added a container named ${containerName}`);
+        deselect();
     } catch (err) {
         if (err) {
             // TODO: localization refactor
@@ -1027,13 +1065,32 @@ const addContext = async () => {
     }
 };
 
+const refresh = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+    const s = contexts.length === 1 ? '' : 's';
+
+    const msg = `Delete and re-create ${contexts.length} container${s}? Basic properties, such as color, URL, name, and icon are kept, but not cookies or other site information. The ordering of the container${s} may not be preserved.`;
+    const title = 'Delete and Re-create?';
+    const confirmed = await showConfirm(msg, title);
+
+    if (!confirmed) return;
+
+    const duplicated = await duplicate(contexts, false);
+    const refreshed = await del(contexts, false);
+
+    const s1 = refreshed === 1 ? '' : 's';
+
+    const done = `Deleted ${duplicated} and re-created ${refreshed} container${s1}.`;
+
+    help(done);
+    showAlert(done, 'Deleted and Recreated');
+};
 
 /**
  * Empties out the list of contexts to act on when the "selection mode" is
  * enabled. A precursor to this is that the config option should have been
  * set before executing this function.
  */
-const resetSelectedContexts = () => {
+const deselect = () => {
     // reset selectedContextIndices if the selection mode has been turned on
     if (config.selectionMode) {
         config.selectedContextIndices = {};
@@ -1043,6 +1100,10 @@ const resetSelectedContexts = () => {
 
 /**
  * Adds click and other event handlers to a container list item HTML element.
+ *
+ * TODO: This is the most important function and should definitely be unit
+ * tested.
+ *
  * @param filteredResults A list of the currently filtered set of `browser.contextualIdentities`
  * @param context The `contextualIdentity` associated with this handler, assume that a user clicked on a specific container to open if this is defined
  * @param event The event that called this function, such as a key press or mouse click
@@ -1147,7 +1208,6 @@ const containerClickHandler = async (
     }
 
     try {
-
         const tabs = await browser.tabs.query({ currentWindow: true, active: true });
         for (const tab of tabs) {
             if (!tab.active) continue;
@@ -1157,30 +1217,34 @@ const containerClickHandler = async (
             // decision tree
             switch (config.mode) {
                 case MODES.SET_NAME:
-                    await renameContexts(contexts);
+                    await rename(contexts);
                     break;
                 case MODES.DELETE:
-                    await deleteMultipleContainers(contexts);
-                    resetSelectedContexts();
+                    await del(contexts);
+                    deselect();
+                    break;
+                case MODES.REFRESH:
+                    await refresh(contexts);
+                    deselect();
                     break;
                 case MODES.SET_URL:
-                    await setMultipleDefaultUrlsWithPrompt(contexts);
+                    await setUrlsPrompt(contexts);
                     break;
                 case MODES.SET_COLOR:
-                    await setColorForContexts(contexts);
+                    await setColors(contexts);
                     break;
                 case MODES.SET_ICON:
-                    await setIconForContexts(contexts);
+                    await setIcons(contexts);
                     break;
                 case MODES.REPLACE_IN_NAME:
-                    await findReplaceNameInContexts(contexts);
+                    await replaceInName(contexts);
                     break;
                 case MODES.REPLACE_IN_URL:
-                    await findReplaceUrlInContexts(contexts);
+                    await replaceInUrls(contexts);
                     break;
                 case MODES.DUPLICATE:
-                    await duplicateContexts(contexts);
-                    resetSelectedContexts();
+                    await duplicate(contexts);
+                    deselect();
                     break;
                 case MODES.OPEN:
                     // the following code exists because in sticky popup mode,
@@ -1231,7 +1295,7 @@ const containerClickHandler = async (
                         navigatedUrl = tab.url;
                     }
 
-                    await openMultipleContexts(contexts, ctrlModifier, tab);
+                    await open(contexts, ctrlModifier, tab);
                     break;
                 default:
                     break;
@@ -1272,19 +1336,6 @@ const removeExistingContainerListGroupElement = (containerListElement: HTMLEleme
     containerListElement.removeChild(list);
 };
 
-/**
- * As part of rebuilding the filtered list of containers, this function
- * assembles a list group element.
- *
- * TODO: make the `containerListGroup` ID use consistent naming conventions
- * @returns The `<ul>` list group element that will hold the child `<li>` container list items.
- */
-const buildContainerListGroupElement = (): HTMLElement => {
-    const ulElement = document.createElement('ul');
-    ulElement.id = 'containerListGroup';
-    ulElement.className = "list-group";
-    return ulElement;
-};
 
 /**
  * Checks if a user input string matches a container name using a rudimentary
@@ -1305,7 +1356,7 @@ const isUserQueryContextNameMatch = (contextName: string, userQuery: string): bo
  * @param event The event that called this function, such as a key press or mouse click
  * @param actualTabUrl When in sticky popup mode, when opening a new URL, the new tab page might not be loaded yet, so the tab query returns an empty URL. actualTabUrl allows a URL to be passed in in advance, so that the extension can properly show URL overrides in the UI.
  */
-const filterContainers = async (
+const filter = async (
     event: Event | KeyboardEvent | MouseEvent | null,
     actualTabUrl: string | null,
 ) => {
@@ -1319,7 +1370,7 @@ const filterContainers = async (
 
     if (userQuery !== config.lastQuery) {
         // the query has changed, so reset any items the user has selected
-        resetSelectedContexts();
+        deselect();
     }
 
     // persist the last query to extension storage
@@ -1424,7 +1475,7 @@ const filterContainers = async (
 
             containerList.appendChild(ulElement);
 
-            setSummaryText(`Showing ${results.length}/${contexts.length} containers.`);
+            bottomHelp(`Showing ${results.length}/${contexts.length} containers.`);
 
             if (event) {
                 try {
@@ -1580,32 +1631,35 @@ const processExtensionSettings = (data: any, conf: ExtensionConfig | any): Exten
  * Based on the currently selected mode, set a helpful message to show
  * to the user.
  */
-const showModeHelpMessage = () => {
+const helpful = () => {
     switch (config.mode) {
         case MODES.SET_URL:
-            setHelpText("URLs do not affect multi-account container preferences.");
+            help("URLs do not affect multi-account container preferences.");
             break;
         case MODES.SET_NAME:
-            setHelpText("You will be prompted for a new name, 25 character max.")
+            help("You will be prompted for a new name, 25 character max.")
             break;
         case MODES.REPLACE_IN_URL:
         case MODES.REPLACE_IN_NAME:
-            setHelpText("You will be prompted for find & replace strings.")
+            help("You will be prompted for find & replace strings.")
             break;
         case MODES.SET_ICON:
-            setHelpText("You will be prompted for a new icon.")
+            help("You will be prompted for a new icon.")
             break;
         case MODES.SET_COLOR:
-            setHelpText("You will be prompted for a new color.")
+            help("You will be prompted for a new color.")
             break;
         case MODES.DUPLICATE:
-            setHelpText("Duplicates container(s) and URLs, but not cookies etc.")
+            help("Duplicates containers and URLs, but not cookies etc.")
             break;
         case MODES.DELETE:
-            setHelpText("Warning: Will delete containers that you click");
+            help("Warning: Will delete containers that you click");
+            break;
+        case MODES.REFRESH:
+            help("Warning: Will delete and recreate containers");
             break;
         default:
-            setHelpText("");
+            help("");
             break;
     }
 };
@@ -1626,6 +1680,7 @@ const setMode = (mode: string | MODES) => {
         case MODES.REPLACE_IN_URL:
         case MODES.DUPLICATE:
         case MODES.DELETE:
+        case MODES.REFRESH:
             config.mode = mode;
             break;
         default:
@@ -1641,7 +1696,7 @@ const setMode = (mode: string | MODES) => {
         browser.storage.sync.set({ mode: config.mode });
     }
 
-    showModeHelpMessage();
+    helpful();
 };
 
 /**
@@ -1675,39 +1730,41 @@ const setSortMode = (mode: string | SortModes) => {
  * Initializes the extension data upon document load, intended to be added as
  * a callback for the event listener `DOMContentLoaded`.
  */
-const initializeDocument = () => {
+const init = async () => {
     if (!document) return;
 
-    browser.storage.sync.get((data: any) => {
-        // if there is data available in sync, process it first
-        if (data.alwaysSetSync === true) {
-            // done
-            config = processExtensionSettings(data, config);
-            showModeHelpMessage();
-            filterContainers(null, null);
+    const data = await browser.storage.sync.get();
+
+    // if there is data available in sync, process it first
+    if (data.alwaysSetSync === true) {
+        config = processExtensionSettings(data, config);
+
+        helpful();
+        filter(null, null);
+
+        if (config.selectionMode) {
+            help(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
+        }
+
+        focusSearchBox();
+    } else {
+        // if the user explicitly does not want to use sync,
+        // then get the local storage data
+        const local = await browser.storage.local.get();
+
+        if (local) {
+            config = processExtensionSettings(local, config);
+
+            helpful();
+
+            filter(null, null);
+
             if (config.selectionMode) {
-                setHelpText(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
+                help(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
             }
             focusSearchBox();
-        } else {
-            // if the user explicitly does not want to use sync,
-            // then get the local storage data
-            browser.storage.local.get((data: any) => {
-                if (data) {
-                    config = processExtensionSettings(data, config);
-
-                    showModeHelpMessage();
-
-                    filterContainers(null, null);
-
-                    if (config.selectionMode) {
-                        setHelpText(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
-                    }
-                    focusSearchBox();
-                }
-            });
         }
-    });
+    }
 
     const searchContainerForm = document.getElementById('searchContainerForm');
     const searchContainerInput = document.getElementById('searchContainerInput');
@@ -1758,34 +1815,34 @@ const initializeDocument = () => {
 
     // probably the most important event to add, this ensures that
     // key events toggle filtering
-    searchContainerInput.addEventListener("keyup", () => { filterContainers(null, null); });
+    searchContainerInput.addEventListener("keyup", () => { filter(null, null); });
 
     windowStayOpenState.addEventListener("click", () => {
         config = toggleConfigFlag("windowStayOpenState", config);
     });
     selectionMode.addEventListener("click", () => {
         config = toggleConfigFlag("selectionMode", config);
-        resetSelectedContexts();
+        deselect();
         setSelectedListItemClassNames();
         if (config.selectionMode) {
-            setHelpText(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
+            help(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
         } else {
-            showModeHelpMessage();
+            helpful();
         }
     });
     openCurrentPage.addEventListener("click", () => {
         config = toggleConfigFlag("openCurrentPage", config);
 
         if (config.openCurrentPage) {
-            setHelpText(`Every container will open your current tab's URL.`);
+            help(`Every container will open your current tab's URL.`);
         } else {
-            showModeHelpMessage();
+            helpful();
         }
 
-        filterContainers(null, null);
+        filter(null, null);
     });
     addNewContainer.addEventListener("click", () => {
-        addContext();
+        add();
     });
 
     (modeSelect as HTMLSelectElement).addEventListener("change", (event: Event) => {
@@ -1805,9 +1862,9 @@ const initializeDocument = () => {
 
         setSortMode(target.value);
 
-        resetSelectedContexts();
+        deselect();
 
-        filterContainers(null, null);
+        filter(null, null);
 
         event.preventDefault();
     });
@@ -1833,5 +1890,5 @@ document.addEventListener('DOMContentLoaded', () => {
     //     neverConfirmSaveNonHttpUrls: false,
     //     openCurrentTabUrlOnMatch: UrlMatchTypes.empty,
     // };
-    initializeDocument();
+    init();
 });

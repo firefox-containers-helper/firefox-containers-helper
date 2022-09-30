@@ -29,7 +29,7 @@ export const CONTEXT_ICONS = [
     "fence",
 ];
 
-/** All functional modes that allow the user to interact with container(s). */
+/** All functional modes that allow the user to interact with containers. */
 export enum MODES {
     OPEN = "openOnClick",
     SET_URL = "setDefaultUrlsOnClick",
@@ -40,6 +40,7 @@ export enum MODES {
     REPLACE_IN_URL = "replaceInUrlOnClick",
     DUPLICATE = "duplicateOnClick",
     DELETE = "deleteContainersOnClick",
+    REFRESH = "refreshOnClick",
 }
 
 
@@ -70,7 +71,7 @@ export const CONTEXT_COLORS = [
  */
 export const helpTextMessages = [
     'Tip: Press Enter or click on a container below.',
-    `Tip: Use ${platformModifierKey}(+Shift) to open pinned tab(s).`,
+    `Tip: Use ${platformModifierKey}(+Shift) to open pinned tabs.`,
     'Tip: Shift+Click to execute against every shown result',
     'Tip: Bulk import/export containers via Preferences page.'
 ];
