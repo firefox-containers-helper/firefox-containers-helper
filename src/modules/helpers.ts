@@ -1,3 +1,4 @@
+import { SelectedContextIndex } from 'src/types';
 import { CLASS_ELEMENT_HIDE, CLASS_ELEMENT_SHOW } from './classes';
 import { UrlMatchTypes } from './constants';
 
@@ -86,3 +87,44 @@ export const getCurrentTabOverrideUrl = (url: string, current: string, match: Ur
 export const scrollToTop = () => {
     window.scrollTo(0, 0);
 }
+
+/**
+ * Quickly checks to see if a context is selected, via the selection mode
+ * @param i The index of a particular context within the array of filteredContexts
+ * @returns Whether or not the current context is selected
+ */
+export const isContextSelected = (i: number, selected: SelectedContextIndex): boolean => {
+    if (selected[i] === 1) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Quickly checks to see if *any* context is selected, via the selection mode
+ * @returns Whether or not *any* current context is selected
+ */
+export const isAnyContextSelected = (selected: SelectedContextIndex): boolean => {
+    const keys = Object.keys(selected);
+    for (let i = 0; i < keys.length; i++) {
+        const key = parseInt(keys[i], 10);
+        if (selected[key] === 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Checks if a user input string matches a container name using a rudimentary
+ * search algorithm. Should improve this in the future.
+ * @param contextName The lowercase name of the `contextualIdentity` to run the search query against
+ * @param userQuery A string that the user entered as a search term
+ * @returns Whether or not a name and query should be included as part of the search results
+ */
+export const isUserQueryContextNameMatch = (contextName: string, userQuery: string): boolean => {
+    if (contextName.indexOf(userQuery) !== -1) {
+        return true;
+    }
+    return false;
+};

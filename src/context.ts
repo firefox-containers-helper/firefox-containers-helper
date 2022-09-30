@@ -5,29 +5,30 @@ import {
     CONTEXT_COLORS,
     MODES,
     PlatformModifierKey,
-    helpTextMessages,
     SORT_MODE_NAME_ASC,
     SORT_MODE_NAME_DESC,
     SORT_MODE_NONE,
     SORT_MODE_NONE_REVERSE,
     SORT_MODE_URL_ASC,
     SORT_MODE_URL_DESC,
-    containerListItemUrlLabel,
-    containerListItemUrlLabelInverted,
     CONTAINER_LIST_DIV_ID,
     UrlMatchTypes,
     SortModes,
 } from './modules/constants';
-import {
-    containerListItemSelectedClassNames,
-    containerListItemInactiveClassNames,
-    containerListItemActiveDangerClassNames,
-    containerListItemActiveClassNames
-} from "./modules/classes";
-import { getCurrentTabOverrideUrl } from "./modules/helpers";
+import { getCurrentTabOverrideUrl, isAnyContextSelected, isUserQueryContextNameMatch } from "./modules/helpers";
 import {
     buildContainerListGroupElement,
+    buildContainerListItem,
+    buildEmptyContainerListItem,
+    removeExistingContainerListGroupElement,
+    setSelectedListItemClassNames,
 } from './modules/elements';
+import {
+    help,
+    bottomHelp,
+    focusSearchBox,
+    helpful,
+} from './modules/html';
 
 let config: ExtensionConfig = {
     windowStayOpenState: true,
@@ -45,404 +46,6 @@ let config: ExtensionConfig = {
     neverConfirmSaveNonHttpUrls: false,
     openCurrentTabUrlOnMatch: UrlMatchTypes.empty,
 };
-
-/**
- * Quickly checks to see if a context is selected, via the selection mode
- * @param i The index of a particular context within the array of filteredContexts
- * @returns Whether or not the current context is selected
- */
-const isContextSelected = (i: number): boolean => {
-    if (config.selectedContextIndices[i] === 1) {
-        return true;
-    }
-    return false;
-}
-
-/**
- * Quickly checks to see if *any* context is selected, via the selection mode
- * @returns Whether or not *any* current context is selected
- */
-const isAnyContextSelected = (): boolean => {
-    const keys = Object.keys(config.selectedContextIndices);
-    for (let i = 0; i < keys.length; i++) {
-        const key = parseInt(keys[i], 10);
-        if (config.selectedContextIndices[key] === 1) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * Sets the proper class names for filtered contexts that are either selected
- * or not
- */
-const setSelectedListItemClassNames = () => {
-    const keys = Object.keys(config.selectedContextIndices);
-    for (let i = 0; i < keys.length; i++) {
-        const liElement = document.getElementById(`filtered-context-${i}-li`);
-        const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-        if (config.selectedContextIndices[i] === 1) {
-            if (liElement) {
-                liElement.className = containerListItemSelectedClassNames;
-            }
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabelInverted;
-            }
-        } else {
-            if (liElement) {
-                liElement.className = containerListItemInactiveClassNames;
-            }
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        }
-    }
-}
-
-/**
- * Assembles an HTML element that contains the colorized container icon for a given container.
- * context - The container that this icon element will represent
- * @returns An HTML element containing the colorized container icon for `context`.
- */
-const buildContainerIconElement = (context: browser.contextualIdentities.ContextualIdentity): HTMLElement => {
-    const containerIconHolderElement = document.createElement('div');
-    containerIconHolderElement.className = 'icon';
-    addEmptyEventListenersToElement(containerIconHolderElement);
-
-    const containerIconElement = document.createElement('i');
-    containerIconElement.style.backgroundImage = `url(${context.iconUrl})`;
-    containerIconElement.style.filter = `drop-shadow(${context.colorCode} 16px 0)`;
-    addEmptyEventListenersToElement(containerIconElement);
-
-    containerIconHolderElement.appendChild(containerIconElement);
-
-    return containerIconHolderElement;
-};
-
-/**
- * Assembles an HTML element that contains a text label for a given container.
- * context - The contextualIdentity that this text element will represent
- * @param i The index of this contextualIdentity within the filteredResults array
- * @param currentTab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
- * @param actualCurrentUrl The URL that the current tab is supposed to be loading.
- * @returns An HTML element containing text that represents the
- * container's name and default URL, if defined.
- */
-const buildContainerLabelElement = (
-    context: browser.contextualIdentities.ContextualIdentity,
-    i: number,
-    currentTab: browser.tabs.Tab,
-    actualCurrentUrl: string,
-): HTMLElement => {
-    const containerLabelDivHoldingElement = document.createElement('div');
-    containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
-
-    const containerLabelElement = document.createElement('span');
-    containerLabelElement.innerText = `${context.name}`;
-
-    const containerUrlLabelElement = document.createElement('span');
-    containerUrlLabelElement.className = containerListItemUrlLabel;
-    containerUrlLabelElement.id = `filtered-context-${i}-url-label`;
-    const contextDefaultUrl = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
-    if (contextDefaultUrl) {
-        if (config.openCurrentTabUrlOnMatch && (currentTab || actualCurrentUrl)) {
-            // if the current tab isn't loaded yet, the url might be empty,
-            // but we are supposed to be navigating to a page
-            let currentUrl = currentTab.url || "";
-            if (actualCurrentUrl) {
-                currentUrl = actualCurrentUrl;
-            }
-            const overrideUrl = getCurrentTabOverrideUrl(contextDefaultUrl, currentUrl, config.openCurrentTabUrlOnMatch);
-            if (overrideUrl && overrideUrl !== contextDefaultUrl) {
-                containerUrlLabelElement.innerHTML = `<s>${contextDefaultUrl.substr(0, 40)}</s><br/>${config.openCurrentTabUrlOnMatch} match, will open in this URL:<br/>${overrideUrl.substr(0, 40)}`;
-            } else {
-                containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
-            }
-        } else {
-            containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
-        }
-
-    }
-
-    // similar to the above - if the "openCurrentPage" config option has been selected,
-    // then we should override all URL's, as a finality
-    if (config.openCurrentPage && (currentTab || actualCurrentUrl)) {
-        // TODO: bit of refactoring would be nice since I just copy/pasted
-        // this from above
-
-        // if the current tab isn't loaded yet, the url might be empty,
-        // but we are supposed to be navigating to a page
-        let currentUrl = currentTab.url || "";
-        if (actualCurrentUrl) {
-            currentUrl = actualCurrentUrl;
-        }
-
-        containerUrlLabelElement.innerHTML = `${currentUrl.substr(0, 40)}${currentUrl.length > 40 ? '...' : ''}`;
-    }
-
-    addEmptyEventListenersToElement(containerLabelElement);
-    addEmptyEventListenersToElement(containerUrlLabelElement);
-    addEmptyEventListenersToElement(containerLabelDivHoldingElement);
-
-    containerLabelDivHoldingElement.appendChild(containerLabelElement);
-    containerLabelDivHoldingElement.appendChild(containerUrlLabelElement);
-
-    return containerLabelDivHoldingElement;
-};
-
-/**
- * Assembles an HTML element that contains a text label for empty search results.
- * @returns An HTML element containing text that represents the
- * container's name and default URL, if defined.
- */
-const buildEmptyContainerLabelElement = (label: string): HTMLElement => {
-    const containerLabelDivHoldingElement = document.createElement('div');
-    containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
-
-    const containerLabelElement = document.createElement('span');
-    containerLabelElement.innerText = `${label}`;
-
-    addEmptyEventListenersToElement(containerLabelElement);
-    addEmptyEventListenersToElement(containerLabelDivHoldingElement);
-
-    containerLabelDivHoldingElement.appendChild(containerLabelElement);
-
-    return containerLabelDivHoldingElement;
-};
-
-/**
- * Adds click and other event handlers to a container list item HTML element.
- * @param liElement The container list item that will receive all event listeners
- * @param filteredResults A list of the currently filtered set of browser.contextualIdentities
- * @param context The contextualIdentity that this list item will represent
- * @param i The index of this contextualIdentity within the filteredResults array
- * @returns Any error message, or empty string if no errors occurred.
- */
-const applyEventListenersToContainerListItem = (
-    liElement: HTMLElement,
-    filteredResults: browser.contextualIdentities.ContextualIdentity[],
-    context: browser.contextualIdentities.ContextualIdentity,
-    i: number,
-): string => {
-    try {
-        liElement.addEventListener('mouseover', (event: MouseEvent) => {
-            if (!event || !event.target) return;
-
-            const target = event.target as HTMLElement;
-
-            if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
-                target.className = containerListItemActiveDangerClassNames;
-                return;
-            }
-
-            target.className = containerListItemActiveClassNames;
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabelInverted;
-            }
-        });
-        liElement.addEventListener('mouseleave', (event: MouseEvent) => {
-            if (!event || !event.target) return;
-
-            const target = event.target as HTMLElement;
-
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-
-            if (isContextSelected(i)) {
-                target.className = containerListItemSelectedClassNames;
-                if (urlLabel) {
-                    urlLabel.className = containerListItemUrlLabelInverted;
-                }
-
-                return;
-            }
-
-            target.className = containerListItemInactiveClassNames;
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        });
-        liElement.addEventListener('click', (event: MouseEvent) => containerClickHandler(filteredResults, context, event));
-        liElement.addEventListener('keydown', (event: KeyboardEvent) => {
-            if (event.key === 'Enter') {
-                containerClickHandler(filteredResults, context, event);
-            }
-        });
-        liElement.addEventListener('onfocus', (event: Event) => {
-            if (!event || !event.target) return;
-
-            const target = event.target as HTMLElement;
-
-            if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
-                target.className = containerListItemActiveDangerClassNames;
-                return;
-            }
-
-            target.className = containerListItemActiveClassNames;
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        });
-        liElement.addEventListener('blur', (event: FocusEvent) => {
-            if (!event || !event.target) return;
-
-            const target = event.target as HTMLElement;
-
-            if (isContextSelected(i)) {
-                target.className = containerListItemSelectedClassNames;
-                return;
-            }
-
-            target.className = containerListItemInactiveClassNames;
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        });
-
-        return "";
-    } catch (e) {
-        return `failed to apply an event listener: ${JSON.stringify(e)}`;
-    }
-};
-
-/**
- * Assembles an HTML element that contains an entire container list item.
- * @param filteredResults A list of the currently filtered set of browser.contextualIdentities
- * @param context The contextualIdentity that this list item will represent
- * @param i The index of this contextualIdentity within the filteredResults array
- * @param currentTab The currently active tab. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
- * @param actualCurrentUrl The URL that the current tab is supposed to be loading.
- * @returns An HTML element with event listeners, formatted with css as a bootstrap list item.
- */
-const buildContainerListItem = (
-    filteredResults: browser.contextualIdentities.ContextualIdentity[],
-    context: browser.contextualIdentities.ContextualIdentity,
-    i: number,
-    currentTab: browser.tabs.Tab,
-    actualCurrentUrl: string,
-) => {
-    const liElement = document.createElement('li');
-    liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
-
-    const containerIconHolderElement = buildContainerIconElement(context);
-    const containerLabelElement = buildContainerLabelElement(context, i, currentTab, actualCurrentUrl);
-
-    if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
-        const divElement = document.createElement('div');
-        divElement.className = "d-flex justify-content-center align-items-center align-content-center";
-        divElement.id = `filtered-context-${i}-div`;
-        addEmptyEventListenersToElement(divElement);
-        divElement.appendChild(containerIconHolderElement);
-        liElement.appendChild(divElement);
-    } else {
-        liElement.appendChild(containerIconHolderElement);
-    }
-
-    liElement.appendChild(containerLabelElement);
-
-    containerIconHolderElement.id = `filtered-context-${i}-icon`;
-    containerLabelElement.id = `filtered-context-${i}-label`;
-    liElement.id = `filtered-context-${i}-li`;
-
-    const err = applyEventListenersToContainerListItem(liElement, filteredResults, context, i);
-    if (err) {
-        // TODO: localization refactor
-        showAlert(`encountered error building list item for container ${context.name}: ${err}`, 'Error');
-    }
-
-    return liElement;
-};
-
-/**
- * Assembles an HTML element that represents empty search results, but appears
- * similar to an actual search result.
- * @param i A unique value that will make the class/id of the element unique
- * @returns An HTML element with event listeners, formatted with css as a bootstrap list item.
- */
-const buildEmptyContainerListItem = (i: number): HTMLElement => {
-    const liElement = document.createElement('li');
-    liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
-
-    const labelElement = buildEmptyContainerLabelElement('No results');
-
-    const xIconElement = document.createElement('span');
-    xIconElement.className = 'mono-16';
-    xIconElement.innerText = "x";
-
-    liElement.appendChild(xIconElement);
-    liElement.appendChild(labelElement);
-
-    labelElement.id = `filtered-context-${i}-label`;
-    liElement.id = `filtered-context-${i}-li`;
-
-    return liElement;
-};
-
-
-/**
- * When mousing over a list item, child elements can
- * mess up the way classes are set upon mouseover/mouseleave.
- * This fixes that.
- * @param event The event that was created when the user performed some interaction with the document.
- */
-const haltingCallback = (event: Event) => {
-    event.preventDefault();
-    event.stopPropagation();
-}
-
-/**
- * When mousing over a list item, child elements can
- * mess up the way classes are set upon mouseover/mouseleave.
- * This fixes that by applying the haltingCallback event handler to a few
- * events such as mouseover and mouseleave.
- * @param element The HTML element that will receive generic event listeners.
- */
-const addEmptyEventListenersToElement = (element: HTMLElement) => {
-    element.addEventListener('mouseover', haltingCallback);
-    element.addEventListener('mouseleave', haltingCallback);
-};
-
-/**
- * Sets a message inside the "warning" text element.
- * @param message The HTML string to put inside the warning text element.
- */
-const help = (message: string) => {
-    let msg = message;
-    if (!message) {
-        // TODO: make this more clean
-        const rngHelpMsgIndex = parseInt((Math.random() * helpTextMessages.length).toString(), 10) || 0;
-        msg = helpTextMessages[rngHelpMsgIndex];
-    }
-
-    const helpTextEl = document.getElementById('helpText');
-    if (!helpTextEl) return;
-
-    helpTextEl.innerText = msg;
-};
-
-/**
- * Sets a message inside the "summary" text element, such as "Showing x/y containers"
- * @param message The HTML string to put inside the summary text element.
- */
-const bottomHelp = (message: string) => {
-    const summary = document.getElementById('summaryText');
-    if (!summary) return;
-
-    summary.innerText = message;
-}
-
-/**
- * Sets focus to the search box. Should be called often, especially on popup.
- */
-const focusSearchBox = () => {
-    const search = document.getElementById('searchContainerInput');
-    if (!search) return;
-
-    search.focus();
-}
 
 /**
  * Persists container default URL configuration data to extension storage.
@@ -657,23 +260,7 @@ const open = async (
 
     if (contexts.length === 0) return;
 
-    // TODO: refactor this into a friendly helper function
     const requireHTTP = !config.neverConfirmSaveNonHttpUrls;
-
-    // iterate through the list to check if there is at least one URL that
-    // uses a non-HTTP protocol
-    // for (const context of contexts) {
-    //     let url = config.containerDefaultUrls[context.cookieStoreId];
-
-    //     const noHTTPS = url.indexOf(`https://`) !== 0;
-    //     const noHTTP = url.indexOf(`http://`) !== 0;
-
-    //     if (requireHTTP && noHTTPS && noHTTP) {
-    //         const q = `Warning: The URL "${url}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`;
-    //         if (!confirm(q)) return;
-    //         break; // only need to prompt the user once
-    //     }
-    // }
 
     let shouldPrompt = true;
 
@@ -798,7 +385,8 @@ const update = async (contexts: browser.contextualIdentities.ContextualIdentity[
 
 /** Sets the color of one or more contexts simultaneously. */
 const setColors = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const msg = `Choose a color for ${contexts.length} containers from the following list:\n\n${CONTEXT_COLORS.join("\n")}`;
+    const s = contexts.length === 1 ? '' : 's';
+    const msg = `Choose a color for ${contexts.length} container${s} from the following list:\n\n${CONTEXT_COLORS.join(", ")}`;
     const color = await showPrompt(msg, 'Choose Color');
     if (!color) {
         // TODO: !color is indistinguishable from the user pressing "cancel" at prompt
@@ -816,7 +404,8 @@ const setColors = async (contexts: browser.contextualIdentities.ContextualIdenti
 
 /** Sets the icon of one or more contexts simultaneously. */
 const setIcons = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
-    const msg = `Choose an icon for ${contexts.length} containers from the following list:\n\n${CONTEXT_ICONS.join("\n")}`;
+    const s = contexts.length === 1 ? '' : 's';
+    const msg = `Choose an icon for ${contexts.length} container${s} from the following list:\n\n${CONTEXT_ICONS.join(", ")}`;
     const icon = await showPrompt(msg, 'Choose Icon');
 
     if (!icon) {
@@ -1180,12 +769,12 @@ const containerClickHandler = async (
                 "lastSelectedContextIndex": config.lastSelectedContextIndex,
             });
         }
-        setSelectedListItemClassNames();
+        setSelectedListItemClassNames(config.selectedContextIndices);
         return;
     }
 
     let contexts: browser.contextualIdentities.ContextualIdentity[] = [];
-    if (isAnyContextSelected()) {
+    if (isAnyContextSelected(config.selectedContextIndices)) {
         const keys = Object.keys(config.selectedContextIndices);
         for (let i = 0; i < keys.length; i++) {
             if (config.selectedContextIndices[i] === 1) {
@@ -1323,35 +912,6 @@ const containerClickHandler = async (
 };
 
 /**
- * In preparation for rebuilding the filtered list of containers, this function
- * finds and deletes the container list group elements.
- * @param containerListElement The empty (by default, before population) `<div>` on the `popup.html` page that holds the entire container list element collection. Retrieve by using document.getElementById(CONTAINER_LIST_DIV_ID)
- */
-const removeExistingContainerListGroupElement = (containerListElement: HTMLElement) => {
-    const list = document.getElementById('containerListGroup');
-    if (!list) {
-        return;
-    }
-
-    containerListElement.removeChild(list);
-};
-
-
-/**
- * Checks if a user input string matches a container name using a rudimentary
- * search algorithm.
- * @param contextName The lowercase name of the `contextualIdentity` to run the search query against
- * @param userQuery A string that the user entered as a search term
- * @returns Whether or not a name and query should be included as part of the search results
- */
-const isUserQueryContextNameMatch = (contextName: string, userQuery: string): boolean => {
-    if (contextName.indexOf(userQuery) !== -1) {
-        return true;
-    }
-    return false;
-};
-
-/**
  * Applies the user's search query, and updates the list of containers accordingly.
  * @param event The event that called this function, such as a key press or mouse click
  * @param actualTabUrl When in sticky popup mode, when opening a new URL, the new tab page might not be loaded yet, so the tab query returns an empty URL. actualTabUrl allows a URL to be passed in in advance, so that the extension can properly show URL overrides in the UI.
@@ -1396,7 +956,7 @@ const filter = async (
             if (!tab.active) continue;
 
             if (!Array.isArray(contexts)) {
-                setSelectedListItemClassNames();
+                setSelectedListItemClassNames(config.selectedContextIndices);
                 break;
             }
 
@@ -1463,7 +1023,10 @@ const filter = async (
                     context,
                     i,
                     tab,
-                    actualTabUrl || ""
+                    actualTabUrl || "",
+                    config.mode,
+                    config,
+                    containerClickHandler,
                 );
                 ulElement.appendChild(liElement);
             }
@@ -1489,7 +1052,7 @@ const filter = async (
 
                 event.preventDefault();
             }
-            setSelectedListItemClassNames();
+            setSelectedListItemClassNames(config.selectedContextIndices);
             break;
         }
     } catch (err) {
@@ -1628,43 +1191,6 @@ const processExtensionSettings = (data: any, conf: ExtensionConfig | any): Exten
 };
 
 /**
- * Based on the currently selected mode, set a helpful message to show
- * to the user.
- */
-const helpful = () => {
-    switch (config.mode) {
-        case MODES.SET_URL:
-            help("URLs do not affect multi-account container preferences.");
-            break;
-        case MODES.SET_NAME:
-            help("You will be prompted for a new name, 25 character max.")
-            break;
-        case MODES.REPLACE_IN_URL:
-        case MODES.REPLACE_IN_NAME:
-            help("You will be prompted for find & replace strings.")
-            break;
-        case MODES.SET_ICON:
-            help("You will be prompted for a new icon.")
-            break;
-        case MODES.SET_COLOR:
-            help("You will be prompted for a new color.")
-            break;
-        case MODES.DUPLICATE:
-            help("Duplicates containers and URLs, but not cookies etc.")
-            break;
-        case MODES.DELETE:
-            help("Warning: Will delete containers that you click");
-            break;
-        case MODES.REFRESH:
-            help("Warning: Will delete and recreate containers");
-            break;
-        default:
-            help("");
-            break;
-    }
-};
-
-/**
  * When the user changes the current mode, this function sets the stored
  * configuration value accordingly.
  * @param mode The mode to set.
@@ -1696,7 +1222,7 @@ const setMode = (mode: string | MODES) => {
         browser.storage.sync.set({ mode: config.mode });
     }
 
-    helpful();
+    helpful(config.mode);
 };
 
 /**
@@ -1739,7 +1265,7 @@ const init = async () => {
     if (data.alwaysSetSync === true) {
         config = processExtensionSettings(data, config);
 
-        helpful();
+        helpful(config.mode);
         filter(null, null);
 
         if (config.selectionMode) {
@@ -1755,7 +1281,7 @@ const init = async () => {
         if (local) {
             config = processExtensionSettings(local, config);
 
-            helpful();
+            helpful(config.mode);
 
             filter(null, null);
 
@@ -1823,11 +1349,11 @@ const init = async () => {
     selectionMode.addEventListener("click", () => {
         config = toggleConfigFlag("selectionMode", config);
         deselect();
-        setSelectedListItemClassNames();
+        setSelectedListItemClassNames(config.selectedContextIndices);
         if (config.selectionMode) {
             help(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
         } else {
-            helpful();
+            helpful(config.mode);
         }
     });
     openCurrentPage.addEventListener("click", () => {
@@ -1836,7 +1362,7 @@ const init = async () => {
         if (config.openCurrentPage) {
             help(`Every container will open your current tab's URL.`);
         } else {
-            helpful();
+            helpful(config.mode);
         }
 
         filter(null, null);

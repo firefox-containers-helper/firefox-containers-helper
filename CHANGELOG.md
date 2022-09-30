@@ -10,6 +10,8 @@ This changelog contains all relevant changes between different versions of the e
 * Fixed verbiage in various places across the options page and extension popup
 * Implemented "Confirm" modals instead of using the native JavaScript confirm() function
 * Similarly, implemented "Prompt" modals instead of using the native JavaScript prompt() function
+* Added "Refresh" function to allow for a faster way to delete & re-create an existing container
+  * Useful for quickly purging cookies without having to set up a container over again
 * Added alert modals to options page and popup page
   * Options page had to have its maximum height capped in order for the modal to work correctly. The page simply scrolls differently now.
 * Other minor fixes
