@@ -14,6 +14,10 @@ This changelog contains all relevant changes between different versions of the e
   * Useful for quickly purging cookies without having to set up a container over again
 * Added alert modals to options page and popup page
   * Options page had to have its maximum height capped in order for the modal to work correctly. The page simply scrolls differently now.
+* Add a settings Clean Up option that allows users to purge orphaned URL associations with a workflow that gives the user the chance to review cleaned settings before saving them
+  * Added a warning readout to the popup dialog to indicate when cleanup is necessary
+* Focus cancel/OK buttons in modals by default where necessary
+* Preferences page compatibility improvements
 * Other minor fixes
 
 ## v0.0.28

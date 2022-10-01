@@ -1,4 +1,4 @@
-import { SelectedContextIndex } from 'src/types';
+import { ExtensionConfig, SelectedContextIndex } from 'src/types';
 import { CLASS_ELEMENT_HIDE, CLASS_ELEMENT_SHOW } from './classes';
 import { UrlMatchTypes } from './constants';
 
@@ -128,3 +128,68 @@ export const isUserQueryContextNameMatch = (contextName: string, userQuery: stri
     }
     return false;
 };
+
+
+/**
+ * Returns the number of dirty entries in the config - e.g. container URLs
+ * that no longer have containers (orphaned).
+ *
+ * @param conf
+ * @return The number of dirty entries in the config.
+ */
+export const checkDirty = async (conf: ExtensionConfig): Promise<number> => {
+    const ids = Object.keys(conf.containerDefaultUrls);
+
+    const removed: string[] = [];
+
+    for (const id of ids) {
+        try {
+            const context = await browser.contextualIdentities.get(id);
+
+            if (!context) removed.push(id);
+        } catch (err) {
+            removed.push(id);
+        }
+    }
+
+    return removed.length;
+}
+
+/**
+ * Cleans up the config for this extension by removing all cookie store ID's
+ * that do not currently correspond to an actual container's cookie store ID.
+ *
+ * @return The resulting `ExtensionConfig` and the container cookie store ID's (strings) that were removed.
+ */
+export const getCleanSettings = async (conf: ExtensionConfig): Promise<[ExtensionConfig, string[]]> => {
+    const ids = Object.keys(conf.containerDefaultUrls);
+
+    const removed: string[] = [];
+
+    for (const id of ids) {
+        /**
+         * Reusable function that deletes a cookie store ID from the
+         * conf.containerDefaultUrls object. Does not delete the actual
+         * container, because presumably, it doesn't exist if this function
+         * is being called in the first place.
+         *
+         * @param id The cookie store ID whose default URL should be remove.
+         */
+        const remove = (id: string) => {
+            removed.push(id);
+            delete conf.containerDefaultUrls[id];
+        }
+
+        try {
+            const context = await browser.contextualIdentities.get(id);
+
+            if (!context) remove(id);
+        } catch (err) {
+            remove(id);
+        }
+    }
+
+    conf.selectedContextIndices = {};
+
+    return [conf, removed];
+}

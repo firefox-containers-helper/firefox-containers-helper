@@ -15,7 +15,7 @@ import {
     UrlMatchTypes,
     SortModes,
 } from './modules/constants';
-import { getCurrentTabOverrideUrl, isAnyContextSelected, isUserQueryContextNameMatch } from "./modules/helpers";
+import { checkDirty, getCurrentTabOverrideUrl, isAnyContextSelected, isUserQueryContextNameMatch } from "./modules/helpers";
 import {
     buildContainerListGroupElement,
     buildContainerListItem,
@@ -50,7 +50,7 @@ let config: ExtensionConfig = {
 /**
  * Persists container default URL configuration data to extension storage.
  */
-const writeContainerDefaultUrlsToStorage = async () => {
+const saveUrls = async () => {
     try {
         await browser.storage.local.set({ "containerDefaultUrls": config.containerDefaultUrls });
 
@@ -113,7 +113,7 @@ const del = async (contexts: browser.contextualIdentities.ContextualIdentity[], 
 
     const containers = `container${contexts.length === 1 ? '' : 's'}`;
 
-    let deleteAllStr = `Are you sure you want to delete ${contexts.length} ${containers} ?\n\n`;
+    let deleteAllStr = `Are you sure you want to delete ${contexts.length} ${containers}?\n\n`;
 
     // limit the dialog to only showing so many lines
     const maxLines = 5;
@@ -155,6 +155,12 @@ const del = async (contexts: browser.contextualIdentities.ContextualIdentity[], 
     for (const context of contexts) {
         try {
             const d = await browser.contextualIdentities.remove(context.cookieStoreId);
+
+            if (config.containerDefaultUrls[context.cookieStoreId]) {
+                delete config.containerDefaultUrls[context.cookieStoreId];
+                await saveUrls();
+            }
+
             deleted.push(d);
 
             help(`Deleted ${deleted.length}/${contexts.length} ${containers}`);
@@ -225,7 +231,7 @@ const setUrls = async (contexts: browser.contextualIdentities.ContextualIdentity
         help(m);
     }
 
-    await writeContainerDefaultUrlsToStorage();
+    await saveUrls();
 }
 
 /**
@@ -535,7 +541,7 @@ const replaceInUrls = async (contexts: browser.contextualIdentities.ContextualId
 
         // only update storage if needed
         if (updated.length > 0) {
-            writeContainerDefaultUrlsToStorage();
+            saveUrls();
             help(`Updated ${updated.length} containers`);
         }
     } catch (err) {
@@ -654,14 +660,20 @@ const add = async () => {
     }
 };
 
+/** Duplicates and then deletes containers. */
 const refresh = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
     const s = contexts.length === 1 ? '' : 's';
 
-    const msg = `Delete and re-create ${contexts.length} container${s}? Basic properties, such as color, URL, name, and icon are kept, but not cookies or other site information. The ordering of the container${s} may not be preserved.`;
+    const msg = `Delete and re-create ${contexts.length} container${s}? Basic properties, such as color, URL, name, and icon are kept, but not cookies or other site information. The ordering of the container${s} may not be preserved. This will operate in two steps: duplicate, then delete.`;
     const title = 'Delete and Re-create?';
     const confirmed = await showConfirm(msg, title);
 
     if (!confirmed) return;
+
+    const msg2 = `This is a destructive action and will delete actual cookie and other related site data for ${contexts.length} container${s}! Are you absolutely sure?`;
+    const really = await showConfirm(msg2, 'Really Delete and Re-create?');
+
+    if (!really) return;
 
     const duplicated = await duplicate(contexts, false);
     const refreshed = await del(contexts, false);
@@ -1394,10 +1406,25 @@ const init = async () => {
 
         event.preventDefault();
     });
+
+    // check if the config is dirty
+
+    if (!config) return;
+
+    const dirty = await checkDirty(config);
+
+    if (dirty <= 0) return;
+
+    const s = dirty === 1 ? '' : 's';
+
+    const msg = `Cleanup needed, visit Preferences (${dirty} orphan${s})`;
+
+    help(msg);
+    bottomHelp(msg);
 }
 
 // start everything up upon content load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // TODO: try to stop using a global 'config' object and write pure
     //       functions - this is where the initial config would be created:
     // let config: ExtensionConfig = {

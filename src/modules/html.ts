@@ -49,7 +49,7 @@ export const helpful = (mode: MODES) => {
             help("URLs do not affect multi-account container preferences.");
             break;
         case MODES.SET_NAME:
-            help("You will be prompted for a new name, 25 character max.")
+            help("You will be prompted for a new name.")
             break;
         case MODES.REPLACE_IN_URL:
         case MODES.REPLACE_IN_NAME:

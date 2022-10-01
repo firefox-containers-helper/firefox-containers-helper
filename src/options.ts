@@ -1,12 +1,13 @@
+import { checkDirty, getCleanSettings } from "./modules/helpers";
 import { showAlert, showConfirm } from "./modules/modals";
-import { ContextualIdentityWithURL } from "./types";
+import { ContextualIdentityWithURL, ExtensionConfig } from "./types";
 
 // https://github.com/mdn/webextensions-examples/blob/60ce50b10ee66f6d706b0715909e756e4bdba63d/commands/options.js
 // https://github.com/mdn/webextensions-examples/blob/60ce50b10ee66f6d706b0715909e756e4bdba63d/commands/options.html
 const commandName = '_execute_browser_action';
 
-var localSettings = {};
-var syncSettings = {};
+var localSettings: ExtensionConfig | any = {};
+var syncSettings: ExtensionConfig | any = {};
 
 /** Update the UI: set the value of the shortcut text box. */
 const updateUI = async () => {
@@ -163,7 +164,7 @@ const validateLocalSettings = async (settings?: any): Promise<boolean> => {
 
         await setSaveSettingsButtonsDisabled(false);
 
-        checkSettingsAreEqual();
+        await checkSettingsAreEqual();
 
         return true;
     } catch (e) {
@@ -184,7 +185,7 @@ const onChangeLocalSettings = (e: KeyboardEvent) => {
     }
 }
 
-const checkSettingsAreEqual = () => {
+const checkSettingsAreEqual = async () => {
     let result = false;
     if (localSettings && syncSettings) {
         result = objectEquals(localSettings, syncSettings);
@@ -233,7 +234,7 @@ const refreshSyncSettings = async () => {
         const data = await browser.storage.sync.get();
         syncSettings = { ...data };
 
-        checkSettingsAreEqual();
+        await checkSettingsAreEqual();
 
         const syncSettingsTextAreaEl = document.getElementById('syncSettingsTextArea');
         const alwaysSetSyncEl = document.getElementById('alwaysSetSync');
@@ -290,20 +291,52 @@ const btnRefreshSyncClick = () => {
     validateLocalSettings();
 }
 
-const saveLocalSettings = async () => {
+const getLocalSettingsTextArea = async (): Promise<HTMLTextAreaElement | void> => {
     const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
     if (!localSettingsTextAreaEl) {
         await showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
         return;
     }
     const localSettingsTextArea = localSettingsTextAreaEl as HTMLTextAreaElement;
+
+    return localSettingsTextArea;
+}
+
+/**
+ * Attempts to parse the local input settings text area. Shows modals upon parse
+ * failure, so there's no need to show modals upon failure elsewhere, although
+ * this honestly is not an optimal choice and should be updated later.
+ */
+const getConfigFromLocalSettingsTextArea = async (): Promise<ExtensionConfig | void> => {
+    const localSettingsTextArea = await getLocalSettingsTextArea();
+
+    if (!localSettingsTextArea) return;
+
     try {
         const valid = validateLocalSettings(localSettingsTextArea.value);
         if (!valid) {
             await showAlert('The provided local settings do not appear to be valid.', 'Invalid Settings');
             return;
         }
-        const settings = JSON.parse(localSettingsTextArea.value);
+        const settings = JSON.parse(localSettingsTextArea.value) as ExtensionConfig;
+
+        return settings;
+    } catch (err) {
+        if (err) {
+            await showAlert(`Failed get settings from Local Settings text area: ${JSON.stringify(err)}`, 'Settings Error');
+            return;
+        }
+
+        await showAlert(`Failed get settings from Local Settings text area due to an unknown error.`, 'Settings Error');
+        return;
+    }
+}
+
+const saveLocalSettings = async () => {
+    try {
+        const settings = await getConfigFromLocalSettingsTextArea();
+
+        if (!settings) return;
 
         await browser.storage.local.set(settings);
 
@@ -360,14 +393,50 @@ const saveSyncSettings = async () => {
     }
 }
 
-const btnSaveLocalClick = () => {
-    saveLocalSettings();
-    checkSettingsAreEqual();
+const btnSaveLocalClick = async () => {
+    await saveLocalSettings();
+    await checkSettingsAreEqual();
 }
 
-const btnSaveSyncClick = () => {
-    saveSyncSettings();
-    checkSettingsAreEqual();
+const btnSaveSyncClick = async () => {
+    await saveSyncSettings();
+    await checkSettingsAreEqual();
+}
+
+
+/**
+ * Asks the user if they want to clean up the config, and then proceeds to
+ * remove any default URL's from the config that do not map to any existing
+ * containers.
+ */
+const btnCleanLocalClick = async () => {
+    const proceed = await showConfirm(
+        `Sometimes, a container gets deleted, but its URL association within Containers Helper might stay configured. This can stack up over time, and the extension's settings can exceed Firefox Sync quota. This requires a cleanup - generally, this is safe, but if you have important old URLs stored in the Local Settings text field, please copy/paste them to a safe place before continuing, because they will be removed. You will also be given the chance to save the cleaned-up configuration immediately, or continue to edit it. Note that this will also de-select any selected containers from the popup list of containers. If you have more than 1000 cleanup targets, this may take a moment. Proceed?`,
+        'Clean Up Config?'
+    )
+
+    if (!proceed) return;
+
+    const settings = await getConfigFromLocalSettingsTextArea();
+
+    if (!settings) return;
+
+    const [cleaned, removed] = await getCleanSettings(settings);
+
+    const localSettingsTextArea = await getLocalSettingsTextArea();
+
+    if (!localSettingsTextArea) return;
+
+    localSettings = { ...cleaned };
+    localSettingsTextArea.value = JSON.stringify(localSettings);
+
+    const s = removed.length === 1 ? '' : 's';
+
+    const save = await showConfirm(`Cleaned up ${removed.length} orphaned URL association${s}. You can view the new configuration in the Local Settings text field. Would you like to save to the local config now?`, 'Cleaning Success');
+
+    if (!save) return;
+
+    await btnSaveLocalClick();
 }
 
 /**
@@ -728,7 +797,20 @@ const btnImportContainersClick = async () => {
         await showAlert(`Failed to create a container due to an unknown error.`, 'Settings Error');
         return;
     }
-}
+};
+
+const makeBiggerClick = async () => {
+    const optionsMainDivEl = document.getElementById('optionsMainDiv');
+
+    if (!optionsMainDivEl) {
+        await showAlert('The optionsMainDiv HTML element is not present.', 'HTML Error');
+        return;
+    }
+
+    const optionsMainDiv = optionsMainDivEl as HTMLDivElement;
+
+    optionsMainDiv.className = "options-main-div-bigger";
+};
 
 /**
  * Initializes the extension data upon document load, intended to be added as
@@ -760,73 +842,85 @@ const initializeDocument = async () => {
     const neverConfirmForOpeningNonHttpUrlsEl = document.getElementById('neverConfirmForOpeningNonHttpUrls');
     const neverConfirmForSavingNonHttpUrlsEl = document.getElementById('neverConfirmForSavingNonHttpUrls');
     const openCurrentTabUrlOnMatchSelectEl = document.getElementById('openCurrentTabUrlOnMatchSelect');
+    const btnCleanLocalEl = document.getElementById('btnCleanLocal');
+    const makeBiggerEl = document.getElementById('makeBigger');
+
+    const htmlErr = 'HTML Error';
 
     if (!localSettingsTextAreaEl) {
-        await showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
+        await showAlert('The localSettingsTextArea HTML element is not present.', htmlErr);
         return;
     }
     if (!updateEl) {
-        await showAlert('The update HTML element is not present.', 'HTML Error');
+        await showAlert('The update HTML element is not present.', htmlErr);
         return;
     }
     if (!resetEl) {
-        await showAlert('The reset HTML element is not present.', 'HTML Error');
+        await showAlert('The reset HTML element is not present.', htmlErr);
         return;
     }
     if (!btnResetLocalEl) {
-        await showAlert('The btnResetLocal HTML element is not present.', 'HTML Error');
+        await showAlert('The btnResetLocal HTML element is not present.', htmlErr);
         return;
     }
     if (!btnSaveLocalEl) {
-        await showAlert('The btnSaveLocal HTML element is not present.', 'HTML Error');
+        await showAlert('The btnSaveLocal HTML element is not present.', htmlErr);
         return;
     }
     if (!btnSaveSyncEl) {
-        await showAlert('The btnSaveSync HTML element is not present.', 'HTML Error');
+        await showAlert('The btnSaveSync HTML element is not present.', htmlErr);
         return;
     }
     if (!btnRefreshSyncEl) {
-        await showAlert('The btnRefreshSync HTML element is not present.', 'HTML Error');
+        await showAlert('The btnRefreshSync HTML element is not present.', htmlErr);
         return;
     }
     if (!btnLoadFromSyncEl) {
-        await showAlert('The btnLoadFromSync HTML element is not present.', 'HTML Error');
+        await showAlert('The btnLoadFromSync HTML element is not present.', htmlErr);
         return;
     }
     if (!alwaysSetSyncEl) {
-        await showAlert('The alwaysSetSync HTML element is not present.', 'HTML Error');
+        await showAlert('The alwaysSetSync HTML element is not present.', htmlErr);
         return;
     }
     if (!alwaysGetSyncEl) {
-        await showAlert('The alwaysGetSync HTML element is not present.', 'HTML Error');
+        await showAlert('The alwaysGetSync HTML element is not present.', htmlErr);
         return;
     }
     if (!btnResetLocalSettingsEl) {
-        await showAlert('The btnResetLocalSettings HTML element is not present.', 'HTML Error');
+        await showAlert('The btnResetLocalSettings HTML element is not present.', htmlErr);
         return;
     }
     if (!btnResetSyncSettingsEl) {
-        await showAlert('The btnResetSyncSettings HTML element is not present.', 'HTML Error');
+        await showAlert('The btnResetSyncSettings HTML element is not present.', htmlErr);
         return;
     }
     if (!btnExportContainersEl) {
-        await showAlert('The btnExportContainers HTML element is not present.', 'HTML Error');
+        await showAlert('The btnExportContainers HTML element is not present.', htmlErr);
         return;
     }
     if (!btnImportContainersJSONEl) {
-        await showAlert('The btnImportContainersJSON HTML element is not present.', 'HTML Error');
+        await showAlert('The btnImportContainersJSON HTML element is not present.', htmlErr);
         return;
     }
     if (!neverConfirmForOpeningNonHttpUrlsEl) {
-        await showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', 'HTML Error');
+        await showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', htmlErr);
         return;
     }
     if (!neverConfirmForSavingNonHttpUrlsEl) {
-        await showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', 'HTML Error');
+        await showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', htmlErr);
         return;
     }
     if (!openCurrentTabUrlOnMatchSelectEl) {
-        await showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', 'HTML Error');
+        await showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', htmlErr);
+        return;
+    }
+    if (!btnCleanLocalEl) {
+        await showAlert('The btnCleanLocal HTML element is not present.', htmlErr);
+        return;
+    }
+    if (!makeBiggerEl) {
+        await showAlert('The makeBigger HTML element is not present.', htmlErr);
         return;
     }
 
@@ -847,6 +941,8 @@ const initializeDocument = async () => {
     const neverConfirmForOpeningNonHttpUrls = neverConfirmForOpeningNonHttpUrlsEl as HTMLInputElement;
     const neverConfirmForSavingNonHttpUrls = neverConfirmForSavingNonHttpUrlsEl as HTMLInputElement;
     const openCurrentTabUrlOnMatchSelect = openCurrentTabUrlOnMatchSelectEl as HTMLSelectElement;
+    const btnCleanLocal = btnCleanLocalEl as HTMLSelectElement;
+    const makeBigger = makeBiggerEl as HTMLAnchorElement;
 
     localSettingsTextArea.addEventListener('keyup', onChangeLocalSettings);
     update.addEventListener('click', updateShortcut);
@@ -865,6 +961,28 @@ const initializeDocument = async () => {
     neverConfirmForOpeningNonHttpUrls.addEventListener('click', toggleNeverConfirmOpenNonHttpUrlsSettings);
     neverConfirmForSavingNonHttpUrls.addEventListener('click', toggleNeverConfirmSavingNonHttpUrlsSettings);
     openCurrentTabUrlOnMatchSelect.addEventListener('change', openCurrentTabUrlOnMatchSelectChange);
+    btnCleanLocal.addEventListener('click', btnCleanLocalClick);
+
+    makeBigger.addEventListener('click', makeBiggerClick);
+
+    // check if the config is dirty
+
+    if (!localSettings) return;
+
+    const dirty = await checkDirty(localSettings);
+
+    if (dirty <= 0) return;
+
+    const s = dirty === 1 ? '' : 's';
+
+    const cleanUp = await showConfirm(
+        `Warning: There are ${dirty} orphaned container/URL association${s} in the config. You can request a cleanup of the extension's saved settings. It is recommended to proceed so that the extension can consume less storage space and operate more efficiently. Would you like to begin the cleanup? You will be prompted with more information.`,
+        'Clean Up Config?',
+    );
+
+    if (!cleanUp) return;
+
+    await btnCleanLocalClick();
 }
 
 document.addEventListener('DOMContentLoaded', initializeDocument);

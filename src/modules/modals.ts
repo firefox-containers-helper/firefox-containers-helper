@@ -123,6 +123,51 @@ const setModalPromptTitle = (txt: string) => {
     el.innerText = txt;
 }
 
+// -- focus buttons
+
+const focusModalBtnConfirmCancel = () => {
+    const btn = getModalBtnConfirmCancel();
+
+    if (!btn) return;
+
+    btn.focus();
+};
+const focusModalBtnConfirmSecondary = () => {
+    const btn = getModalBtnConfirmSecondary();
+
+    if (!btn) return;
+
+    btn.focus();
+};
+const focusModalBtnConfirmPrimary = () => {
+    const btn = getModalBtnConfirmPrimary();
+
+    if (!btn) return;
+
+    btn.focus();
+};
+const focusModalBtnAlertOK = () => {
+    const btn = getModalBtnAlertOK();
+
+    if (!btn) return;
+
+    btn.focus();
+};
+const focusModalBtnPromptCancel = () => {
+    const btn = getModalBtnPromptCancel();
+
+    if (!btn) return;
+
+    btn.focus();
+};
+const focusModalBtnPromptOK = () => {
+    const btn = getModalBtnPromptOK();
+
+    if (!btn) return;
+
+    btn.focus();
+};
+
 // -- utility functions
 
 /**
@@ -337,8 +382,10 @@ export const showAlert = (msg: string, title: string) => {
     setModalAlertCallback(hideModal);
     setModalAlertText(msg);
     setModalAlertTitle(title);
-    scrollToTop();
+    // scrollToTop();
     showModal();
+
+    focusModalBtnAlertOK();
 }
 
 /**
@@ -362,8 +409,10 @@ export const showConfirm = async (msg: string, title: string): Promise<boolean |
 
     setModalConfirmText(msg);
     setModalConfirmTitle(title);
-    scrollToTop();
+    // scrollToTop();
     showModal();
+
+    focusModalBtnConfirmCancel();
 
     return await promise;
 }
@@ -408,7 +457,7 @@ export const showPrompt = async (msg: string, title: string): Promise<string | n
     setModalPromptText(msg);
     setModalPromptTitle(title);
     setModalPromptInputText('');
-    scrollToTop();
+    // scrollToTop();
     showModal();
 
     promptInput.focus();

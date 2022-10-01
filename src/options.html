@@ -8,10 +8,26 @@
 </head>
 
 <body style="min-height: 500px">
-    <div style="max-height: 500px; overflow-y: scroll;">
+    <div class="container-fluid mt-2">
+        <div class="row">
+            <div class="col-12">
+                <span class="text-muted text-center small">
+                    This view is small for compatibility reasons. <br />
+                    <a href="options.html" target="_blank" rel="noopener noreferer">
+                        Click here to view the full-size Preferences page (recommended).
+                    </a> <br />
+                    <a href="#" id="makeBigger">
+                        Click here to make the view bigger once you're on the Preferences page (recommended).
+                    </a>
+                    <hr />
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="options-main-div-initial" id="optionsMainDiv">
         <div class="modal modal-backdrop modal-hide" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalTitle"
             aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-dialog" role="document">
                 <div class="modal-content" id="modalAlertContent">
                     <div class="modal-header">
                         <h5 class="modal-title" id="modalAlertTitle">Alert</h5>
@@ -314,8 +330,7 @@
                         settings of this addon, click <i>Save Locally</i>, and then you can push the changes to Firefox
                         Sync
                         by clicking <i>Save to Sync</i>. To pull settings down from Firefox Sync, you can click <i>Save
-                            to
-                            Local from Sync</i>.
+                            to Local from Sync</i>.
                     </p>
                     <p>
                         Synchronization between devices should be something that you can finely control. That's why, by
@@ -323,13 +338,20 @@
                         Firefox Sync by checking the <i>Always set settings to Firefox Sync</i> checkbox below, and you
                         can
                         enable reading from Firefox Sync whenever the extension window is opened by checking the
-                        <i>Always
-                            get settings from Firefox Sync</i> checkbox below.
+                        <i>Always get settings from Firefox Sync</i> checkbox below.
                     </p>
                     <p>
                         <i>Note: Use caution when removing this extension from Firefox. Sync settings persist, but local
                             settings may get reset. For best results, copy/paste your settings elsewhere when purging
                             extensions.</i>
+                    </p>
+                    <p>
+                        Some settings don't always get correctly cleaned up and propagated to the extension config, such
+                        as default URL associations that no longer correspond to an existing container. This can happen
+                        when another extension removes a container, and can be used to help reduce the Firefox Sync
+                        storage usage. Click the "Clean Up" button below to remove all default URL's that meet this
+                        criteria for whatever input is in the "Local Settings" text field
+                        below, and click "Save Locally" or "Save to Sync" to propagate the cleaned up config.
                     </p>
                 </div>
             </div>
@@ -353,6 +375,7 @@
                 <div class="col-6">
                     <button type="button" id="btnSaveLocal" class="btn btn-block btn-primary">Save Locally</button>
                     <button type="button" id="btnSaveSync" class="btn btn-block btn-primary">Save to Sync</button>
+                    <button type="button" id="btnCleanLocal" class="btn btn-block btn-primary">Clean Up</button>
                     <button type="button" id="btnResetLocal" class="btn btn-block btn-primary">Refresh</button>
                 </div>
                 <div class="col-6">
