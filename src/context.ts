@@ -205,7 +205,7 @@ const setUrls = async (contexts: browser.contextualIdentities.ContextualIdentity
     const noHTTPS = url.indexOf(`https://`) !== 0;
     const noHTTP = url.indexOf(`http://`) !== 0;
     // TODO: localization refactor
-    const question = 'Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension options page.';
+    const question = 'Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension preferences page.';
 
     if (!allowAnyProtocol && requireHTTP && noHTTPS && noHTTP && !await showConfirm(question, 'Allow Any Protocol?')) return;
 
@@ -301,7 +301,7 @@ const open = async (
             const noHTTP = url.indexOf(`http://`) !== 0;
 
             if (shouldPrompt && !empty && requireHTTP && noHTTPS && noHTTP) {
-                const q = `Warning: The URL "${url}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension options page.`;
+                const q = `Warning: The URL "${url}" does not start with "http://" or "https://". This may cause undesirable behavior. Proceed to open a tab with this URL?\n\nThis dialog can be disabled in the extension preferences page.`;
                 if (!await showConfirm(q, 'Allow Any Protocol?')) return;
                 // only need to prompt the user once
                 shouldPrompt = false;
