@@ -29,6 +29,8 @@ export interface SelectedContextIndex {
 
 /**
  * All configuration options for this web extension are stored in this object.
+ * Note: If this gets updated, please update the `CONF` enum
+ * in constants.ts to include any new or deleted keys.
  */
 export interface ExtensionConfig {
     /**

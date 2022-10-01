@@ -57,7 +57,7 @@ const updateShortcut = async () => {
 }
 
 /**
- * Reset the shortcut and update the textbox.
+ * Reset the shortcut and update the text box.
  */
 const resetShortcut = async (cmd: string) => {
     try {

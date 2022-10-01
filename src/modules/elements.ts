@@ -1,46 +1,58 @@
-import { ExtensionConfig, SelectedContextIndex } from "src/types";
-import { containerListItemSelectedClassNames, containerListItemInactiveClassNames } from "./classes";
-import { containerListItemUrlLabelInverted, containerListItemUrlLabel, MODES } from "./constants";
+import { ContainerDefaultURL, SelectedContextIndex } from "src/types";
+import {
+    containerListItemSelectedClassNames,
+    containerListItemInactiveClassNames,
+    containerDivClassNames,
+    containerLIClassNames,
+    containerLIDestructiveDivClassNames,
+} from "./classes";
+import {
+    containerListItemUrlLabelInverted,
+    containerListItemUrlLabel,
+    MODES,
+    CONF,
+    UrlMatchTypes,
+    CONTAINER_LIST_GROUP_ID,
+} from "./constants";
 import { getCurrentTabOverrideUrl } from "./helpers";
 import {
-    addEmptyEventListenersToElement, applyEventListenersToContainerListItem,
+    addEmptyEventListeners,
+    setEventListeners,
 } from './events';
-import { showAlert } from "./modals";
+import { getSetting } from "./config";
 
 /**
  * As part of rebuilding the filtered list of containers, this function
  * assembles a list group element.
  *
- * TODO: make the `containerListGroup` ID use consistent naming conventions
  * @returns The `<ul>` list group element that will hold the child `<li>` container list items.
  */
-export const buildContainerListGroupElement = (): HTMLElement => {
-    const ulElement = document.createElement('ul');
-    ulElement.id = 'containerListGroup';
-    ulElement.className = "list-group";
-    return ulElement;
+export const buildContainerListGroupElement = (): HTMLUListElement => {
+    const ul = document.createElement('ul') as HTMLUListElement;
+    ul.id = CONTAINER_LIST_GROUP_ID;
+    ul.className = "list-group";
+    return ul;
 };
-
 
 /**
  * Sets the proper class names for filtered contexts that are either selected
  * or not
  */
-export const setSelectedListItemClassNames = (selected: SelectedContextIndex) => {
+export const reflectSelected = (selected: SelectedContextIndex) => {
     const keys = Object.keys(selected);
     for (let i = 0; i < keys.length; i++) {
-        const liElement = document.getElementById(`filtered-context-${i}-li`);
-        const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+        const li = document.getElementById(`filtered-context-${i}-li`) as HTMLLIElement;
+        const urlLabel = document.getElementById(`filtered-context-${i}-url-label`) as HTMLSpanElement;
         if (selected[i] === 1) {
-            if (liElement) {
-                liElement.className = containerListItemSelectedClassNames;
+            if (li) {
+                li.className = containerListItemSelectedClassNames;
             }
             if (urlLabel) {
                 urlLabel.className = containerListItemUrlLabelInverted;
             }
         } else {
-            if (liElement) {
-                liElement.className = containerListItemInactiveClassNames;
+            if (li) {
+                li.className = containerListItemInactiveClassNames;
             }
             if (urlLabel) {
                 urlLabel.className = containerListItemUrlLabel;
@@ -55,19 +67,19 @@ export const setSelectedListItemClassNames = (selected: SelectedContextIndex) =>
  * context - The container that this icon element will represent
  * @returns An HTML element containing the colorized container icon for `context`.
  */
-export const buildContainerIconElement = (context: browser.contextualIdentities.ContextualIdentity): HTMLElement => {
-    const containerIconHolderElement = document.createElement('div');
-    containerIconHolderElement.className = 'icon';
-    addEmptyEventListenersToElement(containerIconHolderElement);
+export const buildContainerIcon = (context: browser.contextualIdentities.ContextualIdentity): HTMLDivElement => {
+    const iconDiv = document.createElement('div') as HTMLDivElement;
+    iconDiv.className = 'icon';
 
-    const containerIconElement = document.createElement('i');
-    containerIconElement.style.backgroundImage = `url(${context.iconUrl})`;
-    containerIconElement.style.filter = `drop-shadow(${context.colorCode} 16px 0)`;
-    addEmptyEventListenersToElement(containerIconElement);
+    const icon = document.createElement('i') as HTMLElement;
+    icon.style.backgroundImage = `url(${context.iconUrl})`;
+    icon.style.filter = `drop-shadow(${context.colorCode} 16px 0)`;
 
-    containerIconHolderElement.appendChild(containerIconElement);
+    addEmptyEventListeners([iconDiv, icon]);
 
-    return containerIconHolderElement;
+    iconDiv.appendChild(icon);
+
+    return iconDiv;
 };
 
 /**
@@ -79,67 +91,82 @@ export const buildContainerIconElement = (context: browser.contextualIdentities.
  * @returns An HTML element containing text that represents the
  * container's name and default URL, if defined.
  */
-export const buildContainerLabelElement = (
+export const buildContainerLabel = async (
     context: browser.contextualIdentities.ContextualIdentity,
     i: number,
     currentTab: browser.tabs.Tab,
     actualCurrentUrl: string,
-    config: ExtensionConfig,
-): HTMLElement => {
-    const containerLabelDivHoldingElement = document.createElement('div');
-    containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
+): Promise<HTMLDivElement> => {
+    try {
+        const containerDiv = document.createElement('div') as HTMLDivElement;
+        containerDiv.className = containerDivClassNames;
 
-    const containerLabelElement = document.createElement('span');
-    containerLabelElement.innerText = `${context.name}`;
+        const nameLabel = document.createElement('span') as HTMLSpanElement;
+        nameLabel.innerText = `${context.name}`;
 
-    const containerUrlLabelElement = document.createElement('span');
-    containerUrlLabelElement.className = containerListItemUrlLabel;
-    containerUrlLabelElement.id = `filtered-context-${i}-url-label`;
-    const contextDefaultUrl = config.containerDefaultUrls[context.cookieStoreId.toString() || ""];
-    if (contextDefaultUrl) {
-        if (config.openCurrentTabUrlOnMatch && (currentTab || actualCurrentUrl)) {
+        const urlLabel = document.createElement('span') as HTMLSpanElement;
+        urlLabel.className = containerListItemUrlLabel;
+        urlLabel.id = `filtered-context-${i}-url-label`;
+
+        const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
+
+        const url = urls[context.cookieStoreId];
+
+        if (url) {
+            const urlMatchType = await getSetting(CONF.openCurrentTabUrlOnMatch) as UrlMatchTypes;
+
+            if (urlMatchType && (currentTab || actualCurrentUrl)) {
+                // if the current tab isn't loaded yet, the url might be empty,
+                // but we are supposed to be navigating to a page
+                let currentUrl = currentTab.url || "";
+                if (actualCurrentUrl) {
+                    currentUrl = actualCurrentUrl;
+                }
+
+                const overrideUrl = getCurrentTabOverrideUrl(url, currentUrl, urlMatchType);
+                if (overrideUrl && overrideUrl !== url) {
+                    urlLabel.innerHTML = `<s>${url.substring(0, 40)}</s><br/>${urlMatchType} match, will open in this URL:<br/>${overrideUrl.substring(0, 40)}`;
+                } else {
+                    urlLabel.innerText = `${url.substring(0, 40)}`;
+                }
+            } else {
+                urlLabel.innerText = `${url.substring(0, 40)}`;
+            }
+
+        }
+
+        const openCurrentPage = await getSetting(CONF.openCurrentPage) as boolean;
+
+        // similar to the above - if the "openCurrentPage" config option has been selected,
+        // then we should override all URL's, as a finality
+
+        if (openCurrentPage && (currentTab || actualCurrentUrl)) {
+            // TODO: bit of refactoring would be nice since I just copy/pasted
+            // this from above
+
             // if the current tab isn't loaded yet, the url might be empty,
             // but we are supposed to be navigating to a page
             let currentUrl = currentTab.url || "";
             if (actualCurrentUrl) {
                 currentUrl = actualCurrentUrl;
             }
-            const overrideUrl = getCurrentTabOverrideUrl(contextDefaultUrl, currentUrl, config.openCurrentTabUrlOnMatch);
-            if (overrideUrl && overrideUrl !== contextDefaultUrl) {
-                containerUrlLabelElement.innerHTML = `<s>${contextDefaultUrl.substr(0, 40)}</s><br/>${config.openCurrentTabUrlOnMatch} match, will open in this URL:<br/>${overrideUrl.substr(0, 40)}`;
-            } else {
-                containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
-            }
-        } else {
-            containerUrlLabelElement.innerText = `${contextDefaultUrl.substr(0, 40)}`;
+
+            urlLabel.innerHTML = `${currentUrl.substring(0, 40)}${currentUrl.length > 40 ? '...' : ''}`;
         }
 
+        addEmptyEventListeners([
+            nameLabel,
+            urlLabel,
+            containerDiv,
+        ]);
+
+        containerDiv.appendChild(nameLabel);
+        containerDiv.appendChild(urlLabel);
+
+        return containerDiv;
+    } catch (e) {
+        throw `failed to build container label element: ${JSON.stringify(e)}`
     }
-
-    // similar to the above - if the "openCurrentPage" config option has been selected,
-    // then we should override all URL's, as a finality
-    if (config.openCurrentPage && (currentTab || actualCurrentUrl)) {
-        // TODO: bit of refactoring would be nice since I just copy/pasted
-        // this from above
-
-        // if the current tab isn't loaded yet, the url might be empty,
-        // but we are supposed to be navigating to a page
-        let currentUrl = currentTab.url || "";
-        if (actualCurrentUrl) {
-            currentUrl = actualCurrentUrl;
-        }
-
-        containerUrlLabelElement.innerHTML = `${currentUrl.substr(0, 40)}${currentUrl.length > 40 ? '...' : ''}`;
-    }
-
-    addEmptyEventListenersToElement(containerLabelElement);
-    addEmptyEventListenersToElement(containerUrlLabelElement);
-    addEmptyEventListenersToElement(containerLabelDivHoldingElement);
-
-    containerLabelDivHoldingElement.appendChild(containerLabelElement);
-    containerLabelDivHoldingElement.appendChild(containerUrlLabelElement);
-
-    return containerLabelDivHoldingElement;
 };
 
 /**
@@ -147,19 +174,18 @@ export const buildContainerLabelElement = (
  * @returns An HTML element containing text that represents the
  * container's name and default URL, if defined.
  */
-export const buildEmptyContainerLabelElement = (label: string): HTMLElement => {
-    const containerLabelDivHoldingElement = document.createElement('div');
-    containerLabelDivHoldingElement.className = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
+export const buildEmptyContainerLabelElement = (label: string): HTMLDivElement => {
+    const div = document.createElement('div') as HTMLDivElement;
+    div.className = containerDivClassNames;
 
     const containerLabelElement = document.createElement('span');
     containerLabelElement.innerText = `${label}`;
 
-    addEmptyEventListenersToElement(containerLabelElement);
-    addEmptyEventListenersToElement(containerLabelDivHoldingElement);
+    addEmptyEventListeners([containerLabelElement, div]);
 
-    containerLabelDivHoldingElement.appendChild(containerLabelElement);
+    div.appendChild(containerLabelElement);
 
-    return containerLabelDivHoldingElement;
+    return div;
 };
 
 /**
@@ -171,53 +197,54 @@ export const buildEmptyContainerLabelElement = (label: string): HTMLElement => {
  * @param actualCurrentUrl The URL that the current tab is supposed to be loading.
  * @returns An HTML element with event listeners, formatted with css as a bootstrap list item.
  */
-export const buildContainerListItem = (
+export const buildContainerListItem = async (
     filteredResults: browser.contextualIdentities.ContextualIdentity[],
     context: browser.contextualIdentities.ContextualIdentity,
     i: number,
     currentTab: browser.tabs.Tab,
     actualCurrentUrl: string,
     mode: MODES,
-    config: ExtensionConfig,
     containerClickHandler: any, // TODO: create type def for containerClickHandler
-) => {
-    const liElement = document.createElement('li');
-    liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
+): Promise<HTMLLIElement> => {
+    try {
+        const li = document.createElement('li') as HTMLLIElement;
+        li.className = containerLIClassNames;
 
-    const containerIconHolderElement = buildContainerIconElement(context);
-    const containerLabelElement = buildContainerLabelElement(context, i, currentTab, actualCurrentUrl, config);
+        const icon = buildContainerIcon(context);
+        const label = await buildContainerLabel(context, i, currentTab, actualCurrentUrl);
 
-    if (mode === MODES.DELETE || mode === MODES.REFRESH) {
-        const divElement = document.createElement('div');
-        divElement.className = "d-flex justify-content-center align-items-center align-content-center";
-        divElement.id = `filtered-context-${i}-div`;
-        addEmptyEventListenersToElement(divElement);
-        divElement.appendChild(containerIconHolderElement);
-        liElement.appendChild(divElement);
-    } else {
-        liElement.appendChild(containerIconHolderElement);
+        if (mode === MODES.DELETE || mode === MODES.REFRESH) {
+            const div = document.createElement('div') as HTMLDivElement;
+
+            div.className = containerLIDestructiveDivClassNames;
+            div.id = `filtered-context-${i}-div`;
+
+            addEmptyEventListeners([div]);
+
+            div.appendChild(icon);
+            li.appendChild(div);
+        } else {
+            li.appendChild(icon);
+        }
+
+        li.appendChild(label);
+
+        icon.id = `filtered-context-${i}-icon`;
+        label.id = `filtered-context-${i}-label`;
+        li.id = `filtered-context-${i}-li`;
+
+        await setEventListeners(
+            li,
+            filteredResults,
+            context,
+            i,
+            containerClickHandler,
+        );
+
+        return li;
+    } catch (e) {
+        throw `encountered error building list item for container ${context.name}: ${e}`;
     }
-
-    liElement.appendChild(containerLabelElement);
-
-    containerIconHolderElement.id = `filtered-context-${i}-icon`;
-    containerLabelElement.id = `filtered-context-${i}-label`;
-    liElement.id = `filtered-context-${i}-li`;
-
-    const err = applyEventListenersToContainerListItem(
-        liElement,
-        filteredResults,
-        context,
-        i,
-        config,
-        containerClickHandler,
-    );
-    if (err) {
-        // TODO: localization refactor
-        showAlert(`encountered error building list item for container ${context.name}: ${err}`, 'Error');
-    }
-
-    return liElement;
 };
 
 /**
@@ -226,23 +253,23 @@ export const buildContainerListItem = (
  * @param i A unique value that will make the class/id of the element unique
  * @returns An HTML element with event listeners, formatted with css as a bootstrap list item.
  */
-export const buildEmptyContainerListItem = (i: number): HTMLElement => {
-    const liElement = document.createElement('li');
-    liElement.className = "list-group-item d-flex justify-content-space-between align-items-center";
+export const buildContainerListItemEmpty = (i: number): HTMLLIElement => {
+    const li = document.createElement('li') as HTMLLIElement;
+    li.className = "list-group-item d-flex justify-content-space-between align-items-center";
 
-    const labelElement = buildEmptyContainerLabelElement('No results');
+    const label = buildEmptyContainerLabelElement('No results');
 
-    const xIconElement = document.createElement('span');
-    xIconElement.className = 'mono-16';
-    xIconElement.innerText = "x";
+    const icon = document.createElement('span');
+    icon.className = 'mono-16';
+    icon.innerText = "x";
 
-    liElement.appendChild(xIconElement);
-    liElement.appendChild(labelElement);
+    li.appendChild(icon);
+    li.appendChild(label);
 
-    labelElement.id = `filtered-context-${i}-label`;
-    liElement.id = `filtered-context-${i}-li`;
+    label.id = `filtered-context-${i}-label`;
+    li.id = `filtered-context-${i}-li`;
 
-    return liElement;
+    return li;
 };
 
 /**
@@ -251,7 +278,7 @@ export const buildEmptyContainerListItem = (i: number): HTMLElement => {
  * @param containerListElement The empty (by default, before population) `<div>` on the `popup.html` page that holds the entire container list element collection. Retrieve by using document.getElementById(CONTAINER_LIST_DIV_ID)
  */
 export const removeExistingContainerListGroupElement = (containerListElement: HTMLElement) => {
-    const list = document.getElementById('containerListGroup');
+    const list = document.getElementById(CONTAINER_LIST_GROUP_ID);
     if (!list) {
         return;
     }

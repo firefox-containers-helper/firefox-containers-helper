@@ -26,3 +26,9 @@ export const containerListItemActiveClassNames = `${containerListItemInactiveCla
  * deletion mode. Assign to `element.className` for a given element.
  */
 export const containerListItemActiveDangerClassNames = `${containerListItemActiveClassNames} bg-danger border-danger`;
+
+export const containerDivClassNames = 'container-list-text d-flex flex-column justify-content-center align-items-baseline px-3';
+
+export const containerLIClassNames = 'list-group-item d-flex justify-content-space-between align-items-center';
+
+export const containerLIDestructiveDivClassNames = 'd-flex justify-content-center align-items-center align-content-center';

@@ -5,6 +5,8 @@
 .overflow-scroll-vertical {
     overflow-y: auto;
     max-height: 300px;
+    min-height: 300px;
+    height: 300px;
 }
 
 .container-list-text {
@@ -33,10 +35,6 @@
 .trash-icon {
     max-width: 14px;
     max-height: 14px;
-}
-
-body {
-    min-width: 330px;
 }
 
 #container-list {

@@ -1,4 +1,4 @@
-import { ExtensionConfig, SelectedContextIndex } from 'src/types';
+import { ContainerDefaultURL, ExtensionConfig, SelectedContextIndex } from 'src/types';
 import { CLASS_ELEMENT_HIDE, CLASS_ELEMENT_SHOW } from './classes';
 import { UrlMatchTypes } from './constants';
 
@@ -22,6 +22,42 @@ export const showElement = (el: HTMLElement | null) => {
     el.classList.remove(CLASS_ELEMENT_HIDE);
 }
 
+/**
+ * `replaceElement` provides a quick way to remove all event listeners from
+ * e.g. a button. It clones the original element and removes the original
+ * element and adds the newly cloned element to the original element's
+ * parent's children. Note that the order of elements may not be fully
+ * preserved, so be careful.
+ */
+export const replaceElement = (el: HTMLElement | null): HTMLElement | null => {
+    if (!el || !el.parentElement) return null;
+
+    const nEl = el.cloneNode(true);
+
+    el.parentElement.appendChild(nEl);
+    el.parentElement.removeChild(el);
+
+    const elem = document.getElementById(el.id);
+
+    return elem;
+}
+
+/**
+ * `replaceElementById` provides a quick way to remove all event listeners from
+ * e.g. a button. It clones the original element (found by querying for `id`)
+ * and removes the original element and adds the newly cloned element to
+ * the original element's parent's children. Note that the order of elements
+ * may not be fully preserved, so be careful.
+ *
+ * @param id The DOM ID corresponding to the element to be replaced.
+ * @return {HTMLElement} The newly cloned element.
+ */
+export const replaceElementById = (id: string): HTMLElement | null => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+
+    return replaceElement(el);
+}
 
 /**
  * Determines whether or not to override the container's default URL with
@@ -138,6 +174,8 @@ export const isUserQueryContextNameMatch = (contextName: string, userQuery: stri
  * @return The number of dirty entries in the config.
  */
 export const checkDirty = async (conf: ExtensionConfig): Promise<number> => {
+    if (!conf?.containerDefaultUrls) return 0;
+
     const ids = Object.keys(conf.containerDefaultUrls);
 
     const removed: string[] = [];
@@ -192,4 +230,23 @@ export const getCleanSettings = async (conf: ExtensionConfig): Promise<[Extensio
     conf.selectedContextIndices = {};
 
     return [conf, removed];
+}
+
+
+/**
+ * Checks if a given container's `contextualIdentity` (`context`) has a default
+ * URL value set in `config.containerDefaultUrls`.
+ * @param context The context for a container, straight from `browser.contextualIdentities`
+ * @param userQuery The text that the user has searched for
+ * @returns Whether or not the container `context` has a default URL set
+ */
+export const queryUrls = (context: browser.contextualIdentities.ContextualIdentity, query: string, urls: ContainerDefaultURL): boolean => {
+    const lookup = urls[context.cookieStoreId];
+    if (!lookup) return false;
+
+    if (lookup.toString().toLowerCase().indexOf(query) !== -1) {
+        return true;
+    }
+
+    return false;
 }

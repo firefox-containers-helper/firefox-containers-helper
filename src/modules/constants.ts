@@ -43,14 +43,26 @@ export enum MODES {
     REFRESH = "refreshOnClick",
 }
 
+/** All keys for the ExtensionConfiguration interface. */
+export enum CONF {
+    windowStayOpenState = 'windowStayOpenState',
+    selectionMode = 'selectionMode',
+    sort = 'sort',
+    openCurrentPage = 'openCurrentPage',
+    mode = 'mode',
+    lastQuery = 'lastQuery',
+    containerDefaultUrls = 'containerDefaultUrls',
+    selectedContextIndices = 'selectedContextIndices',
+    lastSelectedContextIndex = 'lastSelectedContextIndex',
+    alwaysGetSync = 'alwaysGetSync',
+    alwaysSetSync = 'alwaysSetSync',
+    neverConfirmOpenNonHttpUrls = 'neverConfirmOpenNonHttpUrls',
+    neverConfirmSaveNonHttpUrls = 'neverConfirmSaveNonHttpUrls',
+    openCurrentTabUrlOnMatch = 'openCurrentTabUrlOnMatch',
+}
 
-/**
- * All allowable container (context) colors.
- * TODO: jsdoc this as enum?
- * @constant
- * @type {string[]}
- * @default
- */
+
+/** All allowable container (context) colors. */
 export const CONTEXT_COLORS = [
     "blue",
     "turquoise",
@@ -63,12 +75,7 @@ export const CONTEXT_COLORS = [
     "toolbar",
 ];
 
-/**
- * Random list of help messages to show in the Help Text area.
- * @constant
- * @type {string[]}
- * @default
- */
+/** Random list of help messages to show in the Help Text area. */
 export const helpTextMessages = [
     'Tip: Press Enter or click on a container below.',
     `Tip: Use ${platformModifierKey}(+Shift) to open pinned tabs.`,
@@ -121,3 +128,6 @@ export const containerListItemUrlLabelInverted = `text-light small`;
  * containers will go.
  */
 export const CONTAINER_LIST_DIV_ID = 'container-list';
+
+/** The ID of the container list <ul> element. */
+export const CONTAINER_LIST_GROUP_ID = 'containerListGroup';

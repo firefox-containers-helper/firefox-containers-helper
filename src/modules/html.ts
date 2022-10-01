@@ -1,4 +1,5 @@
-import { helpTextMessages, MODES } from "./constants";
+import { getSetting } from "./config";
+import { CONF, helpTextMessages, MODES } from "./constants";
 
 /**
  * Sets a message inside the "warning" text element.
@@ -12,10 +13,10 @@ export const help = (message: string) => {
         msg = helpTextMessages[rngHelpMsgIndex];
     }
 
-    const helpTextEl = document.getElementById('helpText');
-    if (!helpTextEl) return;
+    const helpText = document.getElementById('helpText') as HTMLSpanElement;
+    if (!helpText) return;
 
-    helpTextEl.innerText = msg;
+    helpText.innerText = msg;
 };
 
 /**
@@ -43,7 +44,11 @@ export const focusSearchBox = () => {
  * Based on the currently selected mode, set a helpful message to show
  * to the user.
  */
-export const helpful = (mode: MODES) => {
+export const helpful = async (mode?: MODES) => {
+    if (!mode) {
+        mode = await getSetting(CONF.mode);
+    }
+
     switch (mode) {
         case MODES.SET_URL:
             help("URLs do not affect multi-account container preferences.");

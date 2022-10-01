@@ -1,6 +1,6 @@
 // -- constants
 
-import { hideElement, scrollToTop, showElement } from "./helpers";
+import { hideElement, replaceElement, showElement } from "./helpers";
 
 // modal types
 export const MODAL_TYPE_ALERT = 'modal-type-alert';
@@ -44,35 +44,35 @@ export const MODAL_PROMPT_TITLE = 'modalPromptTitle';
 // -- simple helper functions
 
 // modal id's
-const getModal = () => document.getElementById(MODAL_ID);
+export const getModal = () => document.getElementById(MODAL_ID);
 
 // modal buttons
-const getModalBtnConfirmCancel = () => document.getElementById(MODAL_BTN_CONFIRM_CANCEL);
-const getModalBtnConfirmSecondary = () => document.getElementById(MODAL_BTN_CONFIRM_SECONDARY);
-const getModalBtnConfirmPrimary = () => document.getElementById(MODAL_BTN_CONFIRM_PRIMARY);
-const getModalBtnAlertOK = () => document.getElementById(MODAL_BTN_ALERT_OK);
-const getModalBtnPromptCancel = () => document.getElementById(MODAL_BTN_PROMPT_CANCEL);
-const getModalBtnPromptOK = () => document.getElementById(MODAL_BTN_PROMPT_OK);
+export const getModalBtnConfirmCancel = () => document.getElementById(MODAL_BTN_CONFIRM_CANCEL);
+export const getModalBtnConfirmSecondary = () => document.getElementById(MODAL_BTN_CONFIRM_SECONDARY);
+export const getModalBtnConfirmPrimary = () => document.getElementById(MODAL_BTN_CONFIRM_PRIMARY);
+export const getModalBtnAlertOK = () => document.getElementById(MODAL_BTN_ALERT_OK);
+export const getModalBtnPromptCancel = () => document.getElementById(MODAL_BTN_PROMPT_CANCEL);
+export const getModalBtnPromptOK = () => document.getElementById(MODAL_BTN_PROMPT_OK);
 
 // modal content
-const getModalAlertContent = () => document.getElementById(MODAL_ALERT_CONTENT);
-const getModalConfirmContent = () => document.getElementById(MODAL_CONFIRM_CONTENT);
-const getModalPromptContent = () => document.getElementById(MODAL_PROMPT_CONTENT);
+export const getModalAlertContent = () => document.getElementById(MODAL_ALERT_CONTENT);
+export const getModalConfirmContent = () => document.getElementById(MODAL_CONFIRM_CONTENT);
+export const getModalPromptContent = () => document.getElementById(MODAL_PROMPT_CONTENT);
 
 // modal text spans
-const getModalAlertText = () => document.getElementById(MODAL_ALERT_TEXT);
-const getModalConfirmText = () => document.getElementById(MODAL_CONFIRM_TEXT);
-const getModalPromptText = () => document.getElementById(MODAL_PROMPT_TEXT);
+export const getModalAlertText = () => document.getElementById(MODAL_ALERT_TEXT);
+export const getModalConfirmText = () => document.getElementById(MODAL_CONFIRM_TEXT);
+export const getModalPromptText = () => document.getElementById(MODAL_PROMPT_TEXT);
 
 // modal prompt input
-const getModalPromptInput = () => document.getElementById(MODAL_PROMPT_INPUT);
+export const getModalPromptInput = () => document.getElementById(MODAL_PROMPT_INPUT);
 
 // modal titles
-const getModalAlertTitle = () => document.getElementById(MODAL_ALERT_TITLE);
-const getModalConfirmTitle = () => document.getElementById(MODAL_CONFIRM_TITLE);
-const getModalPromptTitle = () => document.getElementById(MODAL_PROMPT_TITLE);
+export const getModalAlertTitle = () => document.getElementById(MODAL_ALERT_TITLE);
+export const getModalConfirmTitle = () => document.getElementById(MODAL_CONFIRM_TITLE);
+export const getModalPromptTitle = () => document.getElementById(MODAL_PROMPT_TITLE);
 
-const getModalPromptInputText = (): string => {
+export const getModalPromptInputText = (): string => {
     const el = getModalPromptInput();
     if (!el) return '';
     return (el as HTMLInputElement).value;
@@ -80,44 +80,44 @@ const getModalPromptInputText = (): string => {
 
 // setter functions
 
-const setModalAlertText = (txt: string) => {
+export const setModalAlertText = (txt: string) => {
     const el = getModalAlertText();
     if (!el) return;
     el.innerText = txt;
 }
 
-const setModalConfirmText = (txt: string) => {
+export const setModalConfirmText = (txt: string) => {
     const el = getModalConfirmText();
     if (!el) return;
     el.innerText = txt;
 }
 
-const setModalPromptText = (txt: string) => {
+export const setModalPromptText = (txt: string) => {
     const el = getModalPromptText();
     if (!el) return;
     el.innerText = txt;
 }
 
-const setModalPromptInputText = (text: string) => {
+export const setModalPromptInputText = (text: string) => {
     const el = getModalPromptInput();
     if (!el) return;
     (el as HTMLInputElement).value = text;
 }
 
-const setModalAlertTitle = (txt: string) => {
+export const setModalAlertTitle = (txt: string) => {
     const el = getModalAlertTitle();
     if (!el) return;
     el.innerText = txt;
 }
 
-const setModalConfirmTitle = (txt: string) => {
+export const setModalConfirmTitle = (txt: string) => {
     const el = getModalConfirmTitle();
     if (!el) return;
     el.innerText = txt;
 }
 
 
-const setModalPromptTitle = (txt: string) => {
+export const setModalPromptTitle = (txt: string) => {
     const el = getModalPromptTitle();
     if (!el) return;
     el.innerText = txt;
@@ -125,87 +125,48 @@ const setModalPromptTitle = (txt: string) => {
 
 // -- focus buttons
 
-const focusModalBtnConfirmCancel = () => {
+export const focusModalBtnConfirmCancel = () => {
     const btn = getModalBtnConfirmCancel();
 
     if (!btn) return;
 
     btn.focus();
 };
-const focusModalBtnConfirmSecondary = () => {
+export const focusModalBtnConfirmSecondary = () => {
     const btn = getModalBtnConfirmSecondary();
 
     if (!btn) return;
 
     btn.focus();
 };
-const focusModalBtnConfirmPrimary = () => {
+export const focusModalBtnConfirmPrimary = () => {
     const btn = getModalBtnConfirmPrimary();
 
     if (!btn) return;
 
     btn.focus();
 };
-const focusModalBtnAlertOK = () => {
+export const focusModalBtnAlertOK = () => {
     const btn = getModalBtnAlertOK();
 
     if (!btn) return;
 
     btn.focus();
 };
-const focusModalBtnPromptCancel = () => {
+export const focusModalBtnPromptCancel = () => {
     const btn = getModalBtnPromptCancel();
 
     if (!btn) return;
 
     btn.focus();
 };
-const focusModalBtnPromptOK = () => {
+export const focusModalBtnPromptOK = () => {
     const btn = getModalBtnPromptOK();
 
     if (!btn) return;
 
     btn.focus();
 };
-
-// -- utility functions
-
-/**
- * `replaceElement` provides a quick way to remove all event listeners from
- * e.g. a button. It clones the original element and removes the original
- * element and adds the newly cloned element to the original element's
- * parent's children. Note that the order of elements may not be fully
- * preserved, so be careful.
- */
-const replaceElement = (el: HTMLElement | null): HTMLElement | null => {
-    if (!el || !el.parentElement) return null;
-
-    const nEl = el.cloneNode(true);
-
-    el.parentElement.appendChild(nEl);
-    el.parentElement.removeChild(el);
-
-    const elem = document.getElementById(el.id);
-
-    return elem;
-}
-
-/**
- * `replaceElementById` provides a quick way to remove all event listeners from
- * e.g. a button. It clones the original element (found by querying for `id`)
- * and removes the original element and adds the newly cloned element to
- * the original element's parent's children. Note that the order of elements
- * may not be fully preserved, so be careful.
- *
- * @param id The DOM ID corresponding to the element to be replaced.
- * @return {HTMLElement} The newly cloned element.
- */
-const replaceElementById = (id: string): HTMLElement | null => {
-    const el = document.getElementById(id);
-    if (!el) return null;
-
-    return replaceElement(el);
-}
 
 // -- targeted element manipulation functions
 
@@ -217,49 +178,49 @@ const replaceModalBtnPromptCancel = () => replaceElement(getModalBtnPromptCancel
 const replaceModalBtnPromptOK = () => replaceElement(getModalBtnPromptOK());
 
 /** Resets the alert modal's text to an empty string. */
-const resetModalAlertText = () => {
+export const resetModalAlertText = () => {
     const el = getModalAlertText();
     if (!el) return;
     el.innerText = '';
 }
 
 /** Resets the confirm modal's text to an empty string. */
-const resetModalConfirmText = () => {
+export const resetModalConfirmText = () => {
     const el = getModalConfirmText();
     if (!el) return;
     el.innerText = '';
 }
 
 /** Resets the alert modal's title text to an empty string. */
-const resetModalAlertTitle = () => {
+export const resetModalAlertTitle = () => {
     const el = getModalAlertTitle();
     if (!el) return;
     el.innerText = '';
 }
 
 /** Resets the confirm modal's title text to an empty string. */
-const resetModalConfirmTitle = () => {
+export const resetModalConfirmTitle = () => {
     const el = getModalConfirmTitle();
     if (!el) return;
     el.innerText = '';
 }
 
 /** Resets the prompt modal's title text to an empty string. */
-const resetModalPromptTitle = () => {
+export const resetModalPromptTitle = () => {
     const el = getModalPromptTitle();
     if (!el) return;
     el.innerText = '';
 }
 
 /** Removes the contents of the "prompt" modal's main content area. */
-const resetModalPromptInput = () => {
+export const resetModalPromptInput = () => {
     const el = getModalPromptInput();
     if (!el) return;
     el.replaceChildren('');
 }
 
 /** Hides the modal by setting a few classes. */
-const hideModal = () => {
+export const hideModal = () => {
     const modal = getModal();
     if (!modal) return;
 
@@ -268,7 +229,7 @@ const hideModal = () => {
 }
 
 /** Shows the modal by setting a few classes. */
-const showModal = () => {
+export const showModal = () => {
     const modal = getModal();
     if (!modal) return;
 
@@ -282,7 +243,7 @@ const showModal = () => {
  *
  * @param {string} type e.g. the constant `MODAL_TYPE_ALERT`
  */
-const setModalType = (type: string) => {
+export const setModalType = (type: string) => {
     const mp = getModalPromptContent();
     const mc = getModalConfirmContent()
     const ma = getModalAlertContent()
@@ -312,7 +273,7 @@ const setModalType = (type: string) => {
  *
  * @param ok The callback to fire when clicking the OK button.
  */
-const setModalAlertCallback = (ok: () => void): (HTMLElement | null)[] => {
+export const setModalAlertCallback = (ok: () => void): (HTMLElement | null)[] => {
     const okBtn = replaceModalBtnAlertOK();
     if (!okBtn) return [null];
 
@@ -331,7 +292,7 @@ const setModalAlertCallback = (ok: () => void): (HTMLElement | null)[] => {
  * @return Nullable Primary, secondary, and cancel button HTML elements inside
  * an array
  */
-const setModalConfirmCallbacks = (primary: () => void, secondary: () => void, cancel: () => void): (HTMLElement | null)[] => {
+export const setModalConfirmCallbacks = (primary: () => void, secondary: () => void, cancel: () => void): (HTMLElement | null)[] => {
     const cancelBtn = replaceElement(getModalBtnConfirmCancel());
     if (cancelBtn) {
         cancelBtn.addEventListener('click', cancel);
@@ -357,7 +318,7 @@ const setModalConfirmCallbacks = (primary: () => void, secondary: () => void, ca
  * @param cancel The callback to fire when clicking the cancel button
  * @return Nullable OK and Cancel button HTML elements in an array
  */
-const setModalPromptCallbacks = (ok: () => void, cancel: () => void): (HTMLElement | null)[] => {
+export const setModalPromptCallbacks = (ok: () => void, cancel: () => void): (HTMLElement | null)[] => {
     const cancelBtn = replaceElement(getModalBtnPromptCancel());
     if (cancelBtn) {
         cancelBtn.addEventListener('click', cancel);
@@ -423,9 +384,10 @@ export const showConfirm = async (msg: string, title: string): Promise<boolean |
  *
  * @param msg The message to show in the modal. Text-only for safety.
  * @param title The message to show in the modal. Text-only for safety.
+ * @param value Optional value to pre-fill the prompt text field with.
  * @return A promise containing `true`/`false` for yes/no, or `null` for cancel.
  */
-export const showPrompt = async (msg: string, title: string): Promise<string | null> => {
+export const showPrompt = async (msg: string, title: string, value?: string): Promise<string | null> => {
     setModalType(MODAL_TYPE_PROMPT);
 
     // replaceElement(getModalPromptText());
@@ -456,7 +418,7 @@ export const showPrompt = async (msg: string, title: string): Promise<string | n
 
     setModalPromptText(msg);
     setModalPromptTitle(title);
-    setModalPromptInputText('');
+    setModalPromptInputText(value || '');
     // scrollToTop();
     showModal();
 

@@ -1,6 +1,7 @@
 import { ExtensionConfig } from "src/types";
 import { containerListItemActiveDangerClassNames, containerListItemActiveClassNames, containerListItemSelectedClassNames, containerListItemInactiveClassNames } from "./classes";
-import { MODES, containerListItemUrlLabelInverted, containerListItemUrlLabel } from "./constants";
+import { getSetting } from "./config";
+import { MODES, containerListItemUrlLabelInverted, containerListItemUrlLabel, CONF } from "./constants";
 import { isContextSelected } from "./helpers";
 
 /**
@@ -26,101 +27,120 @@ export const addEmptyEventListenersToElement = (element: HTMLElement) => {
     element.addEventListener('mouseleave', haltingCallback);
 };
 
+export const addEmptyEventListeners = (elements: HTMLElement[]) => {
+    for (let i = 0; i < elements.length; i++) {
+        addEmptyEventListenersToElement(elements[i]);
+    }
+}
+
 /**
  * Adds click and other event handlers to a container list item HTML element.
- * @param liElement The container list item that will receive all event listeners
+ * @param li The container list item that will receive all event listeners
  * @param filteredResults A list of the currently filtered set of browser.contextualIdentities
  * @param context The contextualIdentity that this list item will represent
  * @param i The index of this contextualIdentity within the filteredResults array
  * @returns Any error message, or empty string if no errors occurred.
  */
-export const applyEventListenersToContainerListItem = (
-    liElement: HTMLElement,
+export const setEventListeners = async (
+    li: HTMLLIElement,
     filteredResults: browser.contextualIdentities.ContextualIdentity[],
     context: browser.contextualIdentities.ContextualIdentity,
     i: number,
-    config: ExtensionConfig,
     containerClickHandler: any, // TODO: create type def for containerClickHandler
-): string => {
+) => {
     try {
-        liElement.addEventListener('mouseover', (event: MouseEvent) => {
+        const urlLabelId = `filtered-context-${i}-url-label`;
+
+        const mouseOver = async (event: MouseEvent) => {
             if (!event || !event.target) return;
 
             const target = event.target as HTMLElement;
 
-            if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
+            const mode = await getSetting(CONF.mode);
+
+            if (mode === MODES.DELETE || mode === MODES.REFRESH) {
                 target.className = containerListItemActiveDangerClassNames;
                 return;
             }
 
             target.className = containerListItemActiveClassNames;
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabelInverted;
-            }
-        });
-        liElement.addEventListener('mouseleave', (event: MouseEvent) => {
+
+            const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
+            if (urlLabel) urlLabel.className = containerListItemUrlLabelInverted;
+        };
+
+        const mouseLeave = async (event: MouseEvent) => {
             if (!event || !event.target) return;
 
             const target = event.target as HTMLElement;
 
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
+            const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
 
-            if (isContextSelected(i, config.selectedContextIndices)) {
+            const selected = await getSetting(CONF.selectedContextIndices);
+
+            if (isContextSelected(i, selected)) {
                 target.className = containerListItemSelectedClassNames;
-                if (urlLabel) {
-                    urlLabel.className = containerListItemUrlLabelInverted;
-                }
+                if (urlLabel) urlLabel.className = containerListItemUrlLabelInverted;
 
                 return;
             }
 
             target.className = containerListItemInactiveClassNames;
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        });
-        liElement.addEventListener('click', (event: MouseEvent) => containerClickHandler(filteredResults, context, event));
-        liElement.addEventListener('keydown', (event: KeyboardEvent) => {
+
+            if (urlLabel) urlLabel.className = containerListItemUrlLabel;
+        }
+
+        const onClick = (event: MouseEvent) => containerClickHandler(filteredResults, context, event);
+
+        const keyDown = async (event: KeyboardEvent) => {
             if (event.key === 'Enter') {
                 containerClickHandler(filteredResults, context, event);
             }
-        });
-        liElement.addEventListener('onfocus', (event: Event) => {
+        }
+
+        const onFocus = async (event: Event) => {
             if (!event || !event.target) return;
 
             const target = event.target as HTMLElement;
 
-            if (config.mode === MODES.DELETE || config.mode === MODES.REFRESH) {
+            const mode = await getSetting(CONF.mode);
+
+            if (mode === MODES.DELETE || mode === MODES.REFRESH) {
                 target.className = containerListItemActiveDangerClassNames;
                 return;
             }
 
             target.className = containerListItemActiveClassNames;
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        });
-        liElement.addEventListener('blur', (event: FocusEvent) => {
+
+            const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
+            if (urlLabel) urlLabel.className = containerListItemUrlLabel;
+        }
+
+        const onBlur = async (event: FocusEvent) => {
             if (!event || !event.target) return;
 
             const target = event.target as HTMLElement;
 
-            if (isContextSelected(i, config.selectedContextIndices)) {
+            const selected = await getSetting(CONF.selectedContextIndices);
+
+            if (isContextSelected(i, selected)) {
                 target.className = containerListItemSelectedClassNames;
                 return;
             }
 
             target.className = containerListItemInactiveClassNames;
-            const urlLabel = document.getElementById(`filtered-context-${i}-url-label`);
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        });
 
-        return "";
+            const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
+            if (urlLabel) urlLabel.className = containerListItemUrlLabel;
+        }
+
+        li.addEventListener('mouseover', mouseOver);
+        li.addEventListener('mouseleave', mouseLeave);
+        li.addEventListener('click', onClick);
+        li.addEventListener('keydown', keyDown);
+        li.addEventListener('onfocus', onFocus);
+        li.addEventListener('blur', onBlur);
     } catch (e) {
-        return `failed to apply an event listener: ${JSON.stringify(e)}`;
+        throw `failed to apply an event listener: ${JSON.stringify(e)}`;
     }
 };

@@ -88,21 +88,19 @@
                     </h4>
                     <p>
                         Make sure to <i>either</i> have Firefox Sync set up correctly, <i>or</i> make sure you have
-                        manually
-                        backed up this extension's settings <b>before removing the extension</b> at any time. Otherwise,
-                        you
-                        may lose default URL settings, since they are associated with this extension's configuration.
+                        manually backed up this extension's settings <b>before removing the extension</b> at any time.
+                        Otherwise, you may lose default URL settings, since they are associated with this extension's
+                        configuration.
                     </p>
                     <p>
                         Firefox Sync is a great utility, but <a
                             href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/storage/sync#storage_quotas_for_sync_data"
                             target="_blank" rel="noopener noreferer">
-                            there is a limit on the amount of data that this extension can
-                            store when using Firefox Sync</a>.
+                            there is a limit on the amount of data that this extension can store when using Firefox
+                            Sync</a>.
                         <b>It is recommended to not use Firefox Sync if you have
                             more than 100 containers.</b> Otherwise, the extension may silently fail or have other
-                        erroneous
-                        behavior once it hits the storage limit.
+                        erroneous behavior once it hits the storage limit.
                     </p>
                     <p>If you <i>don't</i> push this extension's settings
                         to Firefox Sync (or back up manually), and then proceed to remove the extension, all settings
@@ -180,9 +178,7 @@
                     </ul>
                     <p>
                         For technical information on how the hostname/host/origin are determined, please visit the MDN
-                        page
-                        for
-                        the built-in JavaScript <code>URL</code> interface, here:
+                        page for the built-in JavaScript <code>URL</code> interface, here:
                         <a href="https://developer.mozilla.org/en-US/docs/Web/API/URL" target="_blank"
                             rel="noopener noreferer">https://developer.mozilla.org/en-US/docs/Web/API/URL</a>
                     </p>
@@ -199,8 +195,8 @@
                         <select id="openCurrentTabUrlOnMatchSelect" class="form-select"
                             aria-label="Match hostname/host/origin">
                             <option selected value="">Disabled (default)</option>
-                            <option value="hostname">Hostname/subdomain exact match (example.com but not
-                                www.example.com)
+                            <option value="hostname">Hostname exact match (example.com or abc.example.com, but
+                                not *.example.com)
                             </option>
                             <option value="domain">Domain (*example.com, and example.com)</option>
                             <option value="domain-port">Domain and port (*example.com:12345,
