@@ -6,7 +6,7 @@ This changelog contains all relevant changes between different versions of the e
 
 * Rewrote the extension in TypeScript so that I could deliver a higher quality extension
   * Uses webpack to compile the result
-  * Refactored a lot of functions to use more structure async/await syntax
+  * Refactored a lot of functions to use more structure and proper async/await syntax
 * Fixed verbiage in various places across the options page and extension popup
 * Implemented "Confirm" modals instead of using the native JavaScript confirm() function
 * Similarly, implemented "Prompt" modals instead of using the native JavaScript prompt() function
