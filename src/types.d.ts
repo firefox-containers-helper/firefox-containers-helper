@@ -1,32 +1,6 @@
 import { MODES, UrlMatchTypes } from './modules/constants';
 
 /**
- * A contextual identity represents a container definition.
- * The following documentation was copied from the Mozilla documentation on 11/19/2020.
- * This typedef documentation uses text that is largely the property of Mozilla and is not intended to infringe on any of the licenses of MDN or Mozilla.
- * https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/contextualIdentities/ContextualIdentity
- */
-export interface ContextualIdentity {
-    /** The cookie store ID for the identity. Since contextual identities don't share cookie stores, this serves as a unique identifier.*/
-    cookieStoreId: string;
-
-    /** The color for the identity. This will be shown in tabs belonging to this identity. The value "toolbar" represents a theme-dependent color.  Identities with color "toolbar" will be displayed in the same color as text in the toolbar (corresponding to the theme key "toolbar_field_text").*/
-    color: string;
-
-    /** A hex code representing the exact color used for the identity. For example: "#37adff". In the special case of the "toolbar" color, colorCode is always "#7c7c7d", regardless of the displayed color.*/
-    colorCode: string;
-
-    /** The name of an icon for the identity. This will be shown in the URL bar for tabs belonging to this identity. The following values are valid:*/
-    icon: string;
-
-    /** A full resource:// URL pointing to the identity's icon. For example: "resource://usercontext-content/fingerprint.svg".*/
-    iconUrl: string;
-
-    /** Name of the identity. This will be shown in the URL bar for tabs belonging to this identity. Note that names don't have to be unique.*/
-    name: string;
-}
-
-/**
  * `containerDefaultUrls` is a key-value pair of container ID's to
  * default URLs to open for each container ID.
  * Example:
