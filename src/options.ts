@@ -1,4 +1,4 @@
-import { showAlert } from "./modules/modals";
+import { showAlert, showConfirm } from "./modules/modals";
 import { ContextualIdentityWithURL } from "./types";
 
 // https://github.com/mdn/webextensions-examples/blob/60ce50b10ee66f6d706b0715909e756e4bdba63d/commands/options.js
@@ -12,7 +12,7 @@ var syncSettings = {};
 const updateUI = async () => {
     const shortcutEl = document.getElementById('shortcut');
     if (!shortcutEl) {
-        showAlert('Error: Element with ID shortcut is not present.', 'HTML Error');
+        await showAlert('Error: Element with ID shortcut is not present.', 'HTML Error');
         return;
     }
 
@@ -26,14 +26,14 @@ const updateUI = async () => {
         }
     }
 
-    showAlert('Warning: A keyboard shortcut may not be set correctly.', 'Keyboard Shortcut');
+    await showAlert('Warning: A keyboard shortcut may not be set correctly.', 'Keyboard Shortcut');
 }
 
 /** Update the shortcut based on the value in the text box. */
 const updateShortcut = async () => {
     const shortcutEl = document.getElementById('shortcut');
     if (!shortcutEl) {
-        showAlert('Error: Element with ID shortcut is not present.', 'HTML Error');
+        await showAlert('Error: Element with ID shortcut is not present.', 'HTML Error');
         return;
     }
 
@@ -46,11 +46,11 @@ const updateShortcut = async () => {
         });
     } catch (err) {
         if (err) {
-            showAlert(`Failed to set the keyboard shortcut: ${JSON.stringify(err)}`, 'Keyboard Shortcut Error');
+            await showAlert(`Failed to set the keyboard shortcut: ${JSON.stringify(err)}`, 'Keyboard Shortcut Error');
             return;
         }
 
-        showAlert(`Failed to set the keyboard shortcut due to an unknown error.`, 'Keyboard Shortcut Error');
+        await showAlert(`Failed to set the keyboard shortcut due to an unknown error.`, 'Keyboard Shortcut Error');
         return;
     }
 }
@@ -64,11 +64,11 @@ const resetShortcut = async (cmd: string) => {
         await updateUI();
     } catch (err) {
         if (err) {
-            showAlert(`Failed to reset the keyboard shortcut: ${JSON.stringify(err)}`, 'Keyboard Shortcut Error');
+            await showAlert(`Failed to reset the keyboard shortcut: ${JSON.stringify(err)}`, 'Keyboard Shortcut Error');
             return;
         }
 
-        showAlert(`Failed to reset the keyboard shortcut due to an unknown error.`, 'Keyboard Shortcut Error');
+        await showAlert(`Failed to reset the keyboard shortcut due to an unknown error.`, 'Keyboard Shortcut Error');
         return;
     }
 }
@@ -123,16 +123,16 @@ const setValidationText = (msg: string, color: string) => {
     syncValidationText.className = className;
 }
 
-const setSaveSettingsButtonsDisabled = (disabled: boolean) => {
+const setSaveSettingsButtonsDisabled = async (disabled: boolean) => {
     const btnSaveLocalEl = document.getElementById('btnSaveLocal');
     const btnSaveSyncEl = document.getElementById('btnSaveSync');
 
     if (!btnSaveLocalEl) {
-        showAlert('The btnSaveLocal element is not present.', 'HTML Error');
+        await showAlert('The btnSaveLocal element is not present.', 'HTML Error');
         return;
     }
     if (!btnSaveSyncEl) {
-        showAlert('The btnSaveSync element is not present.', 'HTML Error');
+        await showAlert('The btnSaveSync element is not present.', 'HTML Error');
         return;
     }
 
@@ -143,12 +143,12 @@ const setSaveSettingsButtonsDisabled = (disabled: boolean) => {
     btnSaveSync.disabled = disabled;
 }
 
-const validateLocalSettings = (settings?: any): boolean => {
+const validateLocalSettings = async (settings?: any): Promise<boolean> => {
     try {
         if (!settings) {
             const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
             if (!localSettingsTextAreaEl) {
-                showAlert('The localSettingsTextArea element is not present.', 'HTML Error');
+                await showAlert('The localSettingsTextArea element is not present.', 'HTML Error');
                 return false;
             }
 
@@ -161,14 +161,14 @@ const validateLocalSettings = (settings?: any): boolean => {
 
         setValidationText('Local settings are valid JSON.', 'primary');
 
-        setSaveSettingsButtonsDisabled(false);
+        await setSaveSettingsButtonsDisabled(false);
 
         checkSettingsAreEqual();
 
         return true;
     } catch (e) {
         setValidationText('Invalid local settings JSON.', 'danger');
-        setSaveSettingsButtonsDisabled(true);
+        await setSaveSettingsButtonsDisabled(true);
         return false;
     }
 }
@@ -206,7 +206,7 @@ const resetLocalSettings = async () => {
 
         const localSettingsEl = document.getElementById('localSettingsTextArea');
         if (!localSettingsEl) {
-            showAlert('The localSettingsTextArea element is not present.', 'HTML Error');
+            await showAlert('The localSettingsTextArea element is not present.', 'HTML Error');
             return;
         }
 
@@ -215,11 +215,11 @@ const resetLocalSettings = async () => {
         localSettingsTxt.value = JSON.stringify(data);
     } catch (err) {
         if (err) {
-            showAlert(`Failed to retrieve browser storage data: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to retrieve browser storage data: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to retrieve browser storage data due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to retrieve browser storage data due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -276,11 +276,11 @@ const refreshSyncSettings = async () => {
         openCurrentTabUrlOnMatchSelect.value = data.openCurrentTabUrlOnMatch;
     } catch (err) {
         if (err) {
-            showAlert(`Failed to retrieve browser storage data: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to retrieve browser storage data: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to retrieve browser storage data due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to retrieve browser storage data due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -293,29 +293,29 @@ const btnRefreshSyncClick = () => {
 const saveLocalSettings = async () => {
     const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
     if (!localSettingsTextAreaEl) {
-        showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
+        await showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
         return;
     }
     const localSettingsTextArea = localSettingsTextAreaEl as HTMLTextAreaElement;
     try {
         const valid = validateLocalSettings(localSettingsTextArea.value);
         if (!valid) {
-            showAlert('The provided local settings do not appear to be valid.', 'Invalid Settings');
+            await showAlert('The provided local settings do not appear to be valid.', 'Invalid Settings');
             return;
         }
         const settings = JSON.parse(localSettingsTextArea.value);
 
         await browser.storage.local.set(settings);
 
-        showAlert('Successfully saved local settings.', 'Success');
+        await showAlert('Successfully saved local settings.', 'Success');
         return;
     } catch (err) {
         if (err) {
-            showAlert(`Failed to save local settings: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to save local settings: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to save local settings due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to save local settings due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -328,7 +328,7 @@ const saveLocalSettings = async () => {
 const saveSyncSettings = async () => {
     const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
     if (!localSettingsTextAreaEl) {
-        showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
+        await showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
         return;
     }
 
@@ -337,7 +337,7 @@ const saveSyncSettings = async () => {
     try {
         const valid = validateLocalSettings(localSettingsTextArea.value);
         if (!valid) {
-            showAlert('The provided local settings do not appear to be valid.', 'Invalid Settings');
+            await showAlert('The provided local settings do not appear to be valid.', 'Invalid Settings');
             return;
         }
         const settings = JSON.parse(localSettingsTextArea.value);
@@ -347,15 +347,15 @@ const saveSyncSettings = async () => {
         refreshSyncSettings();
         validateLocalSettings();
 
-        showAlert('Successfully saved local settings to sync.', 'Success');
+        await showAlert('Successfully saved local settings to sync.', 'Success');
         return;
     } catch (err) {
         if (err) {
-            showAlert(`Failed to save sync settings: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to save sync settings: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to save sync settings due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to save sync settings due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -376,7 +376,7 @@ const btnSaveSyncClick = () => {
 const toggleAlwaysSetSyncSettings = async () => {
     const checkboxEl = document.getElementById("alwaysSetSync");
     if (!checkboxEl) {
-        showAlert('The alwaysSetSyncCheckbox HTML element is not present.', 'HTML Error');
+        await showAlert('The alwaysSetSyncCheckbox HTML element is not present.', 'HTML Error');
         return;
     }
 
@@ -391,11 +391,11 @@ const toggleAlwaysSetSyncSettings = async () => {
         refreshSyncSettings();
     } catch (err) {
         if (err) {
-            showAlert(`Failed to toggle the 'always set sync settings' option: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to toggle the 'always set sync settings' option: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to toggle the 'always set sync settings' option due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to toggle the 'always set sync settings' option due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -406,7 +406,7 @@ const toggleAlwaysSetSyncSettings = async () => {
 const toggleAlwaysGetSyncSettings = async () => {
     const checkboxEl = document.getElementById("alwaysGetSync");
     if (!checkboxEl) {
-        showAlert('The alwaysGetSyncCheckbox HTML element is not present.', 'HTML Error');
+        await showAlert('The alwaysGetSyncCheckbox HTML element is not present.', 'HTML Error');
         return;
     }
 
@@ -421,11 +421,11 @@ const toggleAlwaysGetSyncSettings = async () => {
         refreshSyncSettings();
     } catch (err) {
         if (err) {
-            showAlert(`Failed to toggle the 'always get sync settings' option: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to toggle the 'always get sync settings' option: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to toggle the 'always get sync settings' option due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to toggle the 'always get sync settings' option due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -436,7 +436,7 @@ const toggleAlwaysGetSyncSettings = async () => {
 const toggleNeverConfirmOpenNonHttpUrlsSettings = async () => {
     const checkboxEl = document.getElementById("neverConfirmForOpeningNonHttpUrls");
     if (!checkboxEl) {
-        showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', 'HTML Error');
+        await showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', 'HTML Error');
         return;
     }
 
@@ -451,11 +451,11 @@ const toggleNeverConfirmOpenNonHttpUrlsSettings = async () => {
         refreshSyncSettings();
     } catch (err) {
         if (err) {
-            showAlert(`Failed to toggle the 'require HTTP or HTTPS on open' option: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to toggle the 'require HTTP or HTTPS on open' option: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to toggle the 'require HTTP or HTTPS on open' option due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to toggle the 'require HTTP or HTTPS on open' option due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -466,7 +466,7 @@ const toggleNeverConfirmOpenNonHttpUrlsSettings = async () => {
 const toggleNeverConfirmSavingNonHttpUrlsSettings = async () => {
     const checkboxEl = document.getElementById("neverConfirmForSavingNonHttpUrls");
     if (!checkboxEl) {
-        showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', 'HTML Error');
+        await showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', 'HTML Error');
         return;
     }
 
@@ -481,28 +481,28 @@ const toggleNeverConfirmSavingNonHttpUrlsSettings = async () => {
         refreshSyncSettings();
     } catch (err) {
         if (err) {
-            showAlert(`Failed to toggle the 'require HTTP or HTTPS on save' option: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to toggle the 'require HTTP or HTTPS on save' option: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to toggle the 'require HTTP or HTTPS on save' option due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to toggle the 'require HTTP or HTTPS on save' option due to an unknown error.`, 'Settings Error');
         return;
     }
 }
 const openCurrentTabUrlOnMatchSelectChange = async (event: Event) => {
     const selectEl = document.getElementById("openCurrentTabUrlOnMatchSelect");
     if (!selectEl) {
-        showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', 'HTML Error');
+        await showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', 'HTML Error');
         return;
     }
 
     if (!event) {
-        showAlert('The event information is not present for the openCurrentTabUrlOnMatch select callback.', 'Error');
+        await showAlert('The event information is not present for the openCurrentTabUrlOnMatch select callback.', 'Error');
         return;
     }
 
     if (!event.target) {
-        showAlert('The event target information is not present for the openCurrentTabUrlOnMatch select callback.', 'Error');
+        await showAlert('The event target information is not present for the openCurrentTabUrlOnMatch select callback.', 'Error');
         return;
     }
 
@@ -517,11 +517,11 @@ const openCurrentTabUrlOnMatchSelectChange = async (event: Event) => {
         refreshSyncSettings();
     } catch (err) {
         if (err) {
-            showAlert(`Failed to toggle the 'require HTTP or HTTPS' option: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to toggle the 'require HTTP or HTTPS' option: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to toggle the 'require HTTP or HTTPS' option due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to toggle the 'require HTTP or HTTPS' option due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -531,7 +531,7 @@ const btnLoadFromSyncClick = async () => {
         const data = await browser.storage.sync.get();
 
         if (!data) {
-            showAlert('No data was retrieved from storage.', 'Warning');
+            await showAlert('No data was retrieved from storage.', 'Warning');
             return;
         }
 
@@ -541,11 +541,11 @@ const btnLoadFromSyncClick = async () => {
         refreshSyncSettings();
     } catch (err) {
         if (err) {
-            showAlert(`Failed to load settings from sync: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to load settings from sync: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to load settings from sync due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to load settings from sync due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -553,7 +553,7 @@ const btnLoadFromSyncClick = async () => {
 const btnResetLocalSettingsClick = async () => {
     const question = "Are you sure you want to reset local settings? You may not be able to undo this.";
 
-    if (!confirm(question)) return;
+    if (!await showConfirm(question, 'Reset local settings?')) return;
 
     await browser.storage.local.clear();
 
@@ -563,7 +563,7 @@ const btnResetLocalSettingsClick = async () => {
 const btnResetSyncSettingsClick = async () => {
     const question = "Are you sure you want to reset sync settings? You may not be able to undo this.";
 
-    if (!confirm(question)) return;
+    if (!await showConfirm(question, 'Reset sync settings?')) return;
 
     await browser.storage.sync.clear();
 
@@ -571,6 +571,10 @@ const btnResetSyncSettingsClick = async () => {
 }
 
 const btnExportContainersClick = async () => {
+    await exportContainers();
+}
+
+const exportContainers = async (alertIfNone: boolean = true) => {
     try {
         const config = await browser.storage.local.get();
 
@@ -587,7 +591,7 @@ const btnExportContainersClick = async () => {
 
         const textareaEl = document.getElementById('containersExportAsJSON');
         if (!textareaEl) {
-            showAlert('The containersExportAsJSON textarea HTML element is not present.', 'HTML Error');
+            await showAlert('The containersExportAsJSON textarea HTML element is not present.', 'HTML Error');
             return;
         }
 
@@ -595,7 +599,7 @@ const btnExportContainersClick = async () => {
         textarea.value = JSON.stringify(contexts);
 
         if (!contexts.length) {
-            showAlert('There are no containers to export.', 'Info');
+            if (alertIfNone) await showAlert('There are no containers to export.', 'Info');
             return;
         }
 
@@ -611,7 +615,7 @@ const btnExportContainersClick = async () => {
 
         const csvEl = document.getElementById('containersExportAsCSV');
         if (!csvEl) {
-            showAlert('The containersExportAsCSV textarea HTML element is not present.', 'HTML Error');
+            await showAlert('The containersExportAsCSV textarea HTML element is not present.', 'HTML Error');
             return;
         }
 
@@ -620,11 +624,11 @@ const btnExportContainersClick = async () => {
         csv.value = `${keysQuotes.join(",")}\n${rows.join("\n")}`;
     } catch (err) {
         if (err) {
-            showAlert(`Failed to export containers: ${JSON.stringify(err)}`, 'Export Error');
+            await showAlert(`Failed to export containers: ${JSON.stringify(err)}`, 'Export Error');
             return;
         }
 
-        showAlert(`Failed to export containers due to an unknown error.`, 'Export Error');
+        await showAlert(`Failed to export containers due to an unknown error.`, 'Export Error');
         return;
     }
 }
@@ -632,7 +636,7 @@ const btnExportContainersClick = async () => {
 const btnImportContainersClick = async () => {
     const textImportEl = document.getElementById('containersImportAsJSON');
     if (!textImportEl) {
-        showAlert('The containersImportAsJSON textarea HTML element is not present.', 'HTML Error');
+        await showAlert('The containersImportAsJSON textarea HTML element is not present.', 'HTML Error');
         return;
     }
 
@@ -643,33 +647,33 @@ const btnImportContainersClick = async () => {
         containers = JSON.parse(textImport.value);
     } catch (err) {
         if (err) {
-            showAlert(`Failed to parse the import containers text field as JSON: ${JSON.stringify(err)}`, 'Import Error');
+            await showAlert(`Failed to parse the import containers text field as JSON: ${JSON.stringify(err)}`, 'Import Error');
             return;
         }
 
-        showAlert(`Failed to parse the import containers text field as JSON due to an unknown error.`, 'Import Error');
+        await showAlert(`Failed to parse the import containers text field as JSON due to an unknown error.`, 'Import Error');
         return;
     }
 
     if (!Array.isArray(containers)) {
-        showAlert('The "Import Containers" text input field must be valid JSON, and it must be an array of objects.', 'Import Error');
+        await showAlert('The "Import Containers" text input field must be valid JSON, and it must be an array of objects.', 'Import Error');
         return;
     }
 
     if (containers.length === 0) {
-        showAlert(`The "Import Containers" text input field is valid, but you provided an empty array, so there's nothing to do.`, 'Import Error');
+        await showAlert(`The "Import Containers" text input field is valid, but you provided an empty array, so there's nothing to do.`, 'Import Error');
         return;
     }
 
     // validate that each container has a name
     for (const container of containers) {
         if (!container.name) {
-            showAlert(`There is a problem with the containers you attempted to import. The following container does not have the required 'name' field: ${JSON.stringify(container)}`, 'Import Error');
+            await showAlert(`There is a problem with the containers you attempted to import. The following container does not have the required 'name' field: ${JSON.stringify(container)}`, 'Import Error');
             return;
         }
     }
 
-    if (!confirm(`Please confirm that you'd like to add ${containers.length} containers.`)) {
+    if (!await showConfirm(`Please confirm that you'd like to add ${containers.length} containers.`, 'Add Containers?')) {
         return;
     }
 
@@ -708,20 +712,20 @@ const btnImportContainersClick = async () => {
             browser.storage.sync.set({ "containerDefaultUrls": config.containerDefaultUrls });
         }
 
-        if (msgs.length) {
-            showAlert(msgs.join('\n'), 'Completed');
+        if (msgs.length <= 5) {
+            await showAlert(msgs.join('\n'), 'Completed');
             return;
         }
 
-        showAlert('The import finished.', 'Completed');
+        await showAlert('The import finished.', 'Completed');
         return;
     } catch (err) {
         if (err) {
-            showAlert(`Failed to create a container: ${JSON.stringify(err)}`, 'Settings Error');
+            await showAlert(`Failed to create a container: ${JSON.stringify(err)}`, 'Settings Error');
             return;
         }
 
-        showAlert(`Failed to create a container due to an unknown error.`, 'Settings Error');
+        await showAlert(`Failed to create a container due to an unknown error.`, 'Settings Error');
         return;
     }
 }
@@ -730,14 +734,14 @@ const btnImportContainersClick = async () => {
  * Initializes the extension data upon document load, intended to be added as
  * a callback for the event listener `DOMContentLoaded`.
  */
-const initializeDocument = () => {
-    resetLocalSettings();
+const initializeDocument = async () => {
+    await resetLocalSettings();
 
-    refreshSyncSettings();
+    await refreshSyncSettings();
 
-    btnExportContainersClick();
+    await exportContainers(false);
 
-    updateUI();
+    await updateUI();
 
     const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
     const updateEl = document.getElementById('update');
@@ -758,71 +762,71 @@ const initializeDocument = () => {
     const openCurrentTabUrlOnMatchSelectEl = document.getElementById('openCurrentTabUrlOnMatchSelect');
 
     if (!localSettingsTextAreaEl) {
-        showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
+        await showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
         return;
     }
     if (!updateEl) {
-        showAlert('The update HTML element is not present.', 'HTML Error');
+        await showAlert('The update HTML element is not present.', 'HTML Error');
         return;
     }
     if (!resetEl) {
-        showAlert('The reset HTML element is not present.', 'HTML Error');
+        await showAlert('The reset HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnResetLocalEl) {
-        showAlert('The btnResetLocal HTML element is not present.', 'HTML Error');
+        await showAlert('The btnResetLocal HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnSaveLocalEl) {
-        showAlert('The btnSaveLocal HTML element is not present.', 'HTML Error');
+        await showAlert('The btnSaveLocal HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnSaveSyncEl) {
-        showAlert('The btnSaveSync HTML element is not present.', 'HTML Error');
+        await showAlert('The btnSaveSync HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnRefreshSyncEl) {
-        showAlert('The btnRefreshSync HTML element is not present.', 'HTML Error');
+        await showAlert('The btnRefreshSync HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnLoadFromSyncEl) {
-        showAlert('The btnLoadFromSync HTML element is not present.', 'HTML Error');
+        await showAlert('The btnLoadFromSync HTML element is not present.', 'HTML Error');
         return;
     }
     if (!alwaysSetSyncEl) {
-        showAlert('The alwaysSetSync HTML element is not present.', 'HTML Error');
+        await showAlert('The alwaysSetSync HTML element is not present.', 'HTML Error');
         return;
     }
     if (!alwaysGetSyncEl) {
-        showAlert('The alwaysGetSync HTML element is not present.', 'HTML Error');
+        await showAlert('The alwaysGetSync HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnResetLocalSettingsEl) {
-        showAlert('The btnResetLocalSettings HTML element is not present.', 'HTML Error');
+        await showAlert('The btnResetLocalSettings HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnResetSyncSettingsEl) {
-        showAlert('The btnResetSyncSettings HTML element is not present.', 'HTML Error');
+        await showAlert('The btnResetSyncSettings HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnExportContainersEl) {
-        showAlert('The btnExportContainers HTML element is not present.', 'HTML Error');
+        await showAlert('The btnExportContainers HTML element is not present.', 'HTML Error');
         return;
     }
     if (!btnImportContainersJSONEl) {
-        showAlert('The btnImportContainersJSON HTML element is not present.', 'HTML Error');
+        await showAlert('The btnImportContainersJSON HTML element is not present.', 'HTML Error');
         return;
     }
     if (!neverConfirmForOpeningNonHttpUrlsEl) {
-        showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', 'HTML Error');
+        await showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', 'HTML Error');
         return;
     }
     if (!neverConfirmForSavingNonHttpUrlsEl) {
-        showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', 'HTML Error');
+        await showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', 'HTML Error');
         return;
     }
     if (!openCurrentTabUrlOnMatchSelectEl) {
-        showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', 'HTML Error');
+        await showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', 'HTML Error');
         return;
     }
 
