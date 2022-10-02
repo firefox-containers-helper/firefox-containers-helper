@@ -1,8 +1,8 @@
 import { ContainerDefaultURL, ExtensionConfig, SelectedContextIndex } from 'src/types';
-import { getSetting, getSettings, setSettings } from './config';
-import { CONF, CONTEXT_COLORS, CONTEXT_ICONS, CONTAINER_LIST_DIV_ID, MODES, SORT_MODE_NAME_ASC, SORT_MODE_NAME_DESC, SORT_MODE_NONE, SORT_MODE_NONE_REVERSE, SORT_MODE_URL_ASC, SORT_MODE_URL_DESC, PlatformModifierKey, UrlMatchTypes, SortModes } from './constants';
+import { getSetting, setSettings } from './config';
+import { CONF, CONTEXT_COLORS, CONTEXT_ICONS, CONTAINER_LIST_DIV_ID, MODES, SORT_MODE_NAME_ASC, SORT_MODE_NAME_DESC, SORT_MODE_NONE, SORT_MODE_NONE_REVERSE, SORT_MODE_URL_ASC, SORT_MODE_URL_DESC, UrlMatchTypes, SortModes } from './constants';
 import { reflectSelected, removeExistingContainerListGroupElement, buildContainerListGroupElement, buildContainerListItem, buildContainerListItemEmpty } from './elements';
-import { getModifiers } from './events';
+import { getModifiers, preventUnload, relieveUnload } from './events';
 import { getCurrentTabOverrideUrl, isAnyContextSelected, queryNameMatch, queryUrls } from './helpers';
 import { bottomHelp, help, helpful } from './html';
 import { showAlert, showPrompt, showConfirm } from './modals';
@@ -62,36 +62,47 @@ export const del = async (contexts: browser.contextualIdentities.ContextualIdent
 
     let changed = false;
 
-    for (const context of contexts) {
-        try {
-            const d = await browser.contextualIdentities.remove(context.cookieStoreId);
+    try {
+        let counter = 0;
+        for (const context of contexts) {
+            try {
+                const d = await browser.contextualIdentities.remove(context.cookieStoreId);
 
-            if (urls[context.cookieStoreId]) {
-                delete urls[context.cookieStoreId];
-                changed = true;
+                if (urls[context.cookieStoreId]) {
+                    delete urls[context.cookieStoreId];
+                    changed = true;
+                }
+
+                deleted.push(d);
+                counter += 1;
+
+                // re-calculating deleted.length each iteration is very
+                // costly as the array size increases, so it's better to just
+                // use a counter
+                help(`Deleted ${counter}/${contexts.length} ${containers}`);
+            } catch (err) {
+                throw `Error deleting container ${context.name} (id: ${context.cookieStoreId}): ${err}`;
             }
-
-            deleted.push(d);
-
-            help(`Deleted ${deleted.length}/${contexts.length} ${containers}`);
-        } catch (err) {
-            throw `Error deleting container ${context.name} (id: ${context.cookieStoreId}): ${err}`;
-        } finally {
-            // note that despite the performance hit, it is critical to save
-            // the settings each iteration of the loop. If we instead decide
-            // to only save after the loop is completed (which is faster),
-            // the user might decide to close the popup window before the loop
-            // is done, and we would have:
-            // - deleted all of the containers leading up to the closure
-            // - not persisted any default URL's to the settings
-            // However, it _is_ possible to rely on the Orphan Cleanup process
-            // offered in the options page to do this automatically. But, since
-            // (as of 2022-10-01) this is still a new feature, the more stable
-            // choice is to take the performance hit and do it right each time,
-            // then automate the cleanup later.
-            if (changed) {
-                await setSettings({ containerDefaultUrls: urls });
-            }
+        }
+    } catch (err) {
+        throw err;
+    } finally {
+        // note that despite the performance hit, it is critical to *consider*
+        // saving the settings each iteration of the loop. If we instead decide
+        // to only save after the loop is completed (which is faster),
+        // the user might decide to close the popup window before the loop
+        // is done, and we would have:
+        // - deleted all of the containers leading up to the closure
+        // - not persisted any default URL's to the settings
+        // However, it _is_ possible to rely on the Orphan Cleanup process
+        // offered in the options page to do this automatically. But, since
+        // (as of 2022-10-01) this is still a new feature, the more stable
+        // choice is to take the performance hit and do it right each time,
+        // then automate the cleanup later. The choice has been made to warn
+        // the user not to close the window before long-lived operations that
+        // would likely encounter this issue (e.g for >50 containers).
+        if (changed) {
+            await setSettings({ containerDefaultUrls: urls });
         }
     }
 
@@ -104,40 +115,54 @@ export const del = async (contexts: browser.contextualIdentities.ContextualIdent
     return deleted.length;
 };
 
-/** Associates a default URL to each container. */
+/**
+ * Associates a default URL to each container. Accepts either one string or
+ * a 1:1 mapping of contexts to URL's - each context will be assigned its
+ * corresponding URL by index.
+ */
 export const setUrls = async (
     contexts: browser.contextualIdentities.ContextualIdentity[],
-    url: string,
+    url: string[],
     allowAnyProtocol: boolean = false,
     updateHelp: boolean = true,
 ) => {
-    if (!url) {
-        await showAlert('Please provide a non-empty URL, or type "none" without quotes to clear URL values.', 'Invalid Input');
-        return;
+    if (!contexts.length || !url.length) return;
+
+    const multiple = contexts.length > 1;
+    const single = contexts.length === 1;
+
+    if (multiple && contexts.length !== url.length) {
+        throw `When setting URLs, either 1 URL must be passed in, or a 1:1 ratio of containers:URLs - got ${contexts.length}:${url.length} instead`;
     }
 
-    const clear = url === "none";
+    const clear = multiple && url[0] === 'none';
     const requireHTTP = !await getSetting(CONF.neverConfirmSaveNonHttpUrls);
     const noHTTPS = url.indexOf(`https://`) !== 0;
     const noHTTP = url.indexOf(`http://`) !== 0;
     const question = 'Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension preferences page.';
+    const ask = !clear && !allowAnyProtocol && requireHTTP && noHTTPS && noHTTP;
 
-    if (!clear && !allowAnyProtocol && requireHTTP && noHTTPS && noHTTP && !await showConfirm(question, 'Allow Any Protocol?')) return;
+    if (ask && !await showConfirm(question, 'Allow Any Protocol?')) return;
 
-    const s = contexts.length === 1 ? '' : 's';
+    const s = single ? '' : 's';
 
-    const urls = await getSetting(CONF.containerDefaultUrls);
+    const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
 
     let changed = false;
 
     try {
+        const first = url[0];
+
         let i = 0; // just for consistency
         for (const context of contexts) {
             i++;
 
+            const _url = single ? first : url[i];
+            const _clear = _url === 'none';
+
             const m = `Updated URL for ${i}/${contexts.length} container${s}`;
 
-            if (clear) {
+            if (_clear) {
                 delete urls[context.cookieStoreId];
                 changed = true;
 
@@ -146,7 +171,7 @@ export const setUrls = async (
                 continue;
             }
 
-            urls[context.cookieStoreId] = url;
+            urls[context.cookieStoreId] = _url;
             changed = true;
 
             if (updateHelp) help(m);
@@ -173,7 +198,7 @@ export const setUrlsPrompt = async (contexts: browser.contextualIdentities.Conte
     let prefill = '';
 
     if (one) {
-        const urls = await getSetting(CONF.containerDefaultUrls);
+        const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
         const context = contexts[0];
         const contextUrl = urls[context.cookieStoreId];
         if (urls[context.cookieStoreId]) {
@@ -185,7 +210,7 @@ export const setUrlsPrompt = async (contexts: browser.contextualIdentities.Conte
 
     if (!url) return;
 
-    await setUrls(contexts, url);
+    await setUrls(contexts, [url]);
 };
 
 /**
@@ -433,7 +458,7 @@ export const replaceInUrls = async (contexts: browser.contextualIdentities.Conte
 
     let prefill = '';
 
-    const urls = await getSetting(CONF.containerDefaultUrls);
+    const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
     if (one) {
         const context = contexts[0];
         const contextUrl = urls[context.cookieStoreId];
@@ -508,37 +533,42 @@ export const duplicate = async (contexts: browser.contextualIdentities.Contextua
     // only ask if there are multiple containers to duplicate
     if (contexts.length > 1 && prompt && !await showConfirm(question, 'Confirm Duplicate')) return 0;
 
-    let duplicated: browser.contextualIdentities.ContextualIdentity[] = [];
+    const duplicated: browser.contextualIdentities.ContextualIdentity[] = [];
+    const urlsToSet: string[] = [];
 
     // if the containers have default URL associations, we need to update those too
     const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
 
-    for (const context of contexts) {
-        const newContext = {
-            color: context.color,
-            icon: context.icon,
-            name: context.name
-        };
+    try {
+        for (const context of contexts) {
+            const newContext = {
+                color: context.color,
+                icon: context.icon,
+                name: context.name
+            };
 
-        try {
-            const created = await browser.contextualIdentities.create(newContext);
-            duplicated.push(created);
-
-            const urlToSet = urls[context.cookieStoreId] || "none";
-
-            // TODO: consider allowing setUrls to accept a mapping of inputs,
-            // such as:
-            // cookieStoreId: "https://url.com"
-            await setUrls([created], urlToSet, true, false);
-        } catch (err) {
-            throw `error when duplicating container ${context.name}: ${err}`;
-        } finally {
-            help(`Duplicated ${duplicated.length}/${contexts.length} container${s}`);
-            if (duplicated.length) {
-                // when duplicating, the selected containers need to be deselected,
-                // since the indices have changed
-                await deselect();
+            try {
+                const created = await browser.contextualIdentities.create(newContext);
+                const urlToSet = urls[context.cookieStoreId] || "none";
+                duplicated.push(created);
+                urlsToSet.push(urlToSet);
+            } catch (err) {
+                throw `error when duplicating container ${context.name}: ${err}`;
+            } finally {
+                help(`Creating ${duplicated.length}/${contexts.length} container${s}...`);
             }
+        }
+    } catch (err) {
+        throw `error duplicating containers: ${err}`;
+    } finally {
+        await setUrls(duplicated, urlsToSet, true, false);
+
+        help(`Duplicated ${duplicated.length}/${contexts.length} container${s}`);
+
+        if (duplicated.length) {
+            // when duplicating, the selected containers need to be deselected,
+            // since the indices have changed
+            await deselect();
         }
     }
 
@@ -636,6 +666,8 @@ export const deselect = async () => {
  */
 export const done = async (currentUrl: string) => {
     const stay = await getSetting(CONF.windowStayOpenState) as boolean;
+
+    relieveUnload();
 
     // decide to close the extension or not at the last step
     if (!stay) {
@@ -834,6 +866,8 @@ const act = async (
 
     const mode = await getSetting(CONF.mode) as MODES;
 
+    preventUnload();
+
     switch (mode) {
         case MODES.SET_NAME:
             await rename(contexts);
@@ -900,6 +934,19 @@ export const actHandler = async (
         }
 
         const contexts = await getActionable(filtered, clicked, selected, shift);
+
+        if (contexts.length > 50) {
+            // estimate of 100 container actions / second, but cut that in half
+            // to be safe
+            const estimateLow = Math.ceil(contexts.length / 100);
+            const estimateHigh = Math.ceil(contexts.length / 50);
+            const proceed = await showConfirm(
+                `Warning: You're about to perform an action on a large number of containers (${contexts.length}). This action might take around ${estimateLow}-${estimateHigh} seconds, depending on your system. If you close the extension popup window, the action may get interrupted before completing. Alternatively, you can click 'Open in Tab' below and execute the operation in a dedicated tab. Do you want to proceed?`,
+                `Long Operation`,
+            )
+
+            if (!proceed) return;
+        }
 
         await act(contexts, ctrl);
     } catch (err) {

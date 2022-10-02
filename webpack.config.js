@@ -53,6 +53,7 @@ module.exports = {
                 'src/manifest.json',
                 'src/options.html',
                 'src/popup.html',
+                'src/options-redir.html',
                 { from: 'src/icons', to: 'icons' },
                 { from: 'src/css', to: 'css' },
             ],

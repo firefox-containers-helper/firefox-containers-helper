@@ -799,19 +799,6 @@ const btnImportContainersClick = async () => {
     }
 };
 
-const makeBiggerClick = async () => {
-    const optionsMainDivEl = document.getElementById('optionsMainDiv');
-
-    if (!optionsMainDivEl) {
-        await showAlert('The optionsMainDiv HTML element is not present.', 'HTML Error');
-        return;
-    }
-
-    const optionsMainDiv = optionsMainDivEl as HTMLDivElement;
-
-    optionsMainDiv.className = "options-main-div-bigger";
-};
-
 /**
  * Initializes the extension data upon document load, intended to be added as
  * a callback for the event listener `DOMContentLoaded`.
@@ -843,7 +830,6 @@ const initializeDocument = async () => {
     const neverConfirmForSavingNonHttpUrlsEl = document.getElementById('neverConfirmForSavingNonHttpUrls');
     const openCurrentTabUrlOnMatchSelectEl = document.getElementById('openCurrentTabUrlOnMatchSelect');
     const btnCleanLocalEl = document.getElementById('btnCleanLocal');
-    const makeBiggerEl = document.getElementById('makeBigger');
 
     const htmlErr = 'HTML Error';
 
@@ -919,10 +905,6 @@ const initializeDocument = async () => {
         await showAlert('The btnCleanLocal HTML element is not present.', htmlErr);
         return;
     }
-    if (!makeBiggerEl) {
-        await showAlert('The makeBigger HTML element is not present.', htmlErr);
-        return;
-    }
 
     const localSettingsTextArea = localSettingsTextAreaEl as HTMLTextAreaElement;
     const update = updateEl as HTMLButtonElement;
@@ -942,7 +924,6 @@ const initializeDocument = async () => {
     const neverConfirmForSavingNonHttpUrls = neverConfirmForSavingNonHttpUrlsEl as HTMLInputElement;
     const openCurrentTabUrlOnMatchSelect = openCurrentTabUrlOnMatchSelectEl as HTMLSelectElement;
     const btnCleanLocal = btnCleanLocalEl as HTMLSelectElement;
-    const makeBigger = makeBiggerEl as HTMLAnchorElement;
 
     localSettingsTextArea.addEventListener('keyup', onChangeLocalSettings);
     update.addEventListener('click', updateShortcut);
@@ -963,8 +944,6 @@ const initializeDocument = async () => {
     openCurrentTabUrlOnMatchSelect.addEventListener('change', openCurrentTabUrlOnMatchSelectChange);
     btnCleanLocal.addEventListener('click', btnCleanLocalClick);
 
-    makeBigger.addEventListener('click', makeBiggerClick);
-
     // check if the config is dirty
 
     if (!localSettings) return;
@@ -974,9 +953,10 @@ const initializeDocument = async () => {
     if (dirty <= 0) return;
 
     const s = dirty === 1 ? '' : 's';
+    const are = dirty === 1 ? 'is' : 'are';
 
     const cleanUp = await showConfirm(
-        `Warning: There are ${dirty} orphaned container/URL association${s} in the config. You can request a cleanup of the extension's saved settings. It is recommended to proceed so that the extension can consume less storage space and operate more efficiently. Would you like to begin the cleanup? You will be prompted with more information.`,
+        `Warning: There ${are} ${dirty} orphaned container/URL association${s} in the config. You can request a cleanup of the extension's saved settings. It is recommended to proceed so that the extension can consume less storage space and operate more efficiently. Would you like to begin the cleanup? You will be prompted with more information.`,
         'Clean Up Config?',
     );
 

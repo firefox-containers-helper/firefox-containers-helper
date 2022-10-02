@@ -1,7 +1,7 @@
 import { ensureConfig, getSetting, getSettings } from './modules/config';
 import { PlatformModifierKey, CONF } from './modules/constants';
 import { checkDirty } from "./modules/helpers";
-import { help, bottomHelp, focusSearchBox, helpful } from './modules/html';
+import { help, focusSearchBox, helpful } from './modules/html';
 import { filter } from './modules/lib';
 import { showAlert } from './modules/modals';
 import { setHandlers } from './modules/handlers';
@@ -42,7 +42,6 @@ const init = async () => {
         const msg = `Cleanup needed, visit Preferences (${dirty} orphan${s})`;
 
         help(msg);
-        bottomHelp(msg);
     } catch (err) {
         let msg = 'Failed to initialize page';
         const title = 'Initialization Error';

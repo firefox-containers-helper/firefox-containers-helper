@@ -165,3 +165,43 @@ export const getModifiers = (event?: MouseEvent | KeyboardEvent): [boolean, bool
 
     return [ctrl, shift];
 }
+
+
+/**
+ * Warning: `beforeunload` events are not fired for an extension popup
+ */
+const unloader = async (event: BeforeUnloadEvent) => {
+    if (!event) return;
+
+    const msg = 'Are you sure you want to leave this page? An action is still in progress.';
+
+    event.preventDefault();
+
+    // unfortunately, the browser doesn't support showing a custom modal
+    // and reacting; you have to use event.returnValue. But if that ever
+    // changes, it would look a  bit like this:
+    // const proceed = await showConfirm(msg, 'Still Processing');
+
+    event.returnValue = msg;
+
+};
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+ *
+ * Warning: `beforeunload` events are not fired for an extension popup
+ */
+export const preventUnload = () => {
+    window.addEventListener('beforeunload', unloader);
+}
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+ *
+ * Warning: `beforeunload` events are not fired for an extension popup
+ */
+export const relieveUnload = () => {
+    try {
+        window.removeEventListener('beforeunload', unloader)
+    } catch { }
+}

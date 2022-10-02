@@ -43,7 +43,7 @@
         }
     },
     "options_ui": {
-        "page": "options.html",
-        "browser_style": true
+        "page": "options-redir.html",
+        "browser_style": false
     }
 }

@@ -79,8 +79,8 @@ export const CONTEXT_COLORS = [
 export const helpTextMessages = [
     'Tip: Press Enter or click on a container below.',
     `Tip: Use ${platformModifierKey}(+Shift) to open pinned tabs.`,
-    'Tip: Shift+Click to execute against every shown result',
-    'Tip: Bulk import/export containers via Preferences page.'
+    'Tip: Shift+Click operates on every result.',
+    'Tip: Visit Preferences for bulk import/export.'
 ];
 
 export const SORT_MODE_NAME_ASC = 'name-a';
