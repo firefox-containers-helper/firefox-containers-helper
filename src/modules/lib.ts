@@ -63,7 +63,6 @@ export const del = async (contexts: browser.contextualIdentities.ContextualIdent
     let changed = false;
 
     try {
-        let counter = 0;
         for (const context of contexts) {
             try {
                 const d = await browser.contextualIdentities.remove(context.cookieStoreId);
@@ -74,12 +73,8 @@ export const del = async (contexts: browser.contextualIdentities.ContextualIdent
                 }
 
                 deleted.push(d);
-                counter += 1;
 
-                // re-calculating deleted.length each iteration is very
-                // costly as the array size increases, so it's better to just
-                // use a counter
-                help(`Deleted ${counter}/${contexts.length} ${containers}`);
+                help(`Deleted ${deleted.length}/${contexts.length} ${containers}`);
             } catch (err) {
                 throw `Error deleting container ${context.name} (id: ${context.cookieStoreId}): ${err}`;
             }
@@ -130,15 +125,19 @@ export const setUrls = async (
 
     const multiple = contexts.length > 1;
     const single = contexts.length === 1;
+    const oneUrl = url.length === 1;
+    const sameLength = contexts.length === url.length;
 
-    if (multiple && contexts.length !== url.length) {
+    if (multiple && !sameLength && !oneUrl) {
         throw `When setting URLs, either 1 URL must be passed in, or a 1:1 ratio of containers:URLs - got ${contexts.length}:${url.length} instead`;
     }
 
-    const clear = multiple && url[0] === 'none';
+    const first = url[0];
+
+    const clear = oneUrl && first === 'none';
     const requireHTTP = !await getSetting(CONF.neverConfirmSaveNonHttpUrls);
-    const noHTTPS = url.indexOf(`https://`) !== 0;
-    const noHTTP = url.indexOf(`http://`) !== 0;
+    const noHTTPS = oneUrl && first.indexOf(`https://`) !== 0;
+    const noHTTP = oneUrl && first.indexOf(`http://`) !== 0;
     const question = 'Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension preferences page.';
     const ask = !clear && !allowAnyProtocol && requireHTTP && noHTTPS && noHTTP;
 
@@ -151,13 +150,12 @@ export const setUrls = async (
     let changed = false;
 
     try {
-        const first = url[0];
-
         let i = 0; // just for consistency
         for (const context of contexts) {
             i++;
 
-            const _url = single ? first : url[i];
+            const _url = oneUrl ? first : url[i];
+
             const _clear = _url === 'none';
 
             const m = `Updated URL for ${i}/${contexts.length} container${s}`;
@@ -179,9 +177,9 @@ export const setUrls = async (
     } catch (e) {
         throw `setUrls threw error: ${e}`;
     } finally {
-        if (changed) {
-            await setSettings({ containerDefaultUrls: urls });
-        }
+        if (!changed) return;
+
+        await setSettings({ containerDefaultUrls: urls });
     }
 }
 
@@ -941,7 +939,7 @@ export const actHandler = async (
             const estimateLow = Math.ceil(contexts.length / 100);
             const estimateHigh = Math.ceil(contexts.length / 50);
             const proceed = await showConfirm(
-                `Warning: You're about to perform an action on a large number of containers (${contexts.length}). This action might take around ${estimateLow}-${estimateHigh} seconds, depending on your system. If you close the extension popup window, the action may get interrupted before completing. Alternatively, you can click 'Open in Tab' below and execute the operation in a dedicated tab. Do you want to proceed?`,
+                `Warning: You're about to perform an action on a large number of containers (${contexts.length}). This action might take around ${estimateLow}-${estimateHigh} seconds (or much longer), depending on your system. If you close the extension popup window, the action may get interrupted before completing. Alternatively, you can click 'Open in Tab' below and execute the operation in a dedicated tab. Do you want to proceed?`,
                 `Long Operation`,
             )
 

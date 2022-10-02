@@ -40,8 +40,6 @@ export const getSetting = async (setting: CONF): Promise<any> => {
 
     const settings = preferSync ? sync : local;
 
-    console.debug(`retrieved setting: ${setting}`);
-
     if (!settings[setting]) {
         return null;
     }

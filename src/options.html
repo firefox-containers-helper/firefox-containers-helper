@@ -67,6 +67,23 @@
         <div class="row">
             <div class="col-12">
                 <h4>
+                    <span class="badge badge-info">Settings</span> Orphans
+                </h4>
+                <p>
+                    Some settings don't always get correctly cleaned up and propagated to the extension config, such
+                    as default URL associations that no longer correspond to an existing container. This can happen
+                    when another extension removes a container, or when this extension's popup closes before finishing
+                    an operation. The Clean Up Orphans button can be used to help reduce the Firefox Sync
+                    storage usage. <a href="#options-settings-section">Click the "Clean Up Orphans" button at the bottom
+                        of this page</a> to remove all default URL's that meet this criteria for whatever input is in
+                    the "Local Settings" text field below, and click "Save Locally" or "Save to Sync" to propagate the
+                    cleaned up config.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <h4>
                     <span class="badge badge-warning">Warning</span> Back up your configuration!
                 </h4>
                 <p>
@@ -100,7 +117,8 @@
                 <p>
                     If you are an extreme power user and leverage containers at a larger scale than most users, you
                     might run into unexplainable slowness, a constantly cycling CPU, containers that do not properly
-                    delete, or other issues. While the cause might not be entirely identified, we can control it to
+                    delete, or other issues. This might occur for a while after deleting/creating a large number of
+                    containers, for example. While the cause might not be entirely identified, we can control it to
                     some extent by altering the configuration of the Firefox Containers extension.
                 </p>
                 <p>
@@ -335,7 +353,7 @@
         </div>
         <div class="row mt-3">
             <div class="col">
-                <h4>
+                <h4 id="options-settings-section">
                     <span class="badge badge-info">Settings</span> Local and Synchronized Settings
                 </h4>
                 <p>
@@ -359,14 +377,6 @@
                         settings may get reset. For best results, copy/paste your settings elsewhere when purging
                         extensions.</i>
                 </p>
-                <p>
-                    Some settings don't always get correctly cleaned up and propagated to the extension config, such
-                    as default URL associations that no longer correspond to an existing container. This can happen
-                    when another extension removes a container, and can be used to help reduce the Firefox Sync
-                    storage usage. Click the "Clean Up" button below to remove all default URL's that meet this
-                    criteria for whatever input is in the "Local Settings" text field
-                    below, and click "Save Locally" or "Save to Sync" to propagate the cleaned up config.
-                </p>
             </div>
         </div>
         <div class="row">
@@ -389,7 +399,7 @@
             <div class="col-6">
                 <button type="button" id="btnSaveLocal" class="btn btn-block btn-primary">Save Locally</button>
                 <button type="button" id="btnSaveSync" class="btn btn-block btn-primary">Save to Sync</button>
-                <button type="button" id="btnCleanLocal" class="btn btn-block btn-primary">Clean Up</button>
+                <button type="button" id="btnCleanLocal" class="btn btn-block btn-info">Clean Up Orphans</button>
                 <button type="button" id="btnResetLocal" class="btn btn-block btn-primary">Refresh</button>
             </div>
             <div class="col-6">

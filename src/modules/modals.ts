@@ -402,7 +402,6 @@ export const showPrompt = async (msg: string, title: string, value?: string): Pr
 
         promptInput?.addEventListener('keydown', (ev: KeyboardEvent) => {
             if (ev.key === 'Enter') {
-                console.debug('yep');
                 completed();
                 ev.preventDefault();
                 ev.stopImmediatePropagation();
