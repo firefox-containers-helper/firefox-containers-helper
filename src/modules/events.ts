@@ -1,5 +1,5 @@
-import { ExtensionConfig } from "src/types";
-import { containerListItemActiveDangerClassNames, containerListItemActiveClassNames, containerListItemSelectedClassNames, containerListItemInactiveClassNames } from "./classes";
+import { ActHandler } from "src/types";
+import { CLASSES_CONTAINER_LI_ACTIVE_DANGER, CLASSES_LI_ACTIVE, CLASSES_CONTAINER_LI_SELECTED, CLASSES_CONTAINER_LI_INACTIVE } from "./classes";
 import { getSetting } from "./config";
 import { MODES, containerListItemUrlLabelInverted, containerListItemUrlLabel, CONF } from "./constants";
 import { isContextSelected } from "./helpers";
@@ -36,17 +36,17 @@ export const addEmptyEventListeners = (elements: HTMLElement[]) => {
 /**
  * Adds click and other event handlers to a container list item HTML element.
  * @param li The container list item that will receive all event listeners
- * @param filteredResults A list of the currently filtered set of browser.contextualIdentities
+ * @param filtered A list of the currently filtered set of browser.contextualIdentities
  * @param context The contextualIdentity that this list item will represent
  * @param i The index of this contextualIdentity within the filteredResults array
  * @returns Any error message, or empty string if no errors occurred.
  */
 export const setEventListeners = async (
     li: HTMLLIElement,
-    filteredResults: browser.contextualIdentities.ContextualIdentity[],
+    filtered: browser.contextualIdentities.ContextualIdentity[],
     context: browser.contextualIdentities.ContextualIdentity,
     i: number,
-    containerClickHandler: any, // TODO: create type def for containerClickHandler
+    actHandler: ActHandler,
 ) => {
     try {
         const urlLabelId = `filtered-context-${i}-url-label`;
@@ -59,11 +59,11 @@ export const setEventListeners = async (
             const mode = await getSetting(CONF.mode);
 
             if (mode === MODES.DELETE || mode === MODES.REFRESH) {
-                target.className = containerListItemActiveDangerClassNames;
+                target.className = CLASSES_CONTAINER_LI_ACTIVE_DANGER;
                 return;
             }
 
-            target.className = containerListItemActiveClassNames;
+            target.className = CLASSES_LI_ACTIVE;
 
             const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
             if (urlLabel) urlLabel.className = containerListItemUrlLabelInverted;
@@ -79,22 +79,22 @@ export const setEventListeners = async (
             const selected = await getSetting(CONF.selectedContextIndices);
 
             if (isContextSelected(i, selected)) {
-                target.className = containerListItemSelectedClassNames;
+                target.className = CLASSES_CONTAINER_LI_SELECTED;
                 if (urlLabel) urlLabel.className = containerListItemUrlLabelInverted;
 
                 return;
             }
 
-            target.className = containerListItemInactiveClassNames;
+            target.className = CLASSES_CONTAINER_LI_INACTIVE;
 
             if (urlLabel) urlLabel.className = containerListItemUrlLabel;
         }
 
-        const onClick = (event: MouseEvent) => containerClickHandler(filteredResults, context, event);
+        const onClick = (event: MouseEvent) => actHandler(filtered, context, event);
 
         const keyDown = async (event: KeyboardEvent) => {
             if (event.key === 'Enter') {
-                containerClickHandler(filteredResults, context, event);
+                actHandler(filtered, context, event);
             }
         }
 
@@ -106,11 +106,11 @@ export const setEventListeners = async (
             const mode = await getSetting(CONF.mode);
 
             if (mode === MODES.DELETE || mode === MODES.REFRESH) {
-                target.className = containerListItemActiveDangerClassNames;
+                target.className = CLASSES_CONTAINER_LI_ACTIVE_DANGER;
                 return;
             }
 
-            target.className = containerListItemActiveClassNames;
+            target.className = CLASSES_LI_ACTIVE;
 
             const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
             if (urlLabel) urlLabel.className = containerListItemUrlLabel;
@@ -124,11 +124,11 @@ export const setEventListeners = async (
             const selected = await getSetting(CONF.selectedContextIndices);
 
             if (isContextSelected(i, selected)) {
-                target.className = containerListItemSelectedClassNames;
+                target.className = CLASSES_CONTAINER_LI_SELECTED;
                 return;
             }
 
-            target.className = containerListItemInactiveClassNames;
+            target.className = CLASSES_CONTAINER_LI_INACTIVE;
 
             const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
             if (urlLabel) urlLabel.className = containerListItemUrlLabel;
@@ -144,3 +144,24 @@ export const setEventListeners = async (
         throw `failed to apply an event listener: ${JSON.stringify(e)}`;
     }
 };
+
+/**
+ * Determines if `ctrl` and if `shift` are individually pressed.
+ *
+ * @returns Two booleans in order: `ctrlModifier` and `shiftModifier`.
+ */
+export const getModifiers = (event?: MouseEvent | KeyboardEvent): [boolean, boolean] => {
+    if (!event) return [false, false];
+
+    let ctrl = false;
+    let shift = false;
+
+    if (event.getModifierState('Control') || event.getModifierState('Meta')) {
+        ctrl = true;
+    }
+    if (event.getModifierState('Shift')) {
+        shift = true;
+    }
+
+    return [ctrl, shift];
+}

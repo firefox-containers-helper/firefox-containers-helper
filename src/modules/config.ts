@@ -27,10 +27,10 @@ export const getSettings = async (): Promise<ExtensionConfig> => {
  * Firefox Sync.
  */
 export const getSetting = async (setting: CONF): Promise<any> => {
-    // console.debug(`getting setting: ${setting}`);
-
     // queries against the browser.storage API are very slow, so use
-    // cached results if possible
+    // cached results if possible - note that the cached object does
+    // get updated automatically any setting is changed, so generally it
+    // will always be up to date
     if (setting in cached) return cached[setting];
 
     const local = await browser.storage.local.get(setting) as Partial<ExtensionConfig>;

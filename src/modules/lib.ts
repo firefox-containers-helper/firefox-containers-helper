@@ -2,7 +2,8 @@ import { ContainerDefaultURL, ExtensionConfig, SelectedContextIndex } from 'src/
 import { getSetting, getSettings, setSettings } from './config';
 import { CONF, CONTEXT_COLORS, CONTEXT_ICONS, CONTAINER_LIST_DIV_ID, MODES, SORT_MODE_NAME_ASC, SORT_MODE_NAME_DESC, SORT_MODE_NONE, SORT_MODE_NONE_REVERSE, SORT_MODE_URL_ASC, SORT_MODE_URL_DESC, PlatformModifierKey, UrlMatchTypes, SortModes } from './constants';
 import { reflectSelected, removeExistingContainerListGroupElement, buildContainerListGroupElement, buildContainerListItem, buildContainerListItemEmpty } from './elements';
-import { getCurrentTabOverrideUrl, isAnyContextSelected, isUserQueryContextNameMatch, queryUrls } from './helpers';
+import { getModifiers } from './events';
+import { getCurrentTabOverrideUrl, isAnyContextSelected, queryNameMatch, queryUrls } from './helpers';
 import { bottomHelp, help, helpful } from './html';
 import { showAlert, showPrompt, showConfirm } from './modals';
 
@@ -121,7 +122,7 @@ export const setUrls = async (
     const noHTTP = url.indexOf(`http://`) !== 0;
     const question = 'Warning: URL\'s should start with "http://" or "https://". Firefox likely will not correctly open pages otherwise. If you would like to proceed, please confirm.\n\nThis dialog can be disabled in the extension preferences page.';
 
-    if (!allowAnyProtocol && requireHTTP && noHTTPS && noHTTP && !await showConfirm(question, 'Allow Any Protocol?')) return;
+    if (!clear && !allowAnyProtocol && requireHTTP && noHTTPS && noHTTP && !await showConfirm(question, 'Allow Any Protocol?')) return;
 
     const s = contexts.length === 1 ? '' : 's';
 
@@ -441,7 +442,7 @@ export const replaceInUrls = async (contexts: browser.contextualIdentities.Conte
         }
     }
 
-    const q1 = `(1/3) What case-insensitive string in ${contexts.length} container default URL${s}} would you like to search for?`;
+    const q1 = `(1/3) What case-insensitive string in ${contexts.length} container default URL${s} would you like to search for?`;
 
     const find = await showPrompt(q1, 'Search String', prefill);
     if (!find) return;
@@ -523,7 +524,6 @@ export const duplicate = async (contexts: browser.contextualIdentities.Contextua
             const created = await browser.contextualIdentities.create(newContext);
             duplicated.push(created);
 
-
             const urlToSet = urls[context.cookieStoreId] || "none";
 
             // TODO: consider allowing setUrls to accept a mapping of inputs,
@@ -582,30 +582,36 @@ export const add = async () => {
     }
 };
 
-/** Duplicates and then deletes containers. */
-export const refresh = async (contexts: browser.contextualIdentities.ContextualIdentity[]) => {
+/**
+ * Duplicates and then deletes containers.
+ *
+ * @return An array of 2 numbers: the first being the number of deleted
+ * containers, and the second being the number of created containers.
+ */
+export const refresh = async (contexts: browser.contextualIdentities.ContextualIdentity[]): Promise<number[]> => {
     const s = contexts.length === 1 ? '' : 's';
 
     const msg = `Delete and re-create ${contexts.length} container${s}? Basic properties, such as color, URL, name, and icon are kept, but not cookies or other site information. The ordering of the container${s} may not be preserved. This will operate in two steps: duplicate, then delete.`;
     const title = 'Delete and Re-create?';
     const confirmed = await showConfirm(msg, title);
 
-    if (!confirmed) return;
+    if (!confirmed) return [0, 0];
 
     const msg2 = `This is a destructive action and will delete actual cookie and other related site data for ${contexts.length} container${s}! Are you absolutely sure?`;
     const really = await showConfirm(msg2, 'Really Delete and Re-create?');
 
-    if (!really) return;
+    if (!really) return [0, 0];
 
     const duplicated = await duplicate(contexts, false);
-    const refreshed = await del(contexts, false);
+    const deleted = await del(contexts, false);
 
-    const s1 = refreshed === 1 ? '' : 's';
+    const s1 = deleted === 1 ? '' : 's';
 
-    const done = `Deleted ${duplicated} and re-created ${refreshed} container${s1}.`;
+    const done = `Deleted ${deleted} and re-created ${duplicated} container${s1}.`;
 
     help(done);
     await showAlert(done, 'Deleted and Recreated');
+    return [deleted, duplicated];
 };
 
 
@@ -628,7 +634,7 @@ export const deselect = async () => {
  * @param currentUrl Optional, determines what URL should be considered as
  * "active" when filtering containers
  */
-export const actionCompletedHandler = async (currentUrl: string) => {
+export const done = async (currentUrl: string) => {
     const stay = await getSetting(CONF.windowStayOpenState) as boolean;
 
     // decide to close the extension or not at the last step
@@ -637,96 +643,85 @@ export const actionCompletedHandler = async (currentUrl: string) => {
         return;
     }
 
-    filter(null, currentUrl);
+    await filter(null, currentUrl);
 }
 
 /**
- * Adds click and other event handlers to a container list item HTML element.
+ * Updates the selected containers index based on user input and state.
  *
- * TODO: This is the most important function and should definitely be broken down
- * and unit tested.
- *
- * @param filteredResults A list of the currently filtered set of `browser.contextualIdentities`
- * @param context The `contextualIdentity` associated with this handler, assume that a user clicked on a specific container to open if this is defined
- * @param event The event that called this function, such as a key press or mouse click
+ * TODO: This function is a great candidate for unit testing due to its
+ * cyclomatic complexity and numerous branching paths.
  */
-export const containerClickHandler = async (
+const selectionChanged = async (
     filtered: browser.contextualIdentities.ContextualIdentity[],
     clicked: browser.contextualIdentities.ContextualIdentity,
-    event: MouseEvent | KeyboardEvent,
+    selected: SelectedContextIndex,
+    shiftModifier: boolean,
 ) => {
-    // start by processing a few options based on event data
-    let ctrlModifier = false;
-    let shiftModifier = false;
-    if (event) {
-        if (event.getModifierState('Control') || event.getModifierState('Meta')) {
-            ctrlModifier = true;
-        }
-        if (event.getModifierState('Shift')) {
-            shiftModifier = true;
-        }
-    }
-
-    const selectionMode = await getSetting(CONF.selectionMode) as boolean;
-    const selected = await getSetting(CONF.selectedContextIndices) as SelectedContextIndex;
     const prev = await getSetting(CONF.lastSelectedContextIndex) as number;
 
-    // if "selectionMode" has been turned on...
-    if (selectionMode && ctrlModifier) {
+    // determine the index of the context that was selected
+    for (let i = 0; i < filtered.length; i++) {
 
-        // determine the index of the context that was selected
-        for (let i = 0; i < filtered.length; i++) {
+        // initialize the the list of indices if there isn't a value there
+        if (selected[i] !== 1 && selected[i] !== 0) {
+            selected[i] = 0;
+        }
 
-            // initialize the the list of indices if there isn't a value there
-            if (selected[i] !== 1 && selected[i] !== 0) {
-                selected[i] = 0;
-            }
+        // take note of the currently selected index
+        if (filtered[i].cookieStoreId === clicked.cookieStoreId) {
 
-            // take note of the currently selected index
-            if (filtered[i].cookieStoreId === clicked.cookieStoreId) {
+            await setSettings({ lastSelectedContextIndex: i });
 
-                await setSettings({ lastSelectedContextIndex: i });
-
-                // toggle the currently selected index unless the shift key is pressed
-                if (!shiftModifier) {
-                    if (selected[i] === 1) {
-                        selected[i] = 0;
-                    } else {
-                        selected[i] = 1;
+            // toggle the currently selected index unless the shift key is pressed
+            if (!shiftModifier) {
+                if (selected[i] === 1) {
+                    selected[i] = 0;
+                } else {
+                    selected[i] = 1;
+                }
+            } else {
+                // if shift+ctrl is pressed, then invert the current
+                // selection, and then also set the rest of the
+                // range from the last click to the same value
+                let newVal = 0;
+                if (selected[i] === 1) {
+                    newVal = 0;
+                } else {
+                    newVal = 1;
+                }
+                if (prev < i) {
+                    for (let j = prev; j <= i; j++) {
+                        selected[j] = newVal;
+                    }
+                } else if (prev > i) {
+                    for (let j = prev; j >= i; j--) {
+                        selected[j] = newVal;
                     }
                 } else {
-                    // if shift+ctrl is pressed, then invert the current
-                    // selection, and then also set the rest of the
-                    // range from the last click to the same value
-                    let newVal = 0;
-                    if (selected[i] === 1) {
-                        newVal = 0;
-                    } else {
-                        newVal = 1;
-                    }
-                    if (prev < i) {
-                        for (let j = prev; j <= i; j++) {
-                            selected[j] = newVal;
-                        }
-                    } else if (prev > i) {
-                        for (let j = prev; j >= i; j--) {
-                            selected[j] = newVal;
-                        }
-                    } else {
-                        selected[i] = newVal;
-                    }
+                    selected[i] = newVal;
                 }
             }
         }
-
-        await setSettings({ selectedContextIndices: selected });
-
-        reflectSelected(selected);
-
-        return;
     }
 
-    let contexts: browser.contextualIdentities.ContextualIdentity[] = [];
+    await setSettings({ selectedContextIndices: selected });
+
+    reflectSelected(selected);
+
+}
+
+/**
+ * Determines the actionable containers based on the user's current selection
+ * or filtered view.
+ */
+const getActionable = async (
+    filtered: browser.contextualIdentities.ContextualIdentity[],
+    clicked: browser.contextualIdentities.ContextualIdentity,
+    selected: SelectedContextIndex,
+    shiftModifier: boolean,
+): Promise<browser.contextualIdentities.ContextualIdentity[]> => {
+    const contexts: browser.contextualIdentities.ContextualIdentity[] = [];
     if (isAnyContextSelected(selected)) {
         const keys = Object.keys(selected);
         for (let i = 0; i < keys.length; i++) {
@@ -743,116 +738,296 @@ export const containerClickHandler = async (
         }
     }
 
-    try {
-        const tabs = await browser.tabs.query({ currentWindow: true, active: true });
-        for (const tab of tabs) {
-            if (!tab.active) continue;
+    return contexts;
+}
 
-            let navigatedUrl = '';
+/**
+ * `getActionableUrl` exists because in sticky popup mode,
+ * the current tab URL changes to blank at first, and
+ * `filter()` will not show the URL overrides.
+ * So, we have to look at the last container in the array
+ * and force `filter()` to treat that URL as the
+ * active tab URL.
+ *
+ * @return The URL to act on.
+ */
+const getActionableUrl = async (
+    contexts: browser.contextualIdentities.ContextualIdentity[],
+    tab: browser.tabs.Tab,
+): Promise<string> => {
+    let url = '';
 
-            // decision tree
-            const mode = await getSetting(CONF.mode) as MODES;
-            switch (mode) {
-                case MODES.SET_NAME:
-                    await rename(contexts);
-                    break;
-                case MODES.DELETE:
-                    await del(contexts);
-                    await deselect();
-                    break;
-                case MODES.REFRESH:
-                    await refresh(contexts);
-                    await deselect();
-                    break;
-                case MODES.SET_URL:
-                    await setUrlsPrompt(contexts);
-                    break;
-                case MODES.SET_COLOR:
-                    await setColors(contexts);
-                    break;
-                case MODES.SET_ICON:
-                    await setIcons(contexts);
-                    break;
-                case MODES.REPLACE_IN_NAME:
-                    await replaceInName(contexts);
-                    break;
-                case MODES.REPLACE_IN_URL:
-                    await replaceInUrls(contexts);
-                    break;
-                case MODES.DUPLICATE:
-                    await duplicate(contexts);
-                    await deselect();
-                    break;
-                case MODES.OPEN:
-                    // the following code exists because in sticky popup mode,
-                    // the current tab url changes to blank at first, and
-                    // filter() will not show the URL overrides.
-                    // So we have to look at the last container in the array
-                    // and force filter() to treat that URL as the
-                    // active tab URL
-                    if (!contexts.length) {
-                        await showAlert('There are no containers to open.', 'Warning');
-                        await actionCompletedHandler(navigatedUrl);
-                        return;
-                    }
+    if (!contexts.length) return '';
 
-                    // validate that each container has a cookie store ID
-                    for (const context of contexts) {
-                        if (!context?.cookieStoreId) {
-                            await showAlert(`A container you attempted to open has an invalid configuration: ${JSON.stringify(context)}`, 'Cannot Open Container');
-                            await actionCompletedHandler(navigatedUrl);
-                            return;
-                        }
-                    }
+    // validate that each container has a cookie store ID
+    for (const context of contexts) {
+        if (context?.cookieStoreId) continue;
 
-                    const last = contexts[contexts.length - 1];
+        throw `A container you attempted to open has an invalid configuration: ${JSON.stringify(context)}`;
+    }
 
-                    const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
-                    const openCurrentTabUrlOnMatch = await getSetting(CONF.openCurrentTabUrlOnMatch) as UrlMatchTypes;
+    const last = contexts[contexts.length - 1];
 
-                    // the last container opened will be used as the last URL;
-                    // this will be passed into the actionCompletedHandler. I had
-                    // to choose something to put here, and the last URL makes the
-                    // most sense.
-                    navigatedUrl = urls[last.cookieStoreId];
+    const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
+    const openCurrentTabUrlOnMatch = await getSetting(CONF.openCurrentTabUrlOnMatch) as UrlMatchTypes;
 
-                    // TODO: this is refactorable logic copy/pasted from open()
-                    if (openCurrentTabUrlOnMatch && tab.url) {
-                        const overriddenUrlToOpen = getCurrentTabOverrideUrl(
-                            navigatedUrl,
-                            tab.url,
-                            openCurrentTabUrlOnMatch,
-                        );
+    // the last container opened will be used as the last URL;
+    // this will be passed into the actionCompletedHandler. I had
+    // to choose something to put here, and the last URL makes the
+    // most sense.
+    url = urls[last.cookieStoreId];
 
-                        if (overriddenUrlToOpen) {
-                            navigatedUrl = overriddenUrlToOpen;
-                        }
-                    }
+    // TODO: this is refactorable logic copy/pasted from open()
+    if (openCurrentTabUrlOnMatch && tab.url) {
+        const overriddenUrlToOpen = getCurrentTabOverrideUrl(
+            url,
+            tab.url,
+            openCurrentTabUrlOnMatch,
+        );
 
-                    // override the URL if the user has elected to open the current page
-                    // for all filtered tabs
-                    const openCurrentPage = await getSetting(CONF.openCurrentPage) as boolean;
-                    if (openCurrentPage && tab.url) {
-                        navigatedUrl = tab.url;
-                    }
-
-                    await open(contexts, ctrlModifier, tab);
-                    break;
-                default:
-                    break;
-            }
-            await actionCompletedHandler(navigatedUrl);
-            break;
+        if (overriddenUrlToOpen) {
+            url = overriddenUrlToOpen;
         }
+    }
+
+    // override the URL if the user has elected to open the current page
+    // for all filtered tabs
+    const openCurrentPage = await getSetting(CONF.openCurrentPage) as boolean;
+
+    if (openCurrentPage && tab.url) return tab.url;
+
+    return url;
+}
+
+/**
+ * Retrieves the currently active tab.
+ *
+ * @return The current active tab. Throws an exception if the current tab
+ * could not be found.
+ */
+const getActiveTab = async (): Promise<browser.tabs.Tab> => {
+    const tabs = await browser.tabs.query({ currentWindow: true, active: true });
+
+    for (const tab of tabs) {
+        if (!tab.active) continue;
+
+        return tab;
+    }
+
+    throw 'Failed to determine the current tab.';
+}
+
+/**
+ * Delete, rename, set URL, open, refresh, etc - the action is triggered here.
+ *
+ * The primary decision tree for determine what action to perform when a user
+ * clicks a selection of containers or hits the enter key for their filtered
+ * search.
+ */
+const act = async (
+    contexts: browser.contextualIdentities.ContextualIdentity[],
+    ctrl: boolean,
+) => {
+    const tab = await getActiveTab();
+
+    let navigatedUrl = '';
+
+    const mode = await getSetting(CONF.mode) as MODES;
+
+    switch (mode) {
+        case MODES.SET_NAME:
+            await rename(contexts);
+            break;
+        case MODES.DELETE:
+            const deleted = await del(contexts);
+            if (deleted > 0) await deselect();
+            break;
+        case MODES.REFRESH:
+            const [removed, refreshed] = await refresh(contexts);
+            if (removed > 0 || refreshed > 0) await deselect();
+            break;
+        case MODES.SET_URL:
+            await setUrlsPrompt(contexts);
+            break;
+        case MODES.SET_COLOR:
+            await setColors(contexts);
+            break;
+        case MODES.SET_ICON:
+            await setIcons(contexts);
+            break;
+        case MODES.REPLACE_IN_NAME:
+            await replaceInName(contexts);
+            break;
+        case MODES.REPLACE_IN_URL:
+            await replaceInUrls(contexts);
+            break;
+        case MODES.DUPLICATE:
+            const duplicated = await duplicate(contexts);
+            if (duplicated > 0) await deselect();
+            break;
+        case MODES.OPEN:
+            navigatedUrl = await getActionableUrl(contexts, tab);
+            await open(contexts, ctrl, tab);
+            break;
+        default:
+            break;
+    }
+
+    await done(navigatedUrl);
+}
+
+/**
+ * Adds click and other event handlers to a container list item HTML element.
+ *
+ * @param filteredResults A list of the currently filtered set of `browser.contextualIdentities`
+ * @param context The `contextualIdentity` associated with this handler, assume that a user clicked on a specific container to open if this is defined
+ * @param event The event that called this function, such as a key press or mouse click
+ */
+export const actHandler = async (
+    filtered: browser.contextualIdentities.ContextualIdentity[],
+    clicked: browser.contextualIdentities.ContextualIdentity,
+    event: MouseEvent | KeyboardEvent,
+) => {
+    try {
+        const [ctrl, shift] = getModifiers(event);
+
+        const selectionMode = await getSetting(CONF.selectionMode) as boolean;
+        const selected = await getSetting(CONF.selectedContextIndices) as SelectedContextIndex;
+
+        if (selectionMode && ctrl) {
+            await selectionChanged(filtered, clicked, selected, shift);
+            return;
+        }
+
+        const contexts = await getActionable(filtered, clicked, selected, shift);
+
+        await act(contexts, ctrl);
     } catch (err) {
         await showAlert(
-            `Failed to execute action on one or more containers: ${err}`,
-            'Execution Error',
+            `Failed to act on one or more containers: ${err}`,
+            'Error',
         )
         return;
-
     }
 };
+
+/**
+ * Retrieves the search query from the user via the search text input.
+ * The latest query will always be pushed to the extension settings so that it
+ * can be recalled the next time the user opens up the popup. Additionally, the
+ * user's current container selection will be reset if the query has changed
+ * from its previous value.
+ */
+const getQuery = async (): Promise<string> => {
+    const searchInput = document.getElementById("searchContainerInput") as HTMLInputElement;
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    if (query !== await getSetting(CONF.lastQuery)) {
+        // the query has changed, so reset any items the user has selected
+        await deselect();
+    }
+
+    await setSettings({ lastQuery: query });
+
+    return query;
+}
+
+const applyQuery = async (
+    contexts: browser.contextualIdentities.ContextualIdentity[],
+    queryLower: string,
+): Promise<browser.contextualIdentities.ContextualIdentity[]> => {
+    const results: browser.contextualIdentities.ContextualIdentity[] = [];
+
+    // first, apply filtering directly:
+    const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
+
+    for (const context of contexts) {
+        const nameLower = context.name.toLowerCase();
+        const nameMatch = queryNameMatch(nameLower, queryLower);
+        const urlMatch = queryUrls(context, queryLower, urls);
+        const emptyQuery = !queryLower;
+
+        if (!emptyQuery && !nameMatch && !urlMatch) continue;
+
+        results.push(context);
+    }
+
+    // second, sort according to the user-configured sort:
+    const sort = await getSetting(CONF.sort) as SortModes;
+
+    results.sort((a: browser.contextualIdentities.ContextualIdentity, b: browser.contextualIdentities.ContextualIdentity) => {
+        const urlA: string = (urls[a.cookieStoreId] || "").toLowerCase();
+        const urlB: string = (urls[b.cookieStoreId] || "").toLowerCase();
+
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+
+        switch (sort) {
+            case SORT_MODE_NAME_ASC:
+                return nameA.localeCompare(nameB);
+            case SORT_MODE_NAME_DESC:
+                return nameB.localeCompare(nameA);
+            case SORT_MODE_URL_ASC:
+                return urlA.localeCompare(urlB);
+            case SORT_MODE_URL_DESC:
+                return urlB.localeCompare(urlA);
+            case SORT_MODE_NONE:
+            default:
+                return 0;
+        }
+    })
+
+    if (sort === SORT_MODE_NONE_REVERSE) {
+        results.reverse();
+    }
+
+    return results;
+}
+
+/**
+ * Manipulates the popup UI/HTML to show the passed-in set of filtered
+ * results.
+ */
+const reflectFiltered = async (
+    results: browser.contextualIdentities.ContextualIdentity[],
+    actualTabUrl?: string | null,
+) => {
+    // finally, propagate the sorted results to the UI:
+    const tab = await getActiveTab();
+
+    const mode = await getSetting(CONF.mode) as MODES;
+
+    const containerList = document.getElementById(CONTAINER_LIST_DIV_ID) as HTMLDivElement;
+    if (!containerList) throw `Failed to find ${CONTAINER_LIST_DIV_ID} HTML element`;
+
+    // prepare by clearing out the old query's HTML output
+    removeExistingContainerListGroupElement(containerList);
+
+    // now build its successor
+    const ul = buildContainerListGroupElement();
+
+    for (let i = 0; i < results.length; i++) {
+        const context = results[i];
+
+        const li = await buildContainerListItem(
+            results,
+            context,
+            i,
+            tab,
+            actualTabUrl || "",
+            mode,
+            actHandler,
+        );
+        ul.appendChild(li);
+    }
+
+    if (results.length === 0) {
+        const li = buildContainerListItemEmpty(0);
+        ul.append(li);
+    }
+
+    containerList.appendChild(ul);
+}
 
 /**
  * Applies the user's search query, and updates the list of containers accordingly.
@@ -863,132 +1038,38 @@ export const filter = async (
     event?: Event | KeyboardEvent | MouseEvent | null,
     actualTabUrl?: string | null,
 ) => {
-    if (event) event.preventDefault();
-
-    // retrieve the search query from the user
-    const searchInput = document.getElementById("searchContainerInput") as HTMLInputElement;
-    const userQuery = searchInput ? searchInput.value.trim().toLowerCase() : '';
-
-    if (userQuery !== await getSetting(CONF.lastQuery)) {
-        // the query has changed, so reset any items the user has selected
-        await deselect();
-    }
-
-    await setSettings({ lastQuery: userQuery });
-
     try {
+        if (event) event.preventDefault();
+
+        const query = await getQuery();
+        const queryLower = query.toLowerCase();
+
         const contexts = await browser.contextualIdentities.query({});
-        const tabs = await browser.tabs.query({ currentWindow: true, active: true });
-        for (const tab of tabs) {
-            if (!tab.active) continue;
 
-            if (!Array.isArray(contexts)) {
-                reflectSelected(await getSetting(CONF.selectedContextIndices));
-                break;
-            }
-
-            const results: browser.contextualIdentities.ContextualIdentity[] = [];
-
-            const containerList = document.getElementById(CONTAINER_LIST_DIV_ID) as HTMLDivElement;
-            if (!containerList) {
-                throw `Failed to find ${CONTAINER_LIST_DIV_ID} HTML element`;
-            }
-
-            // prepare by clearing out the old query's HTML output
-            removeExistingContainerListGroupElement(containerList);
-
-            // now build its successor
-            const ul = buildContainerListGroupElement();
-
-            const lowerCaseUserQuery = userQuery.toLowerCase();
-
-            // in order to enable sorting, we have to do multiple
-            // passes at the contexts array.
-
-            // first, apply filtering directly:
-            const urls = await getSetting(CONF.containerDefaultUrls) as ContainerDefaultURL;
-            for (const context of contexts) {
-                const lowerCaseContextName = context.name.toLowerCase();
-                const queryNameMatch = isUserQueryContextNameMatch(lowerCaseContextName, lowerCaseUserQuery);
-                const queryUrlMatch = queryUrls(context, lowerCaseUserQuery, urls);
-                const emptyQuery = !userQuery;
-
-                if (emptyQuery || queryNameMatch || queryUrlMatch) {
-                    results.push(context);
-                }
-            }
-
-            // second, sort according to the user-configured sort:
-            const sort = await getSetting(CONF.sort) as SortModes;
-
-            results.sort((a: browser.contextualIdentities.ContextualIdentity, b: browser.contextualIdentities.ContextualIdentity) => {
-                const urlA: string = (urls[a.cookieStoreId] || "").toLowerCase();
-                const urlB: string = (urls[b.cookieStoreId] || "").toLowerCase();
-                const nameA = a.name.toLowerCase();
-                const nameB = b.name.toLowerCase();
-                switch (sort) {
-                    case SORT_MODE_NAME_ASC:
-                        return nameA.localeCompare(nameB);
-                    case SORT_MODE_NAME_DESC:
-                        return nameB.localeCompare(nameA);
-                    case SORT_MODE_URL_ASC:
-                        return urlA.localeCompare(urlB);
-                    case SORT_MODE_URL_DESC:
-                        return urlB.localeCompare(urlA);
-                    case SORT_MODE_NONE:
-                    default:
-                        return 0;
-                }
-            })
-
-            if (sort === SORT_MODE_NONE_REVERSE) {
-                results.reverse();
-            }
-
-            // finally, propagate the sorted results to the UI:
-            const mode = await getSetting(CONF.mode) as MODES;
-
-            for (let i = 0; i < results.length; i++) {
-                const context = results[i];
-
-                const li = await buildContainerListItem(
-                    results,
-                    context,
-                    i,
-                    tab,
-                    actualTabUrl || "",
-                    mode,
-                    containerClickHandler,
-                );
-                ul.appendChild(li);
-            }
-
-            if (results.length === 0) {
-                const li = buildContainerListItemEmpty(0);
-                ul.append(li);
-            }
-
-            containerList.appendChild(ul);
-
-            bottomHelp(`Showing ${results.length}/${contexts.length} containers.`);
-
-            if (event) {
-                try {
-                    const keyboardEvent = event as KeyboardEvent;
-                    if (keyboardEvent.key === 'Enter' && results.length > 0) {
-                        containerClickHandler(results, results[0], keyboardEvent);
-                    }
-                } catch (err) {
-                    console.log('keyboard event assertion or key code check did not succeed; this is probably fine');
-                }
-
-                event.preventDefault();
-            }
-
+        if (!Array.isArray(contexts)) {
             reflectSelected(await getSetting(CONF.selectedContextIndices));
-
-            break;
+            return;
         }
+
+
+        // in order to enable sorting, we have to do multiple
+        // passes at the contexts array.
+        const results = await applyQuery(contexts, queryLower);
+
+        await reflectFiltered(results, actualTabUrl);
+
+        bottomHelp(`Showing ${results.length}/${contexts.length} containers.`);
+
+        if (event) {
+            const keyboardEvent = event as KeyboardEvent;
+            if (keyboardEvent.key === 'Enter' && results.length > 0) {
+                await actHandler(results, results[0], keyboardEvent);
+            }
+
+            event.preventDefault();
+        }
+
+        reflectSelected(await getSetting(CONF.selectedContextIndices));
     } catch (err) {
         await showAlert(`Failed to filter the list of containers: ${err}`, 'Filter Error');
         return;
@@ -1026,73 +1107,6 @@ export const toggleConfigFlag = async (key: CONF) => {
 
     checkbox.checked = updated;
 }
-
-/**
- * Retrieves extension settings from browser storage and reflects their values
- * in UI elements.
- */
-export const reflectSettings = async () => {
-    const modeSelectEl = document.getElementById('modeSelect');
-    const sortModeSelectEl = document.getElementById('sortModeSelect');
-    const windowStayOpenStateEl = document.getElementById('windowStayOpenState');
-    const selectionModeEl = document.getElementById('selectionMode');
-    const openCurrentPageEl = document.getElementById('openCurrentPage');
-    const searchContainerInputEl = document.getElementById('searchContainerInput');
-
-    if (!modeSelectEl) {
-        throw 'The modeSelect element could not be found.';
-    }
-    if (!sortModeSelectEl) {
-        throw 'The sortModeSelect element could not be found.';
-    }
-    if (!windowStayOpenStateEl) {
-        throw 'The windowStayOpenState element could not be found.';
-    }
-    if (!selectionModeEl) {
-        throw 'The selectionMode element could not be found.';
-    }
-    if (!openCurrentPageEl) {
-        throw 'The openCurrentPage element could not be found.';
-    }
-    if (!searchContainerInputEl) {
-        throw 'The searchContainerInput element could not be found.';
-    }
-
-    const modeSelect = modeSelectEl as HTMLSelectElement;
-    const sortModeSelect = sortModeSelectEl as HTMLSelectElement;
-    const windowStayOpenState = windowStayOpenStateEl as HTMLInputElement;
-    const selectionMode = selectionModeEl as HTMLInputElement;
-    const openCurrentPage = openCurrentPageEl as HTMLInputElement;
-    const searchContainerInput = searchContainerInputEl as HTMLInputElement;
-
-    const settings = await getSettings();
-
-    for (const key of Object.keys(settings)) {
-        switch (key) {
-            case CONF.mode:
-                modeSelect.value = settings[key] as string;
-                break;
-            case CONF.sort:
-                sortModeSelect.value = settings[key] as string;
-                break;
-            case CONF.windowStayOpenState:
-                windowStayOpenState.checked = settings[key] as boolean;
-                break;
-            case CONF.selectionMode:
-                selectionMode.checked = settings[key] as boolean;
-                break;
-            case CONF.openCurrentPage:
-                openCurrentPage.checked = settings[key] as boolean;
-                break;
-            case CONF.lastQuery:
-                searchContainerInput.value = settings[key] as string;
-                break;
-            case CONF.containerDefaultUrls: // no UI elements for this currently
-            default:
-                break;
-        }
-    }
-};
 
 /**
  * When the user changes the current mode, this function sets the stored

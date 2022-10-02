@@ -3,14 +3,12 @@ import { MODES, UrlMatchTypes } from './modules/constants';
 /**
  * `containerDefaultUrls` is a key-value pair of container ID's to
  * default URLs to open for each container ID.
- * Example:
  *
- * `{"container-name-01":"https://site.com"}`
+ * @example {"container-name-01":"https://site.com"}
  */
 export interface ContainerDefaultURL {
     [name: string]: string;
 }
-
 
 export interface ContextualIdentityWithURL extends browser.contextualIdentities.ContextualIdentity {
     defaultUrl?: string;
@@ -20,7 +18,10 @@ export interface ContextualIdentityWithURL extends browser.contextualIdentities.
  * `selectedContextIndices` keeps track of every context that is selected
  * in selection mode - this is simply an object with every key as a counter,
  * and every value as a 1 or 0 depending on whether or not the corresponding
- * filtered context (container) is selected
+ * filtered context (container) is selected. Any time the filtered array
+ * changes, this array should be completely reset, since the mappings
+ * will be inaccurate.
+ *
  * @example {0: 1, 1: 1, 2: 0, 3: 1}
  */
 export interface SelectedContextIndex {
@@ -140,3 +141,16 @@ export interface ExtensionConfig {
      */
     openCurrentTabUrlOnMatch: UrlMatchTypes,
 };
+
+/**
+ * This is the type definition for the primary action handler that is triggered
+ * when the user hits enter or clicks to open containers. This function is
+ * `act` and was previously named `containerClickHandler`.
+ *
+ * @see `act()` function in ``modules/lib.ts`
+ */
+export type ActHandler = (
+    filtered: browser.contextualIdentities.ContextualIdentity[],
+    clicked: browser.contextualIdentities.ContextualIdentity,
+    event: MouseEvent | KeyboardEvent,
+) => Promise<void>;

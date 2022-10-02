@@ -2,9 +2,10 @@ import { ensureConfig, getSetting, getSettings } from './modules/config';
 import { PlatformModifierKey, CONF } from './modules/constants';
 import { checkDirty } from "./modules/helpers";
 import { help, bottomHelp, focusSearchBox, helpful } from './modules/html';
-import { filter, reflectSettings } from './modules/lib';
+import { filter } from './modules/lib';
 import { showAlert } from './modules/modals';
 import { setHandlers } from './modules/handlers';
+import { reflectSettings } from './modules/elements';
 
 /**
  * Initializes the extension data upon document load, intended to be added as

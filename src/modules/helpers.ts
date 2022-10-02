@@ -158,7 +158,7 @@ export const isAnyContextSelected = (selected: SelectedContextIndex): boolean =>
  * @param userQuery A string that the user entered as a search term
  * @returns Whether or not a name and query should be included as part of the search results
  */
-export const isUserQueryContextNameMatch = (contextName: string, userQuery: string): boolean => {
+export const queryNameMatch = (contextName: string, userQuery: string): boolean => {
     if (contextName.indexOf(userQuery) !== -1) {
         return true;
     }

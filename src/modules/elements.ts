@@ -1,10 +1,10 @@
-import { ContainerDefaultURL, SelectedContextIndex } from "src/types";
+import { ActHandler, ContainerDefaultURL, SelectedContextIndex } from "src/types";
 import {
-    containerListItemSelectedClassNames,
-    containerListItemInactiveClassNames,
-    containerDivClassNames,
-    containerLIClassNames,
-    containerLIDestructiveDivClassNames,
+    CLASSES_CONTAINER_LI_SELECTED,
+    CLASSES_CONTAINER_LI_INACTIVE,
+    CLASSES_CONTAINER_DIV,
+    CLASSES_CONTAINER_LI,
+    CLASSES_CONTAINER_LI_DIV_DESTRUCTIVE,
 } from "./classes";
 import {
     containerListItemUrlLabelInverted,
@@ -19,7 +19,7 @@ import {
     addEmptyEventListeners,
     setEventListeners,
 } from './events';
-import { getSetting } from "./config";
+import { getSetting, getSettings } from "./config";
 
 /**
  * As part of rebuilding the filtered list of containers, this function
@@ -33,34 +33,6 @@ export const buildContainerListGroupElement = (): HTMLUListElement => {
     ul.className = "list-group";
     return ul;
 };
-
-/**
- * Sets the proper class names for filtered contexts that are either selected
- * or not
- */
-export const reflectSelected = (selected: SelectedContextIndex) => {
-    const keys = Object.keys(selected);
-    for (let i = 0; i < keys.length; i++) {
-        const li = document.getElementById(`filtered-context-${i}-li`) as HTMLLIElement;
-        const urlLabel = document.getElementById(`filtered-context-${i}-url-label`) as HTMLSpanElement;
-        if (selected[i] === 1) {
-            if (li) {
-                li.className = containerListItemSelectedClassNames;
-            }
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabelInverted;
-            }
-        } else {
-            if (li) {
-                li.className = containerListItemInactiveClassNames;
-            }
-            if (urlLabel) {
-                urlLabel.className = containerListItemUrlLabel;
-            }
-        }
-    }
-}
-
 
 /**
  * Assembles an HTML element that contains the colorized container icon for a given container.
@@ -99,7 +71,7 @@ export const buildContainerLabel = async (
 ): Promise<HTMLDivElement> => {
     try {
         const containerDiv = document.createElement('div') as HTMLDivElement;
-        containerDiv.className = containerDivClassNames;
+        containerDiv.className = CLASSES_CONTAINER_DIV;
 
         const nameLabel = document.createElement('span') as HTMLSpanElement;
         nameLabel.innerText = `${context.name}`;
@@ -176,7 +148,7 @@ export const buildContainerLabel = async (
  */
 export const buildEmptyContainerLabelElement = (label: string): HTMLDivElement => {
     const div = document.createElement('div') as HTMLDivElement;
-    div.className = containerDivClassNames;
+    div.className = CLASSES_CONTAINER_DIV;
 
     const containerLabelElement = document.createElement('span');
     containerLabelElement.innerText = `${label}`;
@@ -204,11 +176,11 @@ export const buildContainerListItem = async (
     currentTab: browser.tabs.Tab,
     actualCurrentUrl: string,
     mode: MODES,
-    containerClickHandler: any, // TODO: create type def for containerClickHandler
+    actHandler: ActHandler,
 ): Promise<HTMLLIElement> => {
     try {
         const li = document.createElement('li') as HTMLLIElement;
-        li.className = containerLIClassNames;
+        li.className = CLASSES_CONTAINER_LI;
 
         const icon = buildContainerIcon(context);
         const label = await buildContainerLabel(context, i, currentTab, actualCurrentUrl);
@@ -216,7 +188,7 @@ export const buildContainerListItem = async (
         if (mode === MODES.DELETE || mode === MODES.REFRESH) {
             const div = document.createElement('div') as HTMLDivElement;
 
-            div.className = containerLIDestructiveDivClassNames;
+            div.className = CLASSES_CONTAINER_LI_DIV_DESTRUCTIVE;
             div.id = `filtered-context-${i}-div`;
 
             addEmptyEventListeners([div]);
@@ -238,7 +210,7 @@ export const buildContainerListItem = async (
             filteredResults,
             context,
             i,
-            containerClickHandler,
+            actHandler,
         );
 
         return li;
@@ -284,4 +256,87 @@ export const removeExistingContainerListGroupElement = (containerListElement: HT
     }
 
     containerListElement.removeChild(list);
+};
+
+/**
+ * Sets the proper class names for filtered contexts that are either selected
+ * or not
+ */
+export const reflectSelected = (selected: SelectedContextIndex) => {
+    const keys = Object.keys(selected);
+    for (let i = 0; i < keys.length; i++) {
+        const li = document.getElementById(`filtered-context-${i}-li`) as HTMLLIElement;
+        const urlLabel = document.getElementById(`filtered-context-${i}-url-label`) as HTMLSpanElement;
+        if (selected[i] === 1) {
+            if (li) {
+                li.className = CLASSES_CONTAINER_LI_SELECTED;
+            }
+            if (urlLabel) {
+                urlLabel.className = containerListItemUrlLabelInverted;
+            }
+        } else {
+            if (li) {
+                li.className = CLASSES_CONTAINER_LI_INACTIVE;
+            }
+            if (urlLabel) {
+                urlLabel.className = containerListItemUrlLabel;
+            }
+        }
+    }
+}
+
+
+/**
+ * Retrieves extension settings from browser storage and reflects their values
+ * in UI elements.
+ */
+export const reflectSettings = async () => {
+    const modeSelectEl = document.getElementById('modeSelect');
+    const sortModeSelectEl = document.getElementById('sortModeSelect');
+    const windowStayOpenStateEl = document.getElementById('windowStayOpenState');
+    const selectionModeEl = document.getElementById('selectionMode');
+    const openCurrentPageEl = document.getElementById('openCurrentPage');
+    const searchContainerInputEl = document.getElementById('searchContainerInput');
+
+    if (!modeSelectEl) throw 'The modeSelect element could not be found.';
+    if (!sortModeSelectEl) throw 'The sortModeSelect element could not be found.';
+    if (!windowStayOpenStateEl) throw 'The windowStayOpenState element could not be found.';
+    if (!selectionModeEl) throw 'The selectionMode element could not be found.';
+    if (!openCurrentPageEl) throw 'The openCurrentPage element could not be found.';
+    if (!searchContainerInputEl) throw 'The searchContainerInput element could not be found.';
+
+    const modeSelect = modeSelectEl as HTMLSelectElement;
+    const sortModeSelect = sortModeSelectEl as HTMLSelectElement;
+    const windowStayOpenState = windowStayOpenStateEl as HTMLInputElement;
+    const selectionMode = selectionModeEl as HTMLInputElement;
+    const openCurrentPage = openCurrentPageEl as HTMLInputElement;
+    const searchContainerInput = searchContainerInputEl as HTMLInputElement;
+
+    const settings = await getSettings();
+
+    for (const key of Object.keys(settings)) {
+        switch (key) {
+            case CONF.mode:
+                modeSelect.value = settings[key] as string;
+                break;
+            case CONF.sort:
+                sortModeSelect.value = settings[key] as string;
+                break;
+            case CONF.windowStayOpenState:
+                windowStayOpenState.checked = settings[key] as boolean;
+                break;
+            case CONF.selectionMode:
+                selectionMode.checked = settings[key] as boolean;
+                break;
+            case CONF.openCurrentPage:
+                openCurrentPage.checked = settings[key] as boolean;
+                break;
+            case CONF.lastQuery:
+                searchContainerInput.value = settings[key] as string;
+                break;
+            case CONF.containerDefaultUrls: // no UI elements for this currently
+            default:
+                break;
+        }
+    }
 };
