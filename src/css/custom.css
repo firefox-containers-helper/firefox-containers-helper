@@ -5,6 +5,8 @@
 .overflow-scroll-vertical {
     overflow-y: auto;
     max-height: 300px;
+    min-height: 300px;
+    height: 300px;
 }
 
 .container-list-text {
@@ -35,11 +37,6 @@
     max-height: 14px;
 }
 
-body {
-    min-width: 330px;
-    height: 600px;
-}
-
 #container-list {
     min-height: 174px;
 }
@@ -49,4 +46,31 @@ body {
     width: 16px;
     font-family: 'Courier New', Courier, monospace;
     text-align: center;
+}
+
+.element-show {
+    display: block;
+}
+
+.element-hide {
+    display: none;
+}
+
+.modal-show {
+    display: block;
+    padding-right: 0px;
+}
+
+.modal-hide {
+    display: none;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1040;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.5);
 }

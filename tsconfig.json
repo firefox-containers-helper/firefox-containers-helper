@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "display": "Custom for Browser Extension",
+    "include": [
+        "src/*"
+    ],
+    "compilerOptions": {
+        "lib": [
+            "es2022",
+            "DOM"
+        ],
+        "baseUrl": ".",
+        "outDir": "./dist",
+        "module": "commonjs",
+        "target": "es2022",
+        "noEmit": false,
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "moduleResolution": "node"
+    }
+}

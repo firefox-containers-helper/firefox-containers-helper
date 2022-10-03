@@ -7,8 +7,56 @@
     <link rel="stylesheet" href="css/custom.css">
 </head>
 
-<body style="min-height: 500px;">
-    <div class="container-fluid my-3">
+<body>
+    <div class="modal modal-backdrop modal-hide" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalTitle"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" id="modalAlertContent">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAlertTitle">Alert</h5>
+                </div>
+                <div class="modal-body"><span id="modalAlertText"></span></div>
+                <div class="modal-footer">
+                    <button type="button" id="btnModalAlertOK" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+            <div class="modal-content" id="modalConfirmContent">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalConfirmTitle">Confirm?</h5>
+                </div>
+                <div class="modal-body"><span id="modalConfirmText"></span></div>
+                <div class="modal-footer">
+                    <button type="button" id="btnModalConfirmCancel" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="btnModalConfirmSecondary" class="btn btn-secondary">No</button>
+                    <button type="button" id="btnModalConfirmPrimary" class="btn btn-primary">Yes</button>
+                </div>
+            </div>
+            <div class="modal-content" id="modalPromptContent">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPromptTitle">Prompt</h5>
+                </div>
+                <div class="modal-body" id="modalPromptBody">
+                    <form id="modalPromptForm">
+                        <div class="form-group form-row">
+                            <div class="col-12">
+                                <label for="modalPromptInput" id="modalPromptText"
+                                    class="form-check-label mb-3"></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" placeholder="Enter value here"
+                                        id="modalPromptInput" />
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btnModalPromptCancel" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="btnModalPromptOK" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container my-3">
         <div class="row">
             <div class="col">
                 <h3>
@@ -19,35 +67,109 @@
         <div class="row">
             <div class="col-12">
                 <h4>
-                    A warning about Firefox Sync
+                    <span class="badge badge-info">Settings</span> Orphans
                 </h4>
                 <p>
-                    Firefox Sync is a great utility, but there is a limit on the amount of data that this extension can
-                    store when using Firefox Sync. <b>It is recommended to not use Firefox Sync if you store more than
-                        100 containers.</b> Otherwise, the extension may silently fail or have other erroneous behavior,
-                    once it hits the storage limit. You can export and import containers below.
+                    Some settings don't always get correctly cleaned up and propagated to the extension config, such
+                    as default URL associations that no longer correspond to an existing container. This can happen
+                    when another extension removes a container, or when this extension's popup closes before finishing
+                    an operation. The Clean Up Orphans button can be used to help reduce the Firefox Sync
+                    storage usage. <a href="#options-settings-section">Click the "Clean Up Orphans" button at the bottom
+                        of this page</a> to remove all default URL's that meet this criteria for whatever input is in
+                    the "Local Settings" text field below, and click "Save Locally" or "Save to Sync" to propagate the
+                    cleaned up config.
                 </p>
             </div>
         </div>
         <div class="row">
             <div class="col-12">
                 <h4>
-                    Protocol Confirmation
+                    <span class="badge badge-warning">Warning</span> Back up your configuration!
+                </h4>
+                <p>
+                    Make sure to <i>either</i> have Firefox Sync set up correctly, <i>or</i> make sure you have
+                    manually backed up this extension's settings <b>before removing the extension</b> at any time.
+                    Otherwise, you may lose default URL settings, since they are associated with this extension's
+                    configuration.
+                </p>
+                <p>
+                    Firefox Sync is a great utility, but <a
+                        href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/storage/sync#storage_quotas_for_sync_data"
+                        target="_blank" rel="noopener noreferer">
+                        there is a limit on the amount of data that this extension can store when using Firefox
+                        Sync</a>.
+                    <b>It is NOT recommended to use Firefox Sync if you have
+                        more than 30-100 containers.</b> Setting default URL's for containers causes the limit to be
+                    reached very quickly. Otherwise, the extension may show error messages, silently fail or exhibit
+                    other erroneous behavior once it hits the storage limit. It's better to simply disable it. However,
+                    if you only have 5-10 containers, Sync might work well for you.
+                </p>
+                <p>If you <i>don't</i> push this extension's settings
+                    to Firefox Sync (or back up manually), and then proceed to remove the extension, all settings
+                    will
+                    probably be removed. To mitigate this, you can export and import containers below.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <h4>
+                    <span class="badge badge-warning">Warning</span> If you're working with thousands of containers...
+                </h4>
+                <p>
+                    If you are an extreme power user and leverage containers at a larger scale than most users, you
+                    might run into unexplainable slowness, a constantly cycling CPU, containers that do not properly
+                    delete, or other issues. This might occur for a while after deleting/creating a large number of
+                    containers, for example. While the cause might not be entirely identified, we can control it to
+                    some extent by altering the configuration of the Firefox Containers extension.
+                </p>
+                <p>
+                    If this happens to you, consider deleting <code>containers.json</code> from your Firefox
+                    profile. <b>For all intents and purposes, this will completely reset your containers,
+                        which is a destructive action.</b> This can be done by following these steps:
+                </p>
+                <ol>
+                    <li>Navigate to <code>about:profiles</code></li>
+                    <li>Identify your profile in the list</li>
+                    <li>Copy the local directory for your current profile</li>
+                    <li>Open the directory in your file browser</li>
+                    <li>Quit Firefox</li>
+                    <li>Delete <code>containers.json</code> (this is obviously a destructive action)</li>
+                    <li>Start Firefox</li>
+                    <li>Observe that the default 4 containers are the only shown containers
+                        (Personal/Bank/Shopping/Work)</li>
+                    <li>Import your containers on this page below</li>
+                </ol>
+                <p>
+                    Hopefully, your containers are back in working order. If things are still sluggish, you may want
+                    to create a new Firefox profile entirely, and migrate your settings over to it.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <h4>
+                    <span class="badge badge-secondary">Option</span> Protocol Confirmation
                 </h4>
                 <p>
                     When attempting to open a default container URL without a recognized protocol, Firefox may
-                    not load the page correctly. To improve user experience, a confirmation dialog asks if you'd like to
-                    save if neither <code>http://</code> nor <code>https://</code> are detected at the beginning of a
+                    not load the page correctly. To improve user experience, a confirmation dialog asks if you'd
+                    like to
+                    save if neither <code>http://</code> nor <code>https://</code> are detected at the beginning of
+                    a
                     URL. However, there may be scenarios where a protocol <i>other</i> than those two are
-                    desired, such as the <code>dat://</code> protocol (which can be enabled via extensions), or other
+                    desired, such as the <code>dat://</code> protocol (which can be enabled via extensions), or
+                    other
                     protocols. Since it's not really feasible to identify all protocols that are supported by your
-                    current Firefox setup, the below settings can help you hide the confirmation dialogs permanently.
+                    current Firefox setup, the below settings can help you hide the confirmation dialogs
+                    permanently.
                 </p>
                 <div class="form-check mt-2">
                     <input class="form-check-input" type="checkbox" id="neverConfirmForOpeningNonHttpUrls"
                         checked="false">
                     <label class="form-check-label" for="neverConfirmForOpeningNonHttpUrls">I want to <b>open</b>
-                        default URLs that do not start with <code>http://</code> or <code>https://</code>. Don't prompt
+                        default URLs that do not start with <code>http://</code> or <code>https://</code>. Don't
+                        prompt
                         me every time.
                     </label>
                 </div>
@@ -55,7 +177,8 @@
                     <input class="form-check-input" type="checkbox" id="neverConfirmForSavingNonHttpUrls"
                         checked="false">
                     <label class="form-check-label" for="neverConfirmForSavingNonHttpUrls">I want to <b>save</b>
-                        default URLs that do not start with <code>http://</code> or <code>https://</code>. Don't prompt
+                        default URLs that do not start with <code>http://</code> or <code>https://</code>. Don't
+                        prompt
                         me every time.
                     </label>
                 </div>
@@ -64,14 +187,16 @@
         <div class="row mt-3">
             <div class="col-12">
                 <h4>
-                    Opening the current tab URL for containers on the same domain/port/origin
+                    <span class="badge badge-secondary">Option</span> Opening the current tab URL for containers on the
+                    same domain/port/origin
                 </h4>
                 <p>
-                    This is useful for viewing the same page quickly across different containers. If you are currently
-                    on <code>https://example.com/test1234</code> and you have a container has a default URL that matches
-                    the current tab's domain, such as <code>https://example.com/abcdef</code>, you can choose to simply
-                    use the current tab's URL of <code>https://example.com/test1234</code> when opening that container
-                    tab instead of its default URL (<code>https://example.com/abcdef</code>).
+                    This is useful for viewing the same page quickly across different containers. If you are
+                    currently on <code>https://example.com/test1234</code> and you have a container has a default URL
+                    that
+                    matches the current tab's domain, such as <code>https://example.com/abcdef</code>, you can choose to
+                    simply use the current tab's URL of <code>https://example.com/test1234</code> when opening that
+                    container tab instead of its default URL (<code>https://example.com/abcdef</code>).
                 </p>
                 <p>
                     If you want to match more than just the domain, you can choose to match any of the following -
@@ -87,9 +212,8 @@
                     <li><code>origin</code> matches <code>https://example.com:12345</code> only</li>
                 </ul>
                 <p>
-                    For technical information on how the hostname/host/origin are determined, please visit the MDN page
-                    for
-                    the built-in JavaScript <code>URL</code> interface, here:
+                    For technical information on how the hostname/host/origin are determined, please visit the MDN
+                    page for the built-in JavaScript <code>URL</code> interface, here:
                     <a href="https://developer.mozilla.org/en-US/docs/Web/API/URL" target="_blank"
                         rel="noopener noreferer">https://developer.mozilla.org/en-US/docs/Web/API/URL</a>
                 </p>
@@ -97,7 +221,8 @@
                     <b>Warning:</b> The <code>domain</code> option may not be robust enough to properly check all
                     possible URLs that can exist. It works by splitting up the <code>hostname</code> value by
                     <code>.</code> characters, and checking just the final two values. Similarly, the
-                    <code>domain-port</code> option performs the same check, but also checks that the <code>port</code>
+                    <code>domain-port</code> option performs the same check, but also checks that the
+                    <code>port</code>
                     is equal. Where possible, you should use the <code>hostname</code>, <code>host</code>,
                     <code>origin</code> values, as they are native to JavaScript.
                 </p>
@@ -105,7 +230,8 @@
                     <select id="openCurrentTabUrlOnMatchSelect" class="form-select"
                         aria-label="Match hostname/host/origin">
                         <option selected value="">Disabled (default)</option>
-                        <option value="hostname">Hostname/subdomain exact match (example.com but not www.example.com)
+                        <option value="hostname">Hostname exact match (example.com or abc.example.com, but
+                            not *.example.com)
                         </option>
                         <option value="domain">Domain (*example.com, and example.com)</option>
                         <option value="domain-port">Domain and port (*example.com:12345,
@@ -120,10 +246,11 @@
         <div class="row mt-3">
             <div class="col">
                 <h4>
-                    Keyboard Shortcuts
+                    <span class="badge badge-secondary">Option</span> Keyboard Shortcuts
                 </h4>
                 <p>
-                    You can set the keyboard shortcut that will cause the addon window to appear here. You will have to
+                    You can set the keyboard shortcut that will cause the addon window to appear here. You will have
+                    to
                     type out the keyboard shortcut yourself - use key combinations such as <code>Alt+Shift+D</code>,
                     <code>Alt+Shift+W</code>, etc.
                 </p>
@@ -131,7 +258,8 @@
                     Warning: Many keyboard shortcuts may not work, you will have to
                     experiment until you find one that works. Please <a target="_blank"
                         href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#key_combinations"
-                        rel="noopener noreferer">visit the official documentation to see what options are available</a>.
+                        rel="noopener noreferer">visit the official documentation to see what options are
+                        available</a>.
                 </p>
             </div>
         </div>
@@ -153,15 +281,17 @@
         <div class="row mt-3">
             <div class="col">
                 <h4>
-                    Import Containers
+                    <span class="badge badge-primary">Feature</span> Import Containers
                 </h4>
                 <p>
                     You can import your existing containers from a JSON string here. Click <i>Import
                         Containers</i>
                     to get a list. Note that importing containers will simply
-                    add new containers. If you wish to set your Firefox containers to only the ones being imported, you
+                    add new containers. If you wish to set your Firefox containers to only the ones being imported,
+                    you
                     can use
-                    the bulk deletion functionality offered in the normal extension popup window to delete containers
+                    the bulk deletion functionality offered in the normal extension popup window to delete
+                    containers
                     first, and then you can import here. Each container should have the following string properties:
                 <ul>
                     <li><code>color</code> <i>(defaults to <code>toolbar</code> color)</i></li>
@@ -190,27 +320,20 @@
         <div class="row mt-3">
             <div class="col">
                 <h4>
-                    Export Containers
+                    <span class="badge badge-primary">Feature</span> Export Containers
                 </h4>
                 <p>
-                    You can export your existing containers as a JSON or CSV string here. Click <i>Refresh</i>
+                    You can export your existing containers as a JSON string here. Click <i>Refresh</i> to
                     re-query the browser's container configuration and update the below text fields with an exported
                     containers list.
                 </p>
             </div>
         </div>
         <div class="row">
-            <div class="col-6">
+            <div class="col-12">
                 <div class="form-group">
                     <label for="containersExportAsJSON">Containers JSON</label>
                     <textarea class="form-control" readonly="true" id="containersExportAsJSON"
-                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="form-group">
-                    <label for="containersExportAsCSV">Containers CSV</label>
-                    <textarea class="form-control" readonly="true" id="containersExportAsCSV"
                         style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
                 </div>
             </div>
@@ -222,21 +345,26 @@
         </div>
         <div class="row mt-3">
             <div class="col">
-                <h4>
-                    Local and Synchronized Settings
+                <h4 id="options-settings-section">
+                    <span class="badge badge-info">Settings</span> Local and Synchronized Settings
                 </h4>
                 <p>
-                    The local and Firefox Sync configuration settings can be reviewed here. You can modify the raw JSON
-                    settings of this addon, click <i>Save Locally</i>, and then you can push the changes to Firefox Sync
-                    by clicking <i>Save to Sync</i>. To pull settings down from Firefox Sync, you can click <i>Save to
-                        Local from Sync</i>.
+                    The local and Firefox Sync configuration settings can be reviewed here. You can modify the raw
+                    JSON
+                    settings of this addon, click <i>Save Locally</i>, and then you can push the changes to Firefox
+                    Sync
+                    by clicking <i>Save to Sync</i>. To pull settings down from Firefox Sync, you can click <i>Save
+                        to Local from Sync</i>. Note that storage space in Firefox Sync is very limited; you will
+                    probably not be able to store more than 10-30 URL's in Sync without hitting exceeding quota, so you
+                    should probably turn it off.
                 </p>
                 <p>
                     Synchronization between devices should be something that you can finely control. That's why, by
                     default, saving settings to sync is <b>turned off</b>. You can enable all settings to save to
-                    Firefox Sync by checking the <i>Always set settings to Firefox Sync</i> checkbox below, and you can
-                    enable reading from Firefox Sync whenever the extension window is opened by checking the <i>Always
-                        get settings from Firefox Sync</i> checkbox below.
+                    Firefox Sync by checking the <i>Always set settings to Firefox Sync</i> checkbox below, and you
+                    can
+                    enable reading from Firefox Sync whenever the extension window is opened by checking the
+                    <i>Always get settings from Firefox Sync</i> checkbox below.
                 </p>
                 <p>
                     <i>Note: Use caution when removing this extension from Firefox. Sync settings persist, but local
@@ -265,6 +393,7 @@
             <div class="col-6">
                 <button type="button" id="btnSaveLocal" class="btn btn-block btn-primary">Save Locally</button>
                 <button type="button" id="btnSaveSync" class="btn btn-block btn-primary">Save to Sync</button>
+                <button type="button" id="btnCleanLocal" class="btn btn-block btn-info">Clean Up Orphans</button>
                 <button type="button" id="btnResetLocal" class="btn btn-block btn-primary">Refresh</button>
             </div>
             <div class="col-6">
@@ -284,7 +413,8 @@
                 </div>
                 <div class="form-check mt-1">
                     <input class="form-check-input" type="checkbox" id="alwaysGetSync" checked="false">
-                    <label class="form-check-label" for="alwaysGetSync">Always get settings from Firefox Sync</label>
+                    <label class="form-check-label" for="alwaysGetSync">Always get settings from Firefox
+                        Sync</label>
                 </div>
             </div>
         </div>

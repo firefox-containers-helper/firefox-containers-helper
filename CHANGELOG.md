@@ -2,6 +2,30 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.1.0
+
+Significant rewrite of the extension, migrating from vanilla JS to TypeScript.
+
+* Fixed verbiage in various places across the options page and extension popup
+* Implemented "Confirm", "Prompt" and "Alert" modals instead of using the native JavaScript confirm() function
+* Preferences page compatibility improvements
+* Added "Refresh" function to allow for a faster way to delete & re-create an existing container or containers
+  * Useful for quickly purging cookies without having to set up a container over again
+* Added "Clean Up Orphans" to help clean up the config, with help text to show when it's needed
+* Focus cancel/OK buttons in modals by default where necessary
+* Stress-tested the extension and added suggestions/recommendations for extreme power users to the Preferences page
+* Lots of other optimizations/fixes/improvements
+
+Dev changes:
+
+* Rewrote the extension in TypeScript. Uses webpack to compile the result.
+
+## v0.0.28
+
+* Container names no longer are limited to 25 characters. This was previously an API limitation that now seems to have been removed at some point, thank you Mozilla! As a result, the "Set Name" option now allows you to set a name longer than 25 characters. The "+" button did not have this same length check, so its behavior has not been changed.
+* Replaced all javascript "alert" calls with proper modals. This is part of an incremental effort to replace all native JS dialogs such as "confirm", "prompt" and "alert" with proper CSS-enabled modals.
+* Fix https://github.com/cmcode-dev/firefox-containers-helper/issues/40 - the Sort by URL Descending menu option is now correct.
+
 ## v0.0.27
 
 * fixes https://github.com/cmcode-dev/firefox-containers-helper/issues/33 - in some scenarios, the selected items are preserved when they should be reset. Now, the behavior has been updated to de-select all containers when a delete or duplicate action takes place.
