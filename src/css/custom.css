@@ -5,6 +5,8 @@
 .overflow-scroll-vertical {
     overflow-y: auto;
     max-height: 300px;
+    min-height: 300px;
+    height: 300px;
 }
 
 .container-list-text {
@@ -35,10 +37,6 @@
     max-height: 14px;
 }
 
-body {
-    min-width: 330px;
-}
-
 #container-list {
     min-height: 174px;
 }
@@ -48,6 +46,14 @@ body {
     width: 16px;
     font-family: 'Courier New', Courier, monospace;
     text-align: center;
+}
+
+.element-show {
+    display: block;
+}
+
+.element-hide {
+    display: none;
 }
 
 .modal-show {
