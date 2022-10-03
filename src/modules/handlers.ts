@@ -60,7 +60,7 @@ const sortChange = async (event: Event) => {
     event.preventDefault();
 }
 
-const searchKeyUp = (/* _: KeyboardEvent */) => { filter(); };
+const searchKeyUp = (event: KeyboardEvent) => { filter(event); };
 
 const searchSubmit = (submitEvent: SubmitEvent) => { submitEvent.preventDefault(); };
 

@@ -2,6 +2,10 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.1.1
+
+* fix Enter key not working for triggering actions in popup (https://github.com/cmcode-dev/firefox-containers-helper/issues/44)
+
 ## v0.1.0
 
 Significant rewrite of the extension, migrating from vanilla JS to TypeScript.

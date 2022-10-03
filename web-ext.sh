@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-web-ext build -s "./src" --overwrite-dest
+web-ext build -s "./dist" --overwrite-dest
 
 echo -n "Enter your JWT issuer key from addons.mozilla.org: "
 read API_KEY
@@ -13,4 +13,4 @@ echo
 # read ADDON_ID
 # echo
 
-web-ext sign -s "./src" --api-key "${API_KEY}" --api-secret "${API_SECRET}" # --id "${ADDON_ID}"
+web-ext sign -s "./dist" --api-key "${API_KEY}" --api-secret "${API_SECRET}" # --id "${ADDON_ID}"

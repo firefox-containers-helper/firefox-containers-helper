@@ -93,6 +93,7 @@ export const setEventListeners = async (
         const onClick = (event: MouseEvent) => actHandler(filtered, context, event);
 
         const keyDown = async (event: KeyboardEvent) => {
+            console.debug(`keydown`, event);
             if (event.key === 'Enter') {
                 actHandler(filtered, context, event);
             }
