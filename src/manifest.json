@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Containers Helper",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Helps improve container management by providing container searching, deleting, renaming, duplicating, and default URLs on a per-container or bulk basis.",
     "icons": {
         "48": "icons/icon_cube.svg",
