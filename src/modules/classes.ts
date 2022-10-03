@@ -5,8 +5,8 @@ const LI_BASE = 'list-group-item d-flex justify-content-space-between align-item
 
 export const CLASSES_CONTAINER_LI = `${LI_BASE}`;
 
-export const CLASSES_CONTAINER_ICON = `px-2`;
-export const CLASSES_CONTAINER_ICON_DIV = `icon ml-2`;
+export const CLASSES_CONTAINER_ICON = ``;
+export const CLASSES_CONTAINER_ICON_DIV = `icon mx-2 pr-2`;
 
 
 export const CLASSES_CONTAINER_ICON_EMPTY_TEXT = 'mono-16';

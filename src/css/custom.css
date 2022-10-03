@@ -4,7 +4,7 @@
 
 .overflow-scroll-vertical {
     overflow-y: auto;
-    max-height: 350px;
+    max-height: 300px;
     /* min-height: 300px; */
     /* height: 300px; */
 }
@@ -19,7 +19,7 @@
     max-height: 18px;
 }
 
-.icon>i {
+/* .icon>i {
     position: relative;
     background-size: 16px 16px;
     width: 16px;
@@ -27,7 +27,7 @@
     overflow: hidden;
     left: calc(16px * -1);
     border-right: 16px solid transparent;
-}
+} */
 
 .loading {
     display: none;

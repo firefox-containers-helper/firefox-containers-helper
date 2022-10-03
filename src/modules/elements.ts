@@ -10,7 +10,7 @@ import {
     CLASSES_CONTAINER_LI_URL_LABEL_INVERTED,
     CLASSES_CONTAINER_LI_URL_LABEL,
     CLASSES_CONTAINER_ICON_EMPTY_TEXT,
-    CLASSES_CONTAINER_ICON
+    CLASSES_CONTAINER_ICON,
 } from "./classes";
 import {
     MODES,
@@ -48,9 +48,14 @@ export const buildContainerIcon = (context: browser.contextualIdentities.Context
     iconDiv.className = CLASSES_CONTAINER_ICON_DIV;
 
     const icon = document.createElement('i') as HTMLElement;
-    icon.style.backgroundImage = `url(${context.iconUrl})`;
-    icon.style.backgroundRepeat = 'no-repeat';
-    icon.style.filter = `drop-shadow(${context.colorCode} 16px 0)`;
+    icon.style.webkitMaskSize = 'cover';
+    icon.style.maskSize = 'cover';
+    icon.style.webkitMaskImage = `url(${context.iconUrl})`;
+    icon.style.maskImage = `url(${context.iconUrl})`;
+    icon.style.backgroundColor = context.colorCode;
+    icon.style.width = '16px';
+    icon.style.height = '16px';
+    icon.style.display = 'inline-block';
     icon.className = CLASSES_CONTAINER_ICON;
 
     addEmptyEventListeners([iconDiv, icon]);
@@ -110,7 +115,12 @@ export const buildContainerLabel = async (
             } else {
                 urlLabel.innerText = `${url.substring(0, 40)}`;
             }
-
+        } else {
+            // maybe use this instead if it's ever needed - it just looks
+            // off-center though.
+            // urlLabel.innerHTML = '&nbsp;'
+            urlLabel.innerText = '-'
+            urlLabel.title = 'Opens in a blank container tab. Set a default URL to change this.';
         }
 
         const openCurrentPage = await getSetting(CONF.openCurrentPage) as boolean;
