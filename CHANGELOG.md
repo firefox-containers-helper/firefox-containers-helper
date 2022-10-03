@@ -2,6 +2,12 @@
 
 This changelog contains all relevant changes between different versions of the extension.
 
+## v0.1.2
+
+* Adjusts the CSS styling and positioning of elements in the extension popup to respect 600px max height constraints
+* Fixes scrolling on some environments
+* When opening the popup in a new tab, the full width of the screen is used
+
 ## v0.1.1
 
 * fix Enter key not working for triggering actions in popup (https://github.com/cmcode-dev/firefox-containers-helper/issues/44)
