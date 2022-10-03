@@ -338,7 +338,7 @@ export const setModalPromptCallbacks = (ok: () => void, cancel: () => void): (HT
  * @param msg The message to show in the modal. Text-only for safety.
  * @param title The message to show in the modal. Text-only for safety.
  */
-export const showAlert = (msg: string, title: string) => {
+export const showAlert = async (msg: string, title: string) => {
     setModalType(MODAL_TYPE_ALERT);
     setModalAlertCallback(hideModal);
     setModalAlertText(msg);

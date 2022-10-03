@@ -74,30 +74,14 @@ export const setHandlers = async () => {
     const modeSelect = document.getElementById('modeSelect');
     const sortModeSelect = document.getElementById('sortModeSelect');
 
-    if (!searchContainerForm) {
-        throw `The HTML element searchContainerForm is not available.`;
-    }
-    if (!searchContainerInput) {
-        throw `The HTML element searchContainerInput is not available.`;
-    }
-    if (!windowStayOpenState) {
-        throw `The HTML element windowStayOpenState is not available.`;
-    }
-    if (!selectionMode) {
-        throw `The HTML element selectionMode is not available.`;
-    }
-    if (!openCurrentPage) {
-        throw `The HTML element openCurrentPage is not available.`;
-    }
-    if (!addNewContainer) {
-        throw `The HTML element addNewContainer is not available.`;
-    }
-    if (!modeSelect) {
-        throw `The HTML element modeSelect is not available.`;
-    }
-    if (!sortModeSelect) {
-        throw `The HTML element sortModeSelect is not available.`;
-    }
+    if (!searchContainerForm) throw `The HTML element searchContainerForm is not available.`;
+    if (!searchContainerInput) throw `The HTML element searchContainerInput is not available.`;
+    if (!windowStayOpenState) throw `The HTML element windowStayOpenState is not available.`;
+    if (!selectionMode) throw `The HTML element selectionMode is not available.`;
+    if (!openCurrentPage) throw `The HTML element openCurrentPage is not available.`;
+    if (!addNewContainer) throw `The HTML element addNewContainer is not available.`;
+    if (!modeSelect) throw `The HTML element modeSelect is not available.`;
+    if (!sortModeSelect) throw `The HTML element sortModeSelect is not available.`;
 
     // prevents the Search button from causing page navigation/popup flashes
     (searchContainerForm as HTMLFormElement).addEventListener("submit", searchSubmit);

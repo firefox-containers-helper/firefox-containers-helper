@@ -8,3 +8,4 @@ export * from './helpers';
 export * from './html';
 export * from './lib';
 export * from './modals';
+export * from './preferences';

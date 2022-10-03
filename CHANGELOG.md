@@ -4,21 +4,21 @@ This changelog contains all relevant changes between different versions of the e
 
 ## v0.1.0
 
-* Rewrote the extension in TypeScript so that I could deliver a higher quality extension
-  * Uses webpack to compile the result
-  * Refactored a lot of functions to use more structure and proper async/await syntax
+Significant rewrite of the extension, migrating from vanilla JS to TypeScript.
+
 * Fixed verbiage in various places across the options page and extension popup
-* Implemented "Confirm" modals instead of using the native JavaScript confirm() function
-* Similarly, implemented "Prompt" modals instead of using the native JavaScript prompt() function
-* Added "Refresh" function to allow for a faster way to delete & re-create an existing container
-  * Useful for quickly purging cookies without having to set up a container over again
-* Added alert modals to options page and popup page
-  * Options page had to have its maximum height capped in order for the modal to work correctly. The page simply scrolls differently now.
-* Add a settings Clean Up option that allows users to purge orphaned URL associations with a workflow that gives the user the chance to review cleaned settings before saving them
-  * Added a warning readout to the popup dialog to indicate when cleanup is necessary
-* Focus cancel/OK buttons in modals by default where necessary
+* Implemented "Confirm", "Prompt" and "Alert" modals instead of using the native JavaScript confirm() function
 * Preferences page compatibility improvements
-* Other minor fixes
+* Added "Refresh" function to allow for a faster way to delete & re-create an existing container or containers
+  * Useful for quickly purging cookies without having to set up a container over again
+* Added "Clean Up Orphans" to help clean up the config, with help text to show when it's needed
+* Focus cancel/OK buttons in modals by default where necessary
+* Stress-tested the extension and added suggestions/recommendations for extreme power users to the Preferences page
+* Lots of other optimizations/fixes/improvements
+
+Dev changes:
+
+* Rewrote the extension in TypeScript. Uses webpack to compile the result.
 
 ## v0.0.28
 

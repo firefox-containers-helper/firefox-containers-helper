@@ -131,3 +131,9 @@ export const CONTAINER_LIST_DIV_ID = 'container-list';
 
 /** The ID of the container list <ul> element. */
 export const CONTAINER_LIST_GROUP_ID = 'containerListGroup';
+
+/** Firefox Sync vs local storage. */
+export enum SettingsTypes {
+    Local = 'local',
+    Sync = 'sync',
+}

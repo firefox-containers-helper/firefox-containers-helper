@@ -291,26 +291,19 @@ export const reflectSelected = (selected: SelectedContextIndex) => {
  * in UI elements.
  */
 export const reflectSettings = async () => {
-    const modeSelectEl = document.getElementById('modeSelect');
-    const sortModeSelectEl = document.getElementById('sortModeSelect');
-    const windowStayOpenStateEl = document.getElementById('windowStayOpenState');
-    const selectionModeEl = document.getElementById('selectionMode');
-    const openCurrentPageEl = document.getElementById('openCurrentPage');
-    const searchContainerInputEl = document.getElementById('searchContainerInput');
+    const modeSelect = document.getElementById('modeSelect') as HTMLSelectElement;
+    const sortModeSelect = document.getElementById('sortModeSelect') as HTMLSelectElement;
+    const windowStayOpenState = document.getElementById('windowStayOpenState') as HTMLInputElement;
+    const selectionMode = document.getElementById('selectionMode') as HTMLInputElement;
+    const openCurrentPage = document.getElementById('openCurrentPage') as HTMLInputElement;
+    const searchContainerInput = document.getElementById('searchContainerInput') as HTMLInputElement;
 
-    if (!modeSelectEl) throw 'The modeSelect element could not be found.';
-    if (!sortModeSelectEl) throw 'The sortModeSelect element could not be found.';
-    if (!windowStayOpenStateEl) throw 'The windowStayOpenState element could not be found.';
-    if (!selectionModeEl) throw 'The selectionMode element could not be found.';
-    if (!openCurrentPageEl) throw 'The openCurrentPage element could not be found.';
-    if (!searchContainerInputEl) throw 'The searchContainerInput element could not be found.';
-
-    const modeSelect = modeSelectEl as HTMLSelectElement;
-    const sortModeSelect = sortModeSelectEl as HTMLSelectElement;
-    const windowStayOpenState = windowStayOpenStateEl as HTMLInputElement;
-    const selectionMode = selectionModeEl as HTMLInputElement;
-    const openCurrentPage = openCurrentPageEl as HTMLInputElement;
-    const searchContainerInput = searchContainerInputEl as HTMLInputElement;
+    if (!modeSelect) throw 'The modeSelect element could not be found.';
+    if (!sortModeSelect) throw 'The sortModeSelect element could not be found.';
+    if (!windowStayOpenState) throw 'The windowStayOpenState element could not be found.';
+    if (!selectionMode) throw 'The selectionMode element could not be found.';
+    if (!openCurrentPage) throw 'The openCurrentPage element could not be found.';
+    if (!searchContainerInput) throw 'The searchContainerInput element could not be found.';
 
     const settings = await getSettings();
 

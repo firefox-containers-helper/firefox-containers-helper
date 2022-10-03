@@ -1,7 +1,7 @@
 import { ContainerDefaultURL, ExtensionConfig, SelectedContextIndex } from 'src/types';
 import { getSetting, setSettings } from './config';
 import { CONF, CONTEXT_COLORS, CONTEXT_ICONS, CONTAINER_LIST_DIV_ID, MODES, SORT_MODE_NAME_ASC, SORT_MODE_NAME_DESC, SORT_MODE_NONE, SORT_MODE_NONE_REVERSE, SORT_MODE_URL_ASC, SORT_MODE_URL_DESC, UrlMatchTypes, SortModes } from './constants';
-import { reflectSelected, removeExistingContainerListGroupElement, buildContainerListGroupElement, buildContainerListItem, buildContainerListItemEmpty } from './elements';
+import { reflectSelected, removeExistingContainerListGroupElement, buildContainerListGroupElement, buildContainerListItem, buildContainerListItemEmpty, reflectSettings } from './elements';
 import { getModifiers, preventUnload, relieveUnload } from './events';
 import { getCurrentTabOverrideUrl, isAnyContextSelected, queryNameMatch, queryUrls } from './helpers';
 import { bottomHelp, help, helpful } from './html';
@@ -1130,14 +1130,6 @@ export const filter = async (
  * @param key The `ExtensionConfig` key to toggle.
  */
 export const toggleConfigFlag = async (key: CONF) => {
-    const el = document.getElementById(`${key}`);
-    if (!el) {
-        await showAlert(`A checkbox with ID ${key} could not be found.`, 'Config Update Error');
-        return;
-    }
-
-    const checkbox = el as HTMLInputElement;
-
     const original = await getSetting(key) as boolean;
 
     const updates: any = {};
@@ -1147,10 +1139,19 @@ export const toggleConfigFlag = async (key: CONF) => {
     await setSettings(updates as Partial<ExtensionConfig>);
 
     // retrieve the value from storage after it has been set to confirm that
-    // it was pushed successfully, to accurately reflect its value in the UI
-    const updated = await getSetting(key) as boolean;
+    // it was pushed successfully, to accurately reflect its value in the UI.
+    // This is a minimalist approach in the event that it's too expensive to
+    // call reflectSettings() below
+    // const el = document.getElementById(`${key}`);
+    // if (!el) {
+    //     await showAlert(`A checkbox with ID ${key} could not be found.`, 'Config Update Error');
+    //     return;
+    // }
+    // const checkbox = el as HTMLInputElement;
+    // const updated = await getSetting(key) as boolean;
+    // checkbox.checked = updated;
 
-    checkbox.checked = updated;
+    await reflectSettings();
 }
 
 /**
@@ -1177,6 +1178,8 @@ export const setMode = async (mode: string | MODES) => {
             return;
     }
 
+    await reflectSettings();
+
     await helpful();
 };
 
@@ -1197,6 +1200,8 @@ export const setSortMode = async (mode: string | SortModes) => {
             break;
         default:
             await showAlert(`Invalid sort mode '${mode}'.`, 'Invalid Sort Mode');
-            return;
+            break;
     }
+
+    await reflectSettings();
 };

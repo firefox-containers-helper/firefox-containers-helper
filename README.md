@@ -116,7 +116,7 @@ The containers starting with `*` could be considered as permanently pinned tabs,
 
 1. This container management extension is dangerously powerful. If you're not careful, you can delete all of your containers by turning on "Delete Mode", pressing `shift+enter`, and pressing "OK" to the prompts. At this time, the extension doesn't support undoing operations or rolling back commands. You've been warned!
 1. **Major warning:** If you delete all the extensions on your browser that leverage containers, Firefox might reset your entire container configuration to the stock default set of 4 containers: Personal, Banking, Shopping, and Work.
-1. **A note about Firefox Sync**: You may eventually hit a Firefox Sync quota if you have something like 100+ containers without periodically cleanup the config using the cleanup feature. Hitting quota causes problems when saving URLs and doing other things in the extension.
+1. **A note about Firefox Sync**: You may eventually hit a Firefox Sync quota if you have something like 10-30+ containers with URL assocations, and without periodically cleanup the config using the cleanup feature (you will be gently informed when this is needed). Hitting quota causes problems when saving URLs and doing other things in the extension.
 2. **Removing this extension** will cause any settings that are not pushed to Firefox Sync to be lost upon reinstallation of the extension. Make sure to use the Preferences page to copy/paste your configuration before uninstalling the extension, if needed.
 
 ## Community

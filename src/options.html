@@ -98,9 +98,11 @@
                         target="_blank" rel="noopener noreferer">
                         there is a limit on the amount of data that this extension can store when using Firefox
                         Sync</a>.
-                    <b>It is recommended to not use Firefox Sync if you have
-                        more than 100 containers.</b> Otherwise, the extension may silently fail or exhibit other
-                    erroneous behavior once it hits the storage limit.
+                    <b>It is NOT recommended to use Firefox Sync if you have
+                        more than 30-100 containers.</b> Setting default URL's for containers causes the limit to be
+                    reached very quickly. Otherwise, the extension may show error messages, silently fail or exhibit
+                    other erroneous behavior once it hits the storage limit. It's better to simply disable it. However,
+                    if you only have 5-10 containers, Sync might work well for you.
                 </p>
                 <p>If you <i>don't</i> push this extension's settings
                     to Firefox Sync (or back up manually), and then proceed to remove the extension, all settings
@@ -190,14 +192,11 @@
                 </h4>
                 <p>
                     This is useful for viewing the same page quickly across different containers. If you are
-                    currently
-                    on <code>https://example.com/test1234</code> and you have a container has a default URL that
-                    matches
-                    the current tab's domain, such as <code>https://example.com/abcdef</code>, you can choose to
-                    simply
-                    use the current tab's URL of <code>https://example.com/test1234</code> when opening that
-                    container
-                    tab instead of its default URL (<code>https://example.com/abcdef</code>).
+                    currently on <code>https://example.com/test1234</code> and you have a container has a default URL
+                    that
+                    matches the current tab's domain, such as <code>https://example.com/abcdef</code>, you can choose to
+                    simply use the current tab's URL of <code>https://example.com/test1234</code> when opening that
+                    container tab instead of its default URL (<code>https://example.com/abcdef</code>).
                 </p>
                 <p>
                     If you want to match more than just the domain, you can choose to match any of the following -
@@ -324,24 +323,17 @@
                     <span class="badge badge-primary">Feature</span> Export Containers
                 </h4>
                 <p>
-                    You can export your existing containers as a JSON or CSV string here. Click <i>Refresh</i> to
+                    You can export your existing containers as a JSON string here. Click <i>Refresh</i> to
                     re-query the browser's container configuration and update the below text fields with an exported
                     containers list.
                 </p>
             </div>
         </div>
         <div class="row">
-            <div class="col-6">
+            <div class="col-12">
                 <div class="form-group">
                     <label for="containersExportAsJSON">Containers JSON</label>
                     <textarea class="form-control" readonly="true" id="containersExportAsJSON"
-                        style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="form-group">
-                    <label for="containersExportAsCSV">Containers CSV</label>
-                    <textarea class="form-control" readonly="true" id="containersExportAsCSV"
                         style="font-family: 'Courier New', Courier, monospace" rows="6"></textarea>
                 </div>
             </div>
@@ -362,7 +354,9 @@
                     settings of this addon, click <i>Save Locally</i>, and then you can push the changes to Firefox
                     Sync
                     by clicking <i>Save to Sync</i>. To pull settings down from Firefox Sync, you can click <i>Save
-                        to Local from Sync</i>.
+                        to Local from Sync</i>. Note that storage space in Firefox Sync is very limited; you will
+                    probably not be able to store more than 10-30 URL's in Sync without hitting exceeding quota, so you
+                    should probably turn it off.
                 </p>
                 <p>
                     Synchronization between devices should be something that you can finely control. That's why, by

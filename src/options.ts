@@ -1,16 +1,18 @@
-import { checkDirty, getCleanSettings } from "./modules/helpers";
+import { getLocalSettings, getSyncSettings, setLocalSettings, setSettings, setSyncSettings } from "./modules/config";
+import { checkDirty, getCleanSettings, objectEquals } from "./modules/helpers";
+import { bulkExport, bulkImport } from './modules/preferences';
 import { showAlert, showConfirm } from "./modules/modals";
-import { ContextualIdentityWithURL, ExtensionConfig } from "./types";
+import { ExtensionConfig } from "./types";
+import { UrlMatchTypes } from "./modules/constants";
 
 // https://github.com/mdn/webextensions-examples/blob/60ce50b10ee66f6d706b0715909e756e4bdba63d/commands/options.js
 // https://github.com/mdn/webextensions-examples/blob/60ce50b10ee66f6d706b0715909e756e4bdba63d/commands/options.html
 const commandName = '_execute_browser_action';
 
-var localSettings: ExtensionConfig | any = {};
-var syncSettings: ExtensionConfig | any = {};
-
-/** Update the UI: set the value of the shortcut text box. */
-const updateUI = async () => {
+/**
+ * Reflects the saved value for the keyboard shortcut to show the popup.
+ */
+const reflectKeyboardShortcut = async () => {
     const shortcutEl = document.getElementById('shortcut');
     if (!shortcutEl) {
         await showAlert('Error: Element with ID shortcut is not present.', 'HTML Error');
@@ -30,82 +32,6 @@ const updateUI = async () => {
     await showAlert('Warning: A keyboard shortcut may not be set correctly.', 'Keyboard Shortcut');
 }
 
-/** Update the shortcut based on the value in the text box. */
-const updateShortcut = async () => {
-    const shortcutEl = document.getElementById('shortcut');
-    if (!shortcutEl) {
-        await showAlert('Error: Element with ID shortcut is not present.', 'HTML Error');
-        return;
-    }
-
-    const shortcut = shortcutEl as HTMLInputElement;
-
-    try {
-        await browser.commands.update({
-            name: commandName,
-            shortcut: shortcut.value,
-        });
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to set the keyboard shortcut: ${JSON.stringify(err)}`, 'Keyboard Shortcut Error');
-            return;
-        }
-
-        await showAlert(`Failed to set the keyboard shortcut due to an unknown error.`, 'Keyboard Shortcut Error');
-        return;
-    }
-}
-
-/**
- * Reset the shortcut and update the text box.
- */
-const resetShortcut = async (cmd: string) => {
-    try {
-        await browser.commands.reset(cmd);
-        await updateUI();
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to reset the keyboard shortcut: ${JSON.stringify(err)}`, 'Keyboard Shortcut Error');
-            return;
-        }
-
-        await showAlert(`Failed to reset the keyboard shortcut due to an unknown error.`, 'Keyboard Shortcut Error');
-        return;
-    }
-}
-
-// This is a shameless copy of deep equality comparison from StackOverflow.
-// Disclaimer: Deep equality is impossible to completely assess. Also,
-// I've written my own deep equality implementations in JavaScript before,
-// but it's smarter and more pragmatic to crowd source, so long as
-// the code is reviewed and passes test cases.
-// https://stackoverflow.com/a/16788517
-const objectEquals = (x: any, y: any): boolean => {
-    'use strict';
-
-    if (x === null || x === undefined || y === null || y === undefined) { return x === y; }
-    // after this just checking type of one would be enough
-    if (x.constructor !== y.constructor) { return false; }
-    // if they are functions, they should exactly refer to same one (because of closures)
-    if (x instanceof Function) { return x === y; }
-    // if they are regexps, they should exactly refer to same one (it is hard to better equality check on current ES)
-    if (x instanceof RegExp) { return x === y; }
-    if (x === y || x.valueOf() === y.valueOf()) { return true; }
-    if (Array.isArray(x) && x.length !== y.length) { return false; }
-
-    // if they are dates, they must had equal valueOf
-    if (x instanceof Date) { return false; }
-
-    // if they are strictly equal, they both need to be object at least
-    if (!(x instanceof Object)) { return false; }
-    if (!(y instanceof Object)) { return false; }
-
-    // recursive object equality check
-    var p = Object.keys(x);
-    return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
-        p.every(function (i) { return objectEquals(x[i], y[i]); });
-}
-
 /**
  * Sets the validation text.
  *
@@ -116,7 +42,7 @@ const setValidationText = (msg: string, color: string) => {
     if (!msg || !color) return;
 
     const syncValidationText = document.getElementById('syncValidationText');
-    if (!syncValidationText) return;
+    if (!syncValidationText) throw 'The syncValidationText element is not present.';
 
     let className = `badge badge-${color} mt-4`;
 
@@ -125,46 +51,36 @@ const setValidationText = (msg: string, color: string) => {
 }
 
 const setSaveSettingsButtonsDisabled = async (disabled: boolean) => {
-    const btnSaveLocalEl = document.getElementById('btnSaveLocal');
-    const btnSaveSyncEl = document.getElementById('btnSaveSync');
+    const btnSaveLocal = document.getElementById('btnSaveLocal') as HTMLButtonElement;
+    const btnSaveSync = document.getElementById('btnSaveSync') as HTMLButtonElement;
 
-    if (!btnSaveLocalEl) {
-        await showAlert('The btnSaveLocal element is not present.', 'HTML Error');
-        return;
-    }
-    if (!btnSaveSyncEl) {
-        await showAlert('The btnSaveSync element is not present.', 'HTML Error');
-        return;
-    }
-
-    const btnSaveLocal = btnSaveLocalEl as HTMLButtonElement;
-    const btnSaveSync = btnSaveSyncEl as HTMLButtonElement;
+    if (!btnSaveLocal) throw 'The btnSaveLocal element is not present.';
+    if (!btnSaveSync) throw 'The btnSaveSync element is not present.';
 
     btnSaveLocal.disabled = disabled;
     btnSaveSync.disabled = disabled;
 }
 
-const validateLocalSettings = async (settings?: any): Promise<boolean> => {
+/**
+ * Parses the text in the local settings text area into JSON, and updates
+ * the UI if it succeed or fails to parse.
+ */
+const canParseLocal = async (settings?: string): Promise<boolean> => {
     try {
         if (!settings) {
-            const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
-            if (!localSettingsTextAreaEl) {
-                await showAlert('The localSettingsTextArea element is not present.', 'HTML Error');
-                return false;
-            }
+            const text = document.getElementById('localSettingsTextArea') as HTMLTextAreaElement;
+            if (!text) throw 'The localSettingsTextArea element is not present.';
 
-            const localSettingsTextArea = localSettingsTextAreaEl as HTMLTextAreaElement;
-
-            settings = localSettingsTextArea.value;
+            settings = text.value;
         }
 
-        localSettings = JSON.parse(settings);
+        JSON.parse(settings);
 
         setValidationText('Local settings are valid JSON.', 'primary');
 
         await setSaveSettingsButtonsDisabled(false);
 
-        await checkSettingsAreEqual();
+        await checkSettingsEqual();
 
         return true;
     } catch (e) {
@@ -174,129 +90,91 @@ const validateLocalSettings = async (settings?: any): Promise<boolean> => {
     }
 }
 
-const onChangeLocalSettings = (e: KeyboardEvent) => {
-    if (!e) return;
-    if (!e.target) return;
+/**
+ * Checks if the saved local and sync settings are equal to each other, and
+ * updates UI elements according to the result.
+ */
+const checkSettingsEqual = async (): Promise<boolean> => {
+    const sync = await getSyncSettings();
+    const local = await getLocalSettings();
 
-    const target = e.target as HTMLInputElement;
+    const equal = objectEquals(sync, local);
 
-    if (target.value) {
-        validateLocalSettings(target.value);
-    }
-}
-
-const checkSettingsAreEqual = async () => {
-    let result = false;
-    if (localSettings && syncSettings) {
-        result = objectEquals(localSettings, syncSettings);
-    }
-    result ?
-        setValidationText('Local/sync settings match!', 'success') :
+    if (!equal) {
         setValidationText('Local/sync settings do not match.', 'danger');
+        return equal;
+    }
 
-    return result;
+    setValidationText('Local/sync settings match!', 'success');
+    return equal;
 }
 
-const resetLocalSettings = async () => {
+/**
+ * Retrieves the extension's locally saved settings, and updates the UI to
+ * reflect them.
+ */
+const reflectLocalSettings = async (): Promise<ExtensionConfig> => {
     try {
-        const data = await browser.storage.local.get();
+        const local = await getLocalSettings();
 
-        localSettings = { ...data };
+        const str = JSON.stringify(local);
 
-        validateLocalSettings(JSON.stringify(data));
+        await canParseLocal(str);
 
-        const localSettingsEl = document.getElementById('localSettingsTextArea');
-        if (!localSettingsEl) {
-            await showAlert('The localSettingsTextArea element is not present.', 'HTML Error');
-            return;
-        }
+        const txt = document.getElementById('localSettingsTextArea') as HTMLTextAreaElement;
 
-        const localSettingsTxt = localSettingsEl as HTMLTextAreaElement;
+        const alwaysSetSync = document.getElementById('alwaysSetSync') as HTMLInputElement;
+        const alwaysGetSync = document.getElementById('alwaysGetSync') as HTMLInputElement;
+        const neverConfirmForOpeningNonHttpUrls = document.getElementById('neverConfirmForOpeningNonHttpUrls') as HTMLInputElement;
+        const neverConfirmForSavingNonHttpUrls = document.getElementById('neverConfirmForSavingNonHttpUrls') as HTMLInputElement;
+        const openCurrentTabUrlOnMatchSelect = document.getElementById('openCurrentTabUrlOnMatchSelect') as HTMLInputElement;
 
-        localSettingsTxt.value = JSON.stringify(data);
+        if (!txt) throw 'The localSettingsTextArea element is not present.';
+        if (!alwaysSetSync) throw 'alwaysSetSync element is not present.';
+        if (!alwaysGetSync) throw 'alwaysGetSync element is not present.';
+        if (!neverConfirmForOpeningNonHttpUrls) throw 'neverConfirmForOpeningNonHttpUrls element is not present.';
+        if (!neverConfirmForSavingNonHttpUrls) throw 'neverConfirmForSavingNonHttpUrls element is not present.';
+        if (!openCurrentTabUrlOnMatchSelect) throw 'openCurrentTabUrlOnMatchSelect element is not present.';
+
+        txt.value = str;
+        alwaysSetSync.checked = local.alwaysSetSync;
+        alwaysGetSync.checked = local.alwaysGetSync;
+        neverConfirmForOpeningNonHttpUrls.checked = local.neverConfirmOpenNonHttpUrls;
+        neverConfirmForSavingNonHttpUrls.checked = local.neverConfirmSaveNonHttpUrls;
+        openCurrentTabUrlOnMatchSelect.value = local.openCurrentTabUrlOnMatch;
+
+        return local;
     } catch (err) {
-        if (err) {
-            await showAlert(`Failed to retrieve browser storage data: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to retrieve browser storage data due to an unknown error.`, 'Settings Error');
-        return;
+        throw `Failed to reflect local settings: ${err}`;
     }
 }
 
-const resetButtonClick = () => {
-    resetLocalSettings();
-}
-
-const refreshSyncSettings = async () => {
+/**
+ * Retrieves the extension's saved sync settings, and updates the UI to
+ * reflect them.
+ */
+const reflectSyncSettings = async (): Promise<ExtensionConfig> => {
     try {
-        const data = await browser.storage.sync.get();
-        syncSettings = { ...data };
+        const sync = await getSyncSettings();
 
-        await checkSettingsAreEqual();
+        await checkSettingsEqual();
 
-        const syncSettingsTextAreaEl = document.getElementById('syncSettingsTextArea');
-        const alwaysSetSyncEl = document.getElementById('alwaysSetSync');
-        const alwaysGetSyncEl = document.getElementById('alwaysGetSync');
-        const neverConfirmForOpeningNonHttpUrlsEl = document.getElementById('neverConfirmForOpeningNonHttpUrls');
-        const neverConfirmForSavingNonHttpUrlsEl = document.getElementById('neverConfirmForSavingNonHttpUrls');
-        const openCurrentTabUrlOnMatchSelectEl = document.getElementById('openCurrentTabUrlOnMatchSelect');
+        const syncSettingsTextArea = document.getElementById('syncSettingsTextArea') as HTMLTextAreaElement;
 
-        if (!syncSettingsTextAreaEl) {
-            throw 'syncSettingsTextArea element is not present.';
-        }
-        if (!alwaysSetSyncEl) {
-            throw 'alwaysSetSync element is not present.';
-        }
-        if (!alwaysGetSyncEl) {
-            throw 'alwaysGetSync element is not present.';
-        }
-        if (!neverConfirmForOpeningNonHttpUrlsEl) {
-            throw 'neverConfirmForOpeningNonHttpUrls element is not present.';
-        }
-        if (!neverConfirmForSavingNonHttpUrlsEl) {
-            throw 'neverConfirmForSavingNonHttpUrls element is not present.';
-        }
-        if (!openCurrentTabUrlOnMatchSelectEl) {
-            throw 'openCurrentTabUrlOnMatchSelect element is not present.';
-        }
+        if (!syncSettingsTextArea) throw 'syncSettingsTextArea element is not present.';
 
-        const syncSettingsTextArea = syncSettingsTextAreaEl as HTMLTextAreaElement;
-        const alwaysSetSync = alwaysSetSyncEl as HTMLInputElement;
-        const alwaysGetSync = alwaysGetSyncEl as HTMLInputElement;
-        const neverConfirmForOpeningNonHttpUrls = neverConfirmForOpeningNonHttpUrlsEl as HTMLInputElement;
-        const neverConfirmForSavingNonHttpUrls = neverConfirmForSavingNonHttpUrlsEl as HTMLInputElement;
-        const openCurrentTabUrlOnMatchSelect = openCurrentTabUrlOnMatchSelectEl as HTMLInputElement;
+        syncSettingsTextArea.value = JSON.stringify(sync);
 
-        syncSettingsTextArea.value = JSON.stringify(data);
-        alwaysSetSync.checked = data.alwaysSetSync;
-        alwaysGetSync.checked = data.alwaysGetSync;
-        neverConfirmForOpeningNonHttpUrls.checked = data.neverConfirmOpenNonHttpUrls;
-        neverConfirmForSavingNonHttpUrls.checked = data.neverConfirmSaveNonHttpUrls;
-        openCurrentTabUrlOnMatchSelect.value = data.openCurrentTabUrlOnMatch;
+        return sync;
     } catch (err) {
-        if (err) {
-            await showAlert(`Failed to retrieve browser storage data: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to retrieve browser storage data due to an unknown error.`, 'Settings Error');
-        return;
+        throw `Error reflecting sync settings: ${err}`;
     }
-}
-
-const btnRefreshSyncClick = () => {
-    refreshSyncSettings();
-    validateLocalSettings();
 }
 
 const getLocalSettingsTextArea = async (): Promise<HTMLTextAreaElement | void> => {
     const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
-    if (!localSettingsTextAreaEl) {
-        await showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
-        return;
-    }
+    if (!localSettingsTextAreaEl) throw 'The localSettingsTextArea HTML element is not present.';
+
     const localSettingsTextArea = localSettingsTextAreaEl as HTMLTextAreaElement;
 
     return localSettingsTextArea;
@@ -308,49 +186,29 @@ const getLocalSettingsTextArea = async (): Promise<HTMLTextAreaElement | void> =
  * this honestly is not an optimal choice and should be updated later.
  */
 const getConfigFromLocalSettingsTextArea = async (): Promise<ExtensionConfig | void> => {
-    const localSettingsTextArea = await getLocalSettingsTextArea();
-
-    if (!localSettingsTextArea) return;
-
     try {
-        const valid = validateLocalSettings(localSettingsTextArea.value);
-        if (!valid) {
-            await showAlert('The provided local settings do not appear to be valid.', 'Invalid Settings');
-            return;
-        }
-        const settings = JSON.parse(localSettingsTextArea.value) as ExtensionConfig;
+        const local = await getLocalSettingsTextArea();
+
+        if (!local) return;
+
+        const valid = await canParseLocal(local.value);
+
+        if (!valid) throw 'The provided local settings do not appear to be valid.';
+
+        const settings = JSON.parse(local.value) as ExtensionConfig;
 
         return settings;
     } catch (err) {
-        if (err) {
-            await showAlert(`Failed get settings from Local Settings text area: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed get settings from Local Settings text area due to an unknown error.`, 'Settings Error');
-        return;
+        throw `Failed get settings from Local Settings text area: ${err}`
     }
 }
 
 const saveLocalSettings = async () => {
-    try {
-        const settings = await getConfigFromLocalSettingsTextArea();
+    const settings = await getConfigFromLocalSettingsTextArea();
 
-        if (!settings) return;
+    if (!settings) return;
 
-        await browser.storage.local.set(settings);
-
-        await showAlert('Successfully saved local settings.', 'Success');
-        return;
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to save local settings: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to save local settings due to an unknown error.`, 'Settings Error');
-        return;
-    }
+    await setLocalSettings(settings);
 }
 
 /**
@@ -359,50 +217,134 @@ const saveLocalSettings = async () => {
  * saving.
  */
 const saveSyncSettings = async () => {
-    const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
-    if (!localSettingsTextAreaEl) {
-        await showAlert('The localSettingsTextArea HTML element is not present.', 'HTML Error');
-        return;
-    }
+    const text = document.getElementById('localSettingsTextArea') as HTMLTextAreaElement;
 
-    const localSettingsTextArea = localSettingsTextAreaEl as HTMLTextAreaElement;
+    if (!text) throw 'The localSettingsTextArea HTML element is not present.';
 
+    const valid = canParseLocal(text.value);
+
+    if (!valid) throw 'The provided local settings do not appear to be valid.';
+
+    const settings = JSON.parse(text.value) as ExtensionConfig;
+
+    await setSyncSettings(settings);
+
+    await reflectSyncSettings();
+    await canParseLocal();
+}
+
+const onChangeLocalSettings = async (e: KeyboardEvent) => {
+    if (!e) return;
+    if (!e.target) return;
+
+    const target = e.target as HTMLInputElement;
+
+    if (!target?.value) return;
+
+    await canParseLocal(target.value);
+}
+
+/**
+ * Previously named `exportContainers`, this function retrieves all containers
+ * and updates the bulk export text area to reflect their JSON contents,
+ * including their `defaultUrl` values.
+ */
+const reflectContexts = async () => {
     try {
-        const valid = validateLocalSettings(localSettingsTextArea.value);
-        if (!valid) {
-            await showAlert('The provided local settings do not appear to be valid.', 'Invalid Settings');
-            return;
-        }
-        const settings = JSON.parse(localSettingsTextArea.value);
+        const contexts = await bulkExport();
 
-        await browser.storage.sync.set(settings);
+        const textareaEl = document.getElementById('containersExportAsJSON') as HTMLTextAreaElement;
+        if (!textareaEl) throw 'The containersExportAsJSON textarea HTML element is not present.';
 
-        refreshSyncSettings();
-        validateLocalSettings();
-
-        await showAlert('Successfully saved local settings to sync.', 'Success');
-        return;
+        const textarea = textareaEl;
+        textarea.value = JSON.stringify(contexts);
     } catch (err) {
-        if (err) {
-            await showAlert(`Failed to save sync settings: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
+        throw `failed to reflect contexts: ${err}`;
+    }
+}
 
-        await showAlert(`Failed to save sync settings due to an unknown error.`, 'Settings Error');
-        return;
+const btnImportContainersClick = async () => {
+    try {
+        const txt = document.getElementById('containersImportAsJSON') as HTMLTextAreaElement;
+        if (!txt) throw 'The containersImportAsJSON textarea HTML element is not present.';
+
+        const imported = await bulkImport(txt.value);
+
+        const s = imported.length === 1 ? '' : 's';
+
+        await reflectLocalSettings();
+
+        await showAlert(`Imported ${imported.length} container${s}.`, 'Bulk Import');
+    } catch (err) {
+        await showAlert(`Error during bulk import: ${err}`, 'Bulk Import Error');
+    }
+};
+
+/**
+ * Reset the shortcut and update the text box.
+ */
+const resetShortcut = async (cmd: string) => {
+    try {
+        await browser.commands.reset(cmd);
+        await reflectKeyboardShortcut();
+    } catch (err) {
+        await showAlert(`Failed to reset the keyboard shortcut: ${err}`, 'Keyboard Shortcut Error');
+    }
+}
+
+/** Update the shortcut based on the value in the text box. */
+const btnUpdateShortcutClick = async () => {
+    try {
+        const shortcutEl = document.getElementById('shortcut');
+        if (!shortcutEl) throw 'Error: Element with ID "shortcut" is not present.';
+
+        const shortcut = shortcutEl as HTMLInputElement;
+
+        await browser.commands.update({
+            name: commandName,
+            shortcut: shortcut.value,
+        });
+    } catch (err) {
+        await showAlert(`Failed to set the keyboard shortcut: ${err}`, 'Keyboard Shortcut Error');
+    }
+}
+
+const btnResetLocalClick = async () => {
+    try {
+        await reflectLocalSettings();
+    } catch (err) {
+        await showAlert(`Failed to reset local settings: ${err}`, 'Reset Error');
+    }
+}
+
+const btnRefreshSyncClick = async () => {
+    try {
+        await reflectSyncSettings();
+        await canParseLocal();
+    } catch (err) {
+        await showAlert(`Failed to refresh sync settings: ${err}`, 'Refresh Error');
     }
 }
 
 const btnSaveLocalClick = async () => {
-    await saveLocalSettings();
-    await checkSettingsAreEqual();
+    try {
+        await saveLocalSettings();
+        await checkSettingsEqual();
+    } catch (err) {
+        await showAlert(`Failed to save local settings: ${err}`, 'Settings Error');
+    }
 }
 
 const btnSaveSyncClick = async () => {
-    await saveSyncSettings();
-    await checkSettingsAreEqual();
+    try {
+        if (!await showConfirm('Are you sure you want to overwrite your sync settings with your current local settings? This will overwrite values, but will not unset values.', 'Risky Operation')) return;
+        await saveSyncSettings();
+        await checkSettingsEqual();
+        await showAlert('Successfully saved local settings to sync storage.', 'Success');
+    } catch (err) {
+        await showAlert(`Failed to save sync settings: ${err}`, 'Settings Error');
+    }
 }
-
 
 /**
  * Asks the user if they want to clean up the config, and then proceeds to
@@ -427,8 +369,7 @@ const btnCleanLocalClick = async () => {
 
     if (!localSettingsTextArea) return;
 
-    localSettings = { ...cleaned };
-    localSettingsTextArea.value = JSON.stringify(localSettings);
+    localSettingsTextArea.value = JSON.stringify(cleaned);
 
     const s = removed.length === 1 ? '' : 's';
 
@@ -440,529 +381,214 @@ const btnCleanLocalClick = async () => {
 }
 
 /**
- * TODO: Refactor this since it's nearly identical to `toggleAlwaysGetSyncSettings`
+ * Upon toggling a checkbox, the value of that checkbox is propagated to sync
+ * and to local storage. Also pushes all other boolean-valued checkboxes.
  */
-const toggleAlwaysSetSyncSettings = async () => {
-    const checkboxEl = document.getElementById("alwaysSetSync");
-    if (!checkboxEl) {
-        await showAlert('The alwaysSetSyncCheckbox HTML element is not present.', 'HTML Error');
-        return;
-    }
-
-    const checkbox = checkboxEl as HTMLInputElement;
-
+const toggleOptionCheckbox = async () => {
     try {
-        await browser.storage.local.set({ "alwaysSetSync": checkbox.checked });
+        const checkboxSet = document.getElementById("alwaysSetSync") as HTMLInputElement;
+        const checkboxGet = document.getElementById("alwaysGetSync") as HTMLInputElement;
+        const checkboxProtocolOpen = document.getElementById("neverConfirmForOpeningNonHttpUrls") as HTMLInputElement;
+        const checkboxProtocolSave = document.getElementById("neverConfirmForSavingNonHttpUrls") as HTMLInputElement;
+        if (!checkboxSet) throw 'The alwaysSetSyncCheckbox HTML element is not present.';
+        if (!checkboxGet) throw 'The alwaysGetSyncCheckbox HTML element is not present.';
+        if (!checkboxProtocolOpen) throw 'The neverConfirmForOpeningNonHttpUrls HTML element is not present.';
+        if (!checkboxProtocolSave) throw 'The neverConfirmForSavingNonHttpUrls HTML element is not present.';
 
-        await browser.storage.sync.set({ "alwaysSetSync": checkbox.checked });
 
-        resetLocalSettings();
-        refreshSyncSettings();
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to toggle the 'always set sync settings' option: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
+        // these two values are always pushed to firefox sync
+        // and stored locally
+        const special: Partial<ExtensionConfig> = {
+            alwaysSetSync: checkboxSet.checked,
+            alwaysGetSync: checkboxGet.checked,
         }
 
-        await showAlert(`Failed to toggle the 'always set sync settings' option due to an unknown error.`, 'Settings Error');
-        return;
+        const update: Partial<ExtensionConfig> = {
+            neverConfirmOpenNonHttpUrls: checkboxProtocolOpen.checked,
+            neverConfirmSaveNonHttpUrls: checkboxProtocolSave.checked,
+        }
+
+        await setLocalSettings(special);
+        await setSyncSettings(special);
+
+        await setSettings(update);
+
+        await reflectLocalSettings();
+        await reflectSyncSettings();
+    } catch (err) {
+        await showAlert(`Failed to toggle option to always get/set to sync: ${err}`, 'Settings Error');
     }
 }
 
-/**
- * TODO: Refactor this since it's nearly identical to `toggleAlwaysSetSyncSettings`
- */
-const toggleAlwaysGetSyncSettings = async () => {
-    const checkboxEl = document.getElementById("alwaysGetSync");
-    if (!checkboxEl) {
-        await showAlert('The alwaysGetSyncCheckbox HTML element is not present.', 'HTML Error');
-        return;
-    }
-
-    const checkbox = checkboxEl as HTMLInputElement;
-
+const onChangeUrlMatchType = async (event: Event) => {
     try {
-        await browser.storage.local.set({ "alwaysGetSync": checkbox.checked });
+        const select = document.getElementById("openCurrentTabUrlOnMatchSelect") as HTMLSelectElement;
 
-        await browser.storage.sync.set({ "alwaysGetSync": checkbox.checked });
+        if (!select) throw 'The openCurrentTabUrlOnMatchSelect HTML element is not present.';
+        if (!event) throw 'The event information is not present for the openCurrentTabUrlOnMatch select callback.';
+        if (!event.target) throw 'The event target information is not present for the openCurrentTabUrlOnMatch select callback.';
 
-        resetLocalSettings();
-        refreshSyncSettings();
+        const update: Partial<ExtensionConfig> = {
+            openCurrentTabUrlOnMatch: select.value as UrlMatchTypes,
+        };
+
+        await setSettings(update);
+
+        await reflectLocalSettings();
+        await reflectSyncSettings();
     } catch (err) {
-        if (err) {
-            await showAlert(`Failed to toggle the 'always get sync settings' option: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to toggle the 'always get sync settings' option due to an unknown error.`, 'Settings Error');
-        return;
-    }
-}
-
-/**
- * TODO: Refactor this since it's nearly identical to `toggleAlwaysSetSyncSettings`
- */
-const toggleNeverConfirmOpenNonHttpUrlsSettings = async () => {
-    const checkboxEl = document.getElementById("neverConfirmForOpeningNonHttpUrls");
-    if (!checkboxEl) {
-        await showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', 'HTML Error');
-        return;
-    }
-
-    const checkbox = checkboxEl as HTMLInputElement;
-
-    try {
-        await browser.storage.local.set({ "neverConfirmOpenNonHttpUrls": checkbox.checked });
-
-        await browser.storage.sync.set({ "neverConfirmOpenNonHttpUrls": checkbox.checked });
-
-        resetLocalSettings();
-        refreshSyncSettings();
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to toggle the 'require HTTP or HTTPS on open' option: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to toggle the 'require HTTP or HTTPS on open' option due to an unknown error.`, 'Settings Error');
-        return;
-    }
-}
-
-/**
- * TODO: Refactor this since it's nearly identical to `toggleAlwaysSetSyncSettings`
- */
-const toggleNeverConfirmSavingNonHttpUrlsSettings = async () => {
-    const checkboxEl = document.getElementById("neverConfirmForSavingNonHttpUrls");
-    if (!checkboxEl) {
-        await showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', 'HTML Error');
-        return;
-    }
-
-    const checkbox = checkboxEl as HTMLInputElement;
-
-    try {
-        await browser.storage.local.set({ "neverConfirmSaveNonHttpUrls": checkbox.checked });
-
-        await browser.storage.sync.set({ "neverConfirmSaveNonHttpUrls": checkbox.checked });
-
-        resetLocalSettings();
-        refreshSyncSettings();
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to toggle the 'require HTTP or HTTPS on save' option: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to toggle the 'require HTTP or HTTPS on save' option due to an unknown error.`, 'Settings Error');
-        return;
-    }
-}
-const openCurrentTabUrlOnMatchSelectChange = async (event: Event) => {
-    const selectEl = document.getElementById("openCurrentTabUrlOnMatchSelect");
-    if (!selectEl) {
-        await showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', 'HTML Error');
-        return;
-    }
-
-    if (!event) {
-        await showAlert('The event information is not present for the openCurrentTabUrlOnMatch select callback.', 'Error');
-        return;
-    }
-
-    if (!event.target) {
-        await showAlert('The event target information is not present for the openCurrentTabUrlOnMatch select callback.', 'Error');
-        return;
-    }
-
-    const select = event.target as HTMLSelectElement;
-
-    try {
-        await browser.storage.local.set({ "openCurrentTabUrlOnMatch": select.value });
-
-        await browser.storage.sync.set({ "openCurrentTabUrlOnMatch": select.value });
-
-        resetLocalSettings();
-        refreshSyncSettings();
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to toggle the 'require HTTP or HTTPS' option: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to toggle the 'require HTTP or HTTPS' option due to an unknown error.`, 'Settings Error');
-        return;
+        await showAlert(`Failed to change URL match type: ${err}`, 'Settings Error');
     }
 }
 
 const btnLoadFromSyncClick = async () => {
     try {
-        const data = await browser.storage.sync.get();
+        const sync = await getSyncSettings();
 
-        if (!data) {
-            await showAlert('No data was retrieved from storage.', 'Warning');
-            return;
-        }
+        if (!sync) throw 'No sync data was retrieved.';
 
-        await browser.storage.local.set(data);
+        if (!await showConfirm('Are you sure you want to overwrite your local settings with sync settings? This will overwrite values, but will not unset values.', 'Risky Operation')) return;
 
-        resetLocalSettings();
-        refreshSyncSettings();
+        await setLocalSettings(sync);
+
+        await reflectLocalSettings();
+        await reflectSyncSettings();
+
+        await showAlert('Successfully saved sync settings to local storage.', 'Success');
     } catch (err) {
-        if (err) {
-            await showAlert(`Failed to load settings from sync: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to load settings from sync due to an unknown error.`, 'Settings Error');
-        return;
+        await showAlert(`Failed to load settings from sync: ${err}`, 'Settings Error');
     }
 }
 
 const btnResetLocalSettingsClick = async () => {
-    const question = "Are you sure you want to reset local settings? You may not be able to undo this.";
+    try {
+        const question = "Are you sure you want to reset local settings? You may not be able to undo this.";
 
-    if (!await showConfirm(question, 'Reset local settings?')) return;
+        if (!await showConfirm(question, 'Reset local settings?')) return;
 
-    await browser.storage.local.clear();
+        await browser.storage.local.clear();
 
-    resetLocalSettings();
+        await reflectLocalSettings();
+    } catch (err) {
+        await showAlert(`Failed to clear local settings: ${err}`, 'Clear Settings Error');
+    }
 }
 
 const btnResetSyncSettingsClick = async () => {
-    const question = "Are you sure you want to reset sync settings? You may not be able to undo this.";
+    try {
+        const question = "Are you sure you want to reset sync settings? You may not be able to undo this.";
 
-    if (!await showConfirm(question, 'Reset sync settings?')) return;
+        if (!await showConfirm(question, 'Reset sync settings?')) return;
 
-    await browser.storage.sync.clear();
+        await browser.storage.sync.clear();
 
-    refreshSyncSettings();
+        await reflectSyncSettings();
+    } catch (err) {
+        await showAlert(`Failed to clear sync settings: ${err}`, 'Clear Settings Error');
+    }
 }
 
 const btnExportContainersClick = async () => {
-    await exportContainers();
-}
-
-const exportContainers = async (alertIfNone: boolean = true) => {
     try {
-        const config = await browser.storage.local.get();
-
-        const contexts: ContextualIdentityWithURL[] = await browser.contextualIdentities.query({});
-
-        // assemble the default url for each context
-        for (let i = 0; i < contexts.length; i++) {
-            contexts[i].defaultUrl = "";
-            if (config.containerDefaultUrls &&
-                config.containerDefaultUrls[contexts[i].cookieStoreId.toString()]) {
-                contexts[i].defaultUrl = config.containerDefaultUrls[contexts[i].cookieStoreId.toString()];
-            }
-        }
-
-        const textareaEl = document.getElementById('containersExportAsJSON');
-        if (!textareaEl) {
-            await showAlert('The containersExportAsJSON textarea HTML element is not present.', 'HTML Error');
-            return;
-        }
-
-        const textarea = textareaEl as HTMLTextAreaElement;
-        textarea.value = JSON.stringify(contexts);
-
-        if (!contexts.length) {
-            if (alertIfNone) await showAlert('There are no containers to export.', 'Info');
-            return;
-        }
-
-        // build csv
-        const keys = Object.keys(contexts[0]);
-        keys.sort();
-        const keysQuotes = keys.map((key) => `"${key}"`)
-        const rows = contexts.map((context) => {
-            return keys.map((key) => {
-                return `"${(context as any)[key]}"`;
-            }).join(",");
-        })
-
-        const csvEl = document.getElementById('containersExportAsCSV');
-        if (!csvEl) {
-            await showAlert('The containersExportAsCSV textarea HTML element is not present.', 'HTML Error');
-            return;
-        }
-
-        const csv = csvEl as HTMLTextAreaElement;
-
-        csv.value = `${keysQuotes.join(",")}\n${rows.join("\n")}`;
+        await reflectContexts();
     } catch (err) {
-        if (err) {
-            await showAlert(`Failed to export containers: ${JSON.stringify(err)}`, 'Export Error');
-            return;
-        }
-
-        await showAlert(`Failed to export containers due to an unknown error.`, 'Export Error');
-        return;
+        await showAlert(`Failed to export containers: ${err}`, 'Export Error');
     }
 }
-
-const btnImportContainersClick = async () => {
-    const textImportEl = document.getElementById('containersImportAsJSON');
-    if (!textImportEl) {
-        await showAlert('The containersImportAsJSON textarea HTML element is not present.', 'HTML Error');
-        return;
-    }
-
-    const textImport = textImportEl as HTMLTextAreaElement;
-
-    let containers = "";
-    try {
-        containers = JSON.parse(textImport.value);
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to parse the import containers text field as JSON: ${JSON.stringify(err)}`, 'Import Error');
-            return;
-        }
-
-        await showAlert(`Failed to parse the import containers text field as JSON due to an unknown error.`, 'Import Error');
-        return;
-    }
-
-    if (!Array.isArray(containers)) {
-        await showAlert('The "Import Containers" text input field must be valid JSON, and it must be an array of objects.', 'Import Error');
-        return;
-    }
-
-    if (containers.length === 0) {
-        await showAlert(`The "Import Containers" text input field is valid, but you provided an empty array, so there's nothing to do.`, 'Import Error');
-        return;
-    }
-
-    // validate that each container has a name
-    for (const container of containers) {
-        if (!container.name) {
-            await showAlert(`There is a problem with the containers you attempted to import. The following container does not have the required 'name' field: ${JSON.stringify(container)}`, 'Import Error');
-            return;
-        }
-    }
-
-    if (!await showConfirm(`Please confirm that you'd like to add ${containers.length} containers.`, 'Add Containers?')) {
-        return;
-    }
-
-    const msgs: string[] = [];
-
-    try {
-        // retrieve the extension configuration from storage
-        const config = await browser.storage.local.get();
-
-        for (const container of containers) {
-            const toCreate: browser.contextualIdentities._CreateDetails = {
-                name: container.name,
-                icon: container.icon ? container.icon : "circle",
-                color: container.color ? container.color : "toolbar",
-            };
-
-            const created = await browser.contextualIdentities.create(toCreate);
-
-            if (!config.containerDefaultUrls) {
-                config.containerDefaultUrls = {};
-            }
-
-            if (container.defaultUrl) {
-                // associate the default URL
-                config.containerDefaultUrls[created.cookieStoreId.toString()] = container.defaultUrl;
-                msgs.push(`Imported container ${created.name} with a default URL.`);
-            } else {
-                msgs.push(`Imported container ${created.name}.`);
-            }
-        }
-
-        // TODO: this is a duplicate of the function writeContainerDefaultUrlsToStorage
-        //       from context.js, please refactor
-        browser.storage.local.set({ "containerDefaultUrls": config.containerDefaultUrls });
-        if (config.alwaysSetSync === true) {
-            browser.storage.sync.set({ "containerDefaultUrls": config.containerDefaultUrls });
-        }
-
-        if (msgs.length <= 5) {
-            await showAlert(msgs.join('\n'), 'Completed');
-            return;
-        }
-
-        await showAlert('The import finished.', 'Completed');
-        return;
-    } catch (err) {
-        if (err) {
-            await showAlert(`Failed to create a container: ${JSON.stringify(err)}`, 'Settings Error');
-            return;
-        }
-
-        await showAlert(`Failed to create a container due to an unknown error.`, 'Settings Error');
-        return;
-    }
-};
 
 /**
  * Initializes the extension data upon document load, intended to be added as
  * a callback for the event listener `DOMContentLoaded`.
  */
-const initializeDocument = async () => {
-    await resetLocalSettings();
+const init = async () => {
+    try {
+        const local = await reflectLocalSettings();
 
-    await refreshSyncSettings();
+        const sync = await reflectSyncSettings();
 
-    await exportContainers(false);
+        await reflectContexts();
 
-    await updateUI();
+        await reflectKeyboardShortcut();
 
-    const localSettingsTextAreaEl = document.getElementById('localSettingsTextArea');
-    const updateEl = document.getElementById('update');
-    const resetEl = document.getElementById('reset');
-    const btnResetLocalEl = document.getElementById('btnResetLocal');
-    const btnSaveLocalEl = document.getElementById('btnSaveLocal');
-    const btnSaveSyncEl = document.getElementById('btnSaveSync');
-    const btnRefreshSyncEl = document.getElementById('btnRefreshSync');
-    const btnLoadFromSyncEl = document.getElementById('btnLoadFromSync');
-    const alwaysSetSyncEl = document.getElementById('alwaysSetSync');
-    const alwaysGetSyncEl = document.getElementById('alwaysGetSync');
-    const btnResetLocalSettingsEl = document.getElementById('btnResetLocalSettings');
-    const btnResetSyncSettingsEl = document.getElementById('btnResetSyncSettings');
-    const btnExportContainersEl = document.getElementById('btnExportContainers');
-    const btnImportContainersJSONEl = document.getElementById('btnImportContainersJSON');
-    const neverConfirmForOpeningNonHttpUrlsEl = document.getElementById('neverConfirmForOpeningNonHttpUrls');
-    const neverConfirmForSavingNonHttpUrlsEl = document.getElementById('neverConfirmForSavingNonHttpUrls');
-    const openCurrentTabUrlOnMatchSelectEl = document.getElementById('openCurrentTabUrlOnMatchSelect');
-    const btnCleanLocalEl = document.getElementById('btnCleanLocal');
+        const localSettingsTextArea = document.getElementById('localSettingsTextArea') as HTMLTextAreaElement;
+        const update = document.getElementById('update') as HTMLButtonElement;
+        const reset = document.getElementById('reset') as HTMLButtonElement;
+        const btnResetLocal = document.getElementById('btnResetLocal') as HTMLButtonElement;
+        const btnSaveLocal = document.getElementById('btnSaveLocal') as HTMLButtonElement;
+        const btnSaveSync = document.getElementById('btnSaveSync') as HTMLButtonElement;
+        const btnRefreshSync = document.getElementById('btnRefreshSync') as HTMLButtonElement;
+        const btnLoadFromSync = document.getElementById('btnLoadFromSync') as HTMLButtonElement;
+        const alwaysSetSync = document.getElementById('alwaysSetSync') as HTMLInputElement;
+        const alwaysGetSync = document.getElementById('alwaysGetSync') as HTMLInputElement;
+        const btnResetLocalSettings = document.getElementById('btnResetLocalSettings') as HTMLButtonElement;
+        const btnResetSyncSettings = document.getElementById('btnResetSyncSettings') as HTMLButtonElement;
+        const btnExportContainers = document.getElementById('btnExportContainers') as HTMLButtonElement;
+        const btnImportContainersJSON = document.getElementById('btnImportContainersJSON') as HTMLButtonElement;
+        const neverConfirmForOpeningNonHttpUrls = document.getElementById('neverConfirmForOpeningNonHttpUrls') as HTMLInputElement;
+        const neverConfirmForSavingNonHttpUrls = document.getElementById('neverConfirmForSavingNonHttpUrls') as HTMLInputElement;
+        const openCurrentTabUrlOnMatchSelect = document.getElementById('openCurrentTabUrlOnMatchSelect') as HTMLSelectElement;
+        const btnCleanLocal = document.getElementById('btnCleanLocal') as HTMLSelectElement;
 
-    const htmlErr = 'HTML Error';
+        if (!localSettingsTextArea) throw 'The localSettingsTextArea HTML element is not present.';
+        if (!update) throw 'The update HTML element is not present.';
+        if (!reset) throw 'The reset HTML element is not present.';
+        if (!btnResetLocal) throw 'The btnResetLocal HTML element is not present.';
+        if (!btnSaveLocal) throw 'The btnSaveLocal HTML element is not present.';
+        if (!btnSaveSync) throw 'The btnSaveSync HTML element is not present.';
+        if (!btnRefreshSync) throw 'The btnRefreshSync HTML element is not present.';
+        if (!btnLoadFromSync) throw 'The btnLoadFromSync HTML element is not present.';
+        if (!alwaysSetSync) throw 'The alwaysSetSync HTML element is not present.';
+        if (!alwaysGetSync) throw 'The alwaysGetSync HTML element is not present.';
+        if (!btnResetLocalSettings) throw 'The btnResetLocalSettings HTML element is not present.';
+        if (!btnResetSyncSettings) throw 'The btnResetSyncSettings HTML element is not present.';
+        if (!btnExportContainers) throw 'The btnExportContainers HTML element is not present.';
+        if (!btnImportContainersJSON) throw 'The btnImportContainersJSON HTML element is not present.';
+        if (!neverConfirmForOpeningNonHttpUrls) throw 'The neverConfirmForOpeningNonHttpUrls HTML element is not present.';
+        if (!neverConfirmForSavingNonHttpUrls) throw 'The neverConfirmForSavingNonHttpUrls HTML element is not present.';
+        if (!openCurrentTabUrlOnMatchSelect) throw 'The openCurrentTabUrlOnMatchSelect HTML element is not present.';
+        if (!btnCleanLocal) throw 'The btnCleanLocal HTML element is not present.';
 
-    if (!localSettingsTextAreaEl) {
-        await showAlert('The localSettingsTextArea HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!updateEl) {
-        await showAlert('The update HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!resetEl) {
-        await showAlert('The reset HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnResetLocalEl) {
-        await showAlert('The btnResetLocal HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnSaveLocalEl) {
-        await showAlert('The btnSaveLocal HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnSaveSyncEl) {
-        await showAlert('The btnSaveSync HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnRefreshSyncEl) {
-        await showAlert('The btnRefreshSync HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnLoadFromSyncEl) {
-        await showAlert('The btnLoadFromSync HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!alwaysSetSyncEl) {
-        await showAlert('The alwaysSetSync HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!alwaysGetSyncEl) {
-        await showAlert('The alwaysGetSync HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnResetLocalSettingsEl) {
-        await showAlert('The btnResetLocalSettings HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnResetSyncSettingsEl) {
-        await showAlert('The btnResetSyncSettings HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnExportContainersEl) {
-        await showAlert('The btnExportContainers HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnImportContainersJSONEl) {
-        await showAlert('The btnImportContainersJSON HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!neverConfirmForOpeningNonHttpUrlsEl) {
-        await showAlert('The neverConfirmForOpeningNonHttpUrls HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!neverConfirmForSavingNonHttpUrlsEl) {
-        await showAlert('The neverConfirmForSavingNonHttpUrls HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!openCurrentTabUrlOnMatchSelectEl) {
-        await showAlert('The openCurrentTabUrlOnMatchSelect HTML element is not present.', htmlErr);
-        return;
-    }
-    if (!btnCleanLocalEl) {
-        await showAlert('The btnCleanLocal HTML element is not present.', htmlErr);
-        return;
-    }
+        localSettingsTextArea.addEventListener('keyup', onChangeLocalSettings);
+        update.addEventListener('click', btnUpdateShortcutClick);
+        reset.addEventListener('click', () => { resetShortcut(commandName); });
+        btnResetLocal.addEventListener('click', btnResetLocalClick);
+        btnSaveLocal.addEventListener('click', btnSaveLocalClick);
+        btnSaveSync.addEventListener('click', btnSaveSyncClick);
+        btnRefreshSync.addEventListener('click', btnRefreshSyncClick);
+        btnLoadFromSync.addEventListener('click', btnLoadFromSyncClick);
+        alwaysSetSync.addEventListener('click', toggleOptionCheckbox);
+        alwaysGetSync.addEventListener('click', toggleOptionCheckbox);
+        btnResetLocalSettings.addEventListener('click', btnResetLocalSettingsClick);
+        btnResetSyncSettings.addEventListener('click', btnResetSyncSettingsClick);
+        btnExportContainers.addEventListener('click', btnExportContainersClick);
+        btnImportContainersJSON.addEventListener('click', btnImportContainersClick);
+        neverConfirmForOpeningNonHttpUrls.addEventListener('click', toggleOptionCheckbox);
+        neverConfirmForSavingNonHttpUrls.addEventListener('click', toggleOptionCheckbox);
+        openCurrentTabUrlOnMatchSelect.addEventListener('change', onChangeUrlMatchType);
+        btnCleanLocal.addEventListener('click', btnCleanLocalClick);
 
-    const localSettingsTextArea = localSettingsTextAreaEl as HTMLTextAreaElement;
-    const update = updateEl as HTMLButtonElement;
-    const reset = resetEl as HTMLButtonElement;
-    const btnResetLocal = btnResetLocalEl as HTMLButtonElement;
-    const btnSaveLocal = btnSaveLocalEl as HTMLButtonElement;
-    const btnSaveSync = btnSaveSyncEl as HTMLButtonElement;
-    const btnRefreshSync = btnRefreshSyncEl as HTMLButtonElement;
-    const btnLoadFromSync = btnLoadFromSyncEl as HTMLButtonElement;
-    const alwaysSetSync = alwaysSetSyncEl as HTMLInputElement;
-    const alwaysGetSync = alwaysGetSyncEl as HTMLInputElement;
-    const btnResetLocalSettings = btnResetLocalSettingsEl as HTMLButtonElement;
-    const btnResetSyncSettings = btnResetSyncSettingsEl as HTMLButtonElement;
-    const btnExportContainers = btnExportContainersEl as HTMLButtonElement;
-    const btnImportContainersJSON = btnImportContainersJSONEl as HTMLButtonElement;
-    const neverConfirmForOpeningNonHttpUrls = neverConfirmForOpeningNonHttpUrlsEl as HTMLInputElement;
-    const neverConfirmForSavingNonHttpUrls = neverConfirmForSavingNonHttpUrlsEl as HTMLInputElement;
-    const openCurrentTabUrlOnMatchSelect = openCurrentTabUrlOnMatchSelectEl as HTMLSelectElement;
-    const btnCleanLocal = btnCleanLocalEl as HTMLSelectElement;
+        // check if the config is dirty
 
-    localSettingsTextArea.addEventListener('keyup', onChangeLocalSettings);
-    update.addEventListener('click', updateShortcut);
-    reset.addEventListener('click', () => { resetShortcut(commandName); });
-    btnResetLocal.addEventListener('click', resetButtonClick);
-    btnSaveLocal.addEventListener('click', btnSaveLocalClick);
-    btnSaveSync.addEventListener('click', btnSaveSyncClick);
-    btnRefreshSync.addEventListener('click', btnRefreshSyncClick);
-    btnLoadFromSync.addEventListener('click', btnLoadFromSyncClick);
-    alwaysSetSync.addEventListener('click', toggleAlwaysSetSyncSettings);
-    alwaysGetSync.addEventListener('click', toggleAlwaysGetSyncSettings);
-    btnResetLocalSettings.addEventListener('click', btnResetLocalSettingsClick);
-    btnResetSyncSettings.addEventListener('click', btnResetSyncSettingsClick);
-    btnExportContainers.addEventListener('click', btnExportContainersClick);
-    btnImportContainersJSON.addEventListener('click', btnImportContainersClick);
-    neverConfirmForOpeningNonHttpUrls.addEventListener('click', toggleNeverConfirmOpenNonHttpUrlsSettings);
-    neverConfirmForSavingNonHttpUrls.addEventListener('click', toggleNeverConfirmSavingNonHttpUrlsSettings);
-    openCurrentTabUrlOnMatchSelect.addEventListener('change', openCurrentTabUrlOnMatchSelectChange);
-    btnCleanLocal.addEventListener('click', btnCleanLocalClick);
+        if (!local) return;
 
-    // check if the config is dirty
+        const dirty = await checkDirty(local);
 
-    if (!localSettings) return;
+        if (dirty <= 0) return;
 
-    const dirty = await checkDirty(localSettings);
+        const s = dirty === 1 ? '' : 's';
+        const are = dirty === 1 ? 'is' : 'are';
 
-    if (dirty <= 0) return;
+        const cleanUp = await showConfirm(
+            `Warning: There ${are} ${dirty} orphaned container/URL association${s} in the config. You can request a cleanup of the extension's saved settings. It is recommended to proceed so that the extension can consume less storage space and operate more efficiently. Would you like to begin the cleanup? You will be prompted with more information.`,
+            'Clean Up Config?',
+        );
 
-    const s = dirty === 1 ? '' : 's';
-    const are = dirty === 1 ? 'is' : 'are';
+        if (!cleanUp) return;
 
-    const cleanUp = await showConfirm(
-        `Warning: There ${are} ${dirty} orphaned container/URL association${s} in the config. You can request a cleanup of the extension's saved settings. It is recommended to proceed so that the extension can consume less storage space and operate more efficiently. Would you like to begin the cleanup? You will be prompted with more information.`,
-        'Clean Up Config?',
-    );
-
-    if (!cleanUp) return;
-
-    await btnCleanLocalClick();
+        await btnCleanLocalClick();
+    } catch (err) {
+        await showAlert(`Failed to initialize: ${err}`, 'Initialization Error');
+    }
 }
 
-document.addEventListener('DOMContentLoaded', initializeDocument);
+document.addEventListener('DOMContentLoaded', init);
