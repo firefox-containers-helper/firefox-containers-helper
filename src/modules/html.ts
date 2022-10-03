@@ -49,7 +49,7 @@ export const helpful = async (mode?: MODES) => {
 
     switch (mode) {
         case MODES.SET_URL:
-            help("URLs do not affect multi-account container preferences.");
+            help("URLs are only set for this extension.");
             break;
         case MODES.SET_NAME:
             help("You will be prompted for a new name.")
@@ -65,7 +65,7 @@ export const helpful = async (mode?: MODES) => {
             help("You will be prompted for a new color.")
             break;
         case MODES.DUPLICATE:
-            help("Duplicates containers and URLs, but not cookies etc.")
+            help("Duplicates containers, URLs; not cookies")
             break;
         case MODES.DELETE:
             help("Warning: Will delete containers that you click");

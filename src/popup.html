@@ -10,7 +10,7 @@
 </head>
 
 <body>
-    <div class="container-fluid mt-3" id="mainDivContainer">
+    <div class="container-fluid p-2 m-0" id="mainDivContainer">
         <div class="modal modal-backdrop modal-hide" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalTitle"
             aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
@@ -60,9 +60,9 @@
             </div>
         </div>
         <form id="searchContainerForm">
-            <div class="form-group form-row">
+            <div class="form-group form-row mb-2 p-0">
                 <div class="col-12">
-                    <div class="input-group">
+                    <div class="input-group m-0 p-0">
                         <input type="text" class="form-control" placeholder="Search Containers"
                             id="searchContainerInput" />
                         <div class="input-group-append">
@@ -71,7 +71,7 @@
                     </div>
                 </div>
             </div>
-            <div class="form-group form-row">
+            <div class="form-group form-row mb-2 p-0">
                 <div class="col-12">
                     <select class="custom-select" id="modeSelect">
                         <option value="openOnClick" selected>1. Open as Tab(s)</option>
@@ -87,7 +87,7 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group form-row">
+            <div class="form-group form-row mb-2 p-0">
                 <div class="col-12">
                     <select class="custom-select" id="sortModeSelect">
                         <option value="none" selected>Default Sort</option>
@@ -99,15 +99,15 @@
                     </select>
                 </div>
             </div>
-            <div class="form-row">
+            <div class="form-row m-0 p-0 mb-1">
                 <div class="col-12 d-flex justify-content-center align-items-center align-content-center">
-                    <div class="form-group form-check-inline small">
+                    <div class="form-group form-check-inline small m-0 mr-1 p-0">
                         <input type="checkbox" id="windowStayOpenState" class="form-check-input" checked="true">
                         <label for="windowStayOpenState" id="windowStayOpenStateLabel" class="form-check-label">
                             Sticky Popup
                         </label>
                     </div>
-                    <div class="form-group form-check-inline small">
+                    <div class="form-group form-check-inline small m-0 mr-1 p-0">
                         <input type="checkbox" id="selectionMode" class="form-check-input" checked="false">
                         <label for="selectionMode" id="selectionModeLabel" class="form-check-label">
                             Selection Mode
@@ -115,9 +115,9 @@
                     </div>
                 </div>
             </div>
-            <div class="form-row">
+            <div class="form-row m-0 p-0">
                 <div class="col-12 d-flex justify-content-center align-items-center align-content-center">
-                    <div class="form-group form-check-inline small">
+                    <div class="form-group form-check-inline small m-0 p-0">
                         <input type="checkbox" id="openCurrentPage" class="form-check-input" checked="false">
                         <label for="openCurrentPage" id="openCurrentPageLabel" class="form-check-label">
                             Override with current tab's URL
@@ -126,19 +126,19 @@
                 </div>
             </div>
         </form>
-        <div class="row">
+        <div class="row m-0 mb-1 p-0">
             <div class="col-12 text-center">
                 <span class="text-muted small" id="helpText"></span>
             </div>
         </div>
-        <div class="row">
-            <div class="col-12">
+        <div class="row m-0 p-0">
+            <div class="col-12 mx-0 px-0">
                 <div id="container-list" class="overflow-scroll-vertical"></div>
             </div>
         </div>
-        <div class="row">
+        <div class="row m-0 p-0">
             <div class="col-12 text-center text-muted">
-                <span class="text-muted text-center small" id="summaryText"></span><br />
+                <span class="text-muted text-center small" id="summaryText"></span> |
                 <span class="text-muted small">
                     <a href="https://github.com/cmcode-dev/firefox-containers-helper" target="_blank"
                         rel="noopener noreferrer">

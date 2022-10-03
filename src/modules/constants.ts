@@ -109,21 +109,6 @@ export enum UrlMatchTypes {
 }
 
 /**
- * This is the set of classes to assign to a container list item url label that
- * is currently not being hovered over or selected.
- * Assign to `element.className` for a given element.
- */
-export const containerListItemUrlLabel = `text-muted small`;
-
-/**
- * This is the set of classes to assign to a container list item url label that
- * is currently being hovered over or selected
- * Assign to `element.className` for a given element.
- */
-export const containerListItemUrlLabelInverted = `text-light small`;
-
-
-/**
  * The `<div>` ID of the container list. This is where all of the queried
  * containers will go.
  */

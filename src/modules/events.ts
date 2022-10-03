@@ -1,7 +1,7 @@
 import { ActHandler, SelectedContextIndex } from "src/types";
-import { CLASSES_CONTAINER_LI_ACTIVE_DANGER, CLASSES_LI_ACTIVE, CLASSES_CONTAINER_LI_SELECTED, CLASSES_CONTAINER_LI_INACTIVE } from "./classes";
+import { CLASSES_CONTAINER_LI_URL_LABEL_INVERTED, CLASSES_CONTAINER_LI_URL_LABEL, CLASSES_CONTAINER_LI_ACTIVE_DANGER, CLASSES_CONTAINER_LI_ACTIVE, CLASSES_CONTAINER_LI_SELECTED, CLASSES_CONTAINER_LI_INACTIVE } from "./classes";
 import { getSetting } from "./config";
-import { MODES, containerListItemUrlLabelInverted, containerListItemUrlLabel, CONF } from "./constants";
+import { MODES, CONF } from "./constants";
 import { isContextSelected } from "./helpers";
 
 /**
@@ -63,10 +63,10 @@ export const setEventListeners = async (
                 return;
             }
 
-            target.className = CLASSES_LI_ACTIVE;
+            target.className = CLASSES_CONTAINER_LI_ACTIVE;
 
             const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
-            if (urlLabel) urlLabel.className = containerListItemUrlLabelInverted;
+            if (urlLabel) urlLabel.className = CLASSES_CONTAINER_LI_URL_LABEL_INVERTED;
         };
 
         const mouseLeave = async (event: MouseEvent) => {
@@ -80,14 +80,14 @@ export const setEventListeners = async (
 
             if (isContextSelected(i, selected)) {
                 target.className = CLASSES_CONTAINER_LI_SELECTED;
-                if (urlLabel) urlLabel.className = containerListItemUrlLabelInverted;
+                if (urlLabel) urlLabel.className = CLASSES_CONTAINER_LI_URL_LABEL_INVERTED;
 
                 return;
             }
 
             target.className = CLASSES_CONTAINER_LI_INACTIVE;
 
-            if (urlLabel) urlLabel.className = containerListItemUrlLabel;
+            if (urlLabel) urlLabel.className = CLASSES_CONTAINER_LI_URL_LABEL;
         }
 
         const onClick = (event: MouseEvent) => actHandler(filtered, context, event);
@@ -111,10 +111,10 @@ export const setEventListeners = async (
                 return;
             }
 
-            target.className = CLASSES_LI_ACTIVE;
+            target.className = CLASSES_CONTAINER_LI_ACTIVE;
 
             const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
-            if (urlLabel) urlLabel.className = containerListItemUrlLabel;
+            if (urlLabel) urlLabel.className = CLASSES_CONTAINER_LI_URL_LABEL;
         }
 
         const onBlur = async (event: FocusEvent) => {
@@ -132,7 +132,7 @@ export const setEventListeners = async (
             target.className = CLASSES_CONTAINER_LI_INACTIVE;
 
             const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
-            if (urlLabel) urlLabel.className = containerListItemUrlLabel;
+            if (urlLabel) urlLabel.className = CLASSES_CONTAINER_LI_URL_LABEL;
         }
 
         li.addEventListener('mouseover', mouseOver);

@@ -1103,7 +1103,7 @@ export const filter = async (
 
         await reflectFiltered(results, actualTabUrl);
 
-        bottomHelp(`Showing ${results.length}/${contexts.length} containers.`);
+        bottomHelp(`${results.length}/${contexts.length} shown`);
 
         if (event) {
             const keyboardEvent = event as KeyboardEvent;

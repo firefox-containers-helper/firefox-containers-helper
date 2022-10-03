@@ -4,13 +4,14 @@
 
 .overflow-scroll-vertical {
     overflow-y: auto;
-    max-height: 300px;
-    min-height: 300px;
-    height: 300px;
+    max-height: 350px;
+    /* min-height: 300px; */
+    /* height: 300px; */
 }
 
 .container-list-text {
-    font-size: 0.9rem;
+    font-size: small;
+    /* font-size: 0.9rem; */
 }
 
 .icon {
@@ -38,7 +39,8 @@
 }
 
 #container-list {
-    min-height: 174px;
+    min-height: 200px;
+    /* min-height: 174px; */
 }
 
 .mono-16 {
