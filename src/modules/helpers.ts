@@ -72,45 +72,50 @@ export const replaceElementById = (id: string): HTMLElement | null => {
 export const getCurrentTabOverrideUrl = (url: string, current: string, match: UrlMatchTypes): string => {
     if (!url || !current) return "";
 
-    const currentURL = new URL(current);
-    const urlURL = new URL(url);
+    try {
+        const currentURL = new URL(current);    // either of these can throw exceptions via user input
+        const urlURL = new URL(url);            // either of these can throw exceptions via user input
 
-    // just determine the top level domain and the next level domain
-    // using "tld" as a quick shorthand even though it's not technically correct
-    const urlTLD = urlURL.hostname.split('.').slice(-2).join('.').toLowerCase();
-    const currentTLD = currentURL.hostname.split('.').slice(-2).join('.').toLowerCase();
+        // just determine the top level domain and the next level domain
+        // using "tld" as a quick shorthand even though it's not technically correct
+        const urlTLD = urlURL.hostname.split('.').slice(-2).join('.').toLowerCase();
+        const currentTLD = currentURL.hostname.split('.').slice(-2).join('.').toLowerCase();
 
-    switch (match) {
-        case UrlMatchTypes.origin:
-            if (currentURL.origin.toLowerCase() === urlURL.origin.toLowerCase()) {
-                return current;
-            }
-            break;
-        case UrlMatchTypes.host:
-            if (currentURL.host.toLowerCase() === urlURL.host.toLowerCase()) {
-                return current;
-            }
-            break;
-        case UrlMatchTypes.domain:
-            if (urlTLD === currentTLD) {
-                return current;
-            }
-            break;
-        case UrlMatchTypes.domainPort:
-            if (urlTLD === currentTLD && currentURL.port === urlURL.port) {
-                return current;
-            }
-            break;
-        case UrlMatchTypes.hostname:
-            if (currentURL.hostname.toLowerCase() === urlURL.hostname.toLowerCase()) {
-                return current;
-            }
-            break;
-        default:
-            break;
+        switch (match) {
+            case UrlMatchTypes.origin:
+                if (currentURL.origin.toLowerCase() === urlURL.origin.toLowerCase()) {
+                    return current;
+                }
+                break;
+            case UrlMatchTypes.host:
+                if (currentURL.host.toLowerCase() === urlURL.host.toLowerCase()) {
+                    return current;
+                }
+                break;
+            case UrlMatchTypes.domain:
+                if (urlTLD === currentTLD) {
+                    return current;
+                }
+                break;
+            case UrlMatchTypes.domainPort:
+                if (urlTLD === currentTLD && currentURL.port === urlURL.port) {
+                    return current;
+                }
+                break;
+            case UrlMatchTypes.hostname:
+                if (currentURL.hostname.toLowerCase() === urlURL.hostname.toLowerCase()) {
+                    return current;
+                }
+                break;
+            default:
+                break;
+        }
+
+    } catch (err) {
+        console.log(`couldn't determine URL override for url=${url}, current=${current}, matchType=${match}: ${err}`);
     }
 
-    return "";
+    return '';
 }
 
 export const scrollToTop = () => {

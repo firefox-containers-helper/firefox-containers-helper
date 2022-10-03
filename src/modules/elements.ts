@@ -136,8 +136,8 @@ export const buildContainerLabel = async (
         containerDiv.appendChild(urlLabel);
 
         return containerDiv;
-    } catch (e) {
-        throw `failed to build container label element: ${JSON.stringify(e)}`
+    } catch (err) {
+        throw `failed to build container label element: ${err}`
     }
 };
 
