@@ -74,7 +74,7 @@ export const setLocalSettings = async (updates: Partial<ExtensionConfig>) => {
  * `alwaysGetSync` set to true, then settings will always come from
  * Firefox Sync.
  */
-export const getSetting = async (setting: CONF, type?: SettingsTypes): Promise<any> => {
+export const getSetting = async (setting: CONF, type?: SettingsTypes): Promise<unknown> => {
     // queries against the browser.storage API might be slow, so use
     // cached results if possible - note that the cached object does
     // get updated automatically any setting is changed, so generally it
@@ -87,14 +87,16 @@ export const getSetting = async (setting: CONF, type?: SettingsTypes): Promise<a
     // modifying the Preferences values if the popup is opened in a dedicated
     // tab for a long time.
     switch (type) {
-        case SettingsTypes.Local:
+        case SettingsTypes.Local: {
             if (setting in cacheLocal) return cacheLocal[setting];
             const l = await browser.storage.local.get(setting);
             return l[setting];
-        case SettingsTypes.Sync:
+        }
+        case SettingsTypes.Sync: {
             if (setting in cacheSync) return cacheSync[setting];
             const s = await browser.storage.sync.get(setting);
             return s[setting];
+        }
         default:
             break;
     }

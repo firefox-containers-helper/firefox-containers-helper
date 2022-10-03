@@ -246,6 +246,7 @@ export const queryUrls = (context: browser.contextualIdentities.ContextualIdenti
 
 // This is a shameless copy of deep equality comparison from StackOverflow.
 // https://stackoverflow.com/a/16788517
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const objectEquals = (x: any, y: any): boolean => {
     if (x === null || x === undefined || y === null || y === undefined) { return x === y; }
     // after this just checking type of one would be enough
@@ -255,7 +256,7 @@ export const objectEquals = (x: any, y: any): boolean => {
     // if they are regexps, they should exactly refer to same one (it is hard to better equality check on current ES)
     if (x instanceof RegExp) { return x === y; }
     if (x === y || x.valueOf() === y.valueOf()) { return true; }
-    if (Array.isArray(x) && x.length !== y.length) { return false; }
+    if (Array.isArray(x) && Array.isArray(y) && x.length !== y.length) { return false; }
 
     // if they are dates, they must had equal valueOf
     if (x instanceof Date) { return false; }
@@ -265,7 +266,7 @@ export const objectEquals = (x: any, y: any): boolean => {
     if (!(y instanceof Object)) { return false; }
 
     // recursive object equality check
-    var p = Object.keys(x);
+    const p = Object.keys(x);
     return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
         p.every(function (i) { return objectEquals(x[i], y[i]); });
 }

@@ -21,7 +21,7 @@ const reflectKeyboardShortcut = async () => {
 
     const shortcut = shortcutEl as HTMLInputElement;
 
-    let commands = await browser.commands.getAll();
+    const commands = await browser.commands.getAll();
     for (const command of commands) {
         if (command.name === commandName && command.shortcut) {
             shortcut.value = command.shortcut;
@@ -44,7 +44,7 @@ const setValidationText = (msg: string, color: string) => {
     const syncValidationText = document.getElementById('syncValidationText');
     if (!syncValidationText) throw 'The syncValidationText element is not present.';
 
-    let className = `badge badge-${color} mt-4`;
+    const className = `badge badge-${color} mt-4`;
 
     syncValidationText.innerText = msg;
     syncValidationText.className = className;
@@ -504,7 +504,7 @@ const init = async () => {
     try {
         const local = await reflectLocalSettings();
 
-        const sync = await reflectSyncSettings();
+        await reflectSyncSettings();
 
         await reflectContexts();
 

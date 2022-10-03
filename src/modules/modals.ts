@@ -170,12 +170,14 @@ export const focusModalBtnPromptOK = () => {
 
 // -- targeted element manipulation functions
 
-const replaceModalBtnConfirmCancel = () => replaceElement(getModalBtnConfirmCancel());
-const replaceModalBtnConfirmSecondary = () => replaceElement(getModalBtnConfirmSecondary());
-const replaceModalBtnConfirmPrimary = () => replaceElement(getModalBtnConfirmPrimary());
+// Uncomment these if they're ever needed.
+
+// const replaceModalBtnConfirmCancel = () => replaceElement(getModalBtnConfirmCancel());
+// const replaceModalBtnConfirmSecondary = () => replaceElement(getModalBtnConfirmSecondary());
+// const replaceModalBtnConfirmPrimary = () => replaceElement(getModalBtnConfirmPrimary());
 const replaceModalBtnAlertOK = () => replaceElement(getModalBtnAlertOK());
-const replaceModalBtnPromptCancel = () => replaceElement(getModalBtnPromptCancel());
-const replaceModalBtnPromptOK = () => replaceElement(getModalBtnPromptOK());
+// const replaceModalBtnPromptCancel = () => replaceElement(getModalBtnPromptCancel());
+// const replaceModalBtnPromptOK = () => replaceElement(getModalBtnPromptOK());
 
 /** Resets the alert modal's text to an empty string. */
 export const resetModalAlertText = () => {

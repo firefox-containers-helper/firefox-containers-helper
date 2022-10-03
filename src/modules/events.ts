@@ -1,4 +1,4 @@
-import { ActHandler } from "src/types";
+import { ActHandler, SelectedContextIndex } from "src/types";
 import { CLASSES_CONTAINER_LI_ACTIVE_DANGER, CLASSES_LI_ACTIVE, CLASSES_CONTAINER_LI_SELECTED, CLASSES_CONTAINER_LI_INACTIVE } from "./classes";
 import { getSetting } from "./config";
 import { MODES, containerListItemUrlLabelInverted, containerListItemUrlLabel, CONF } from "./constants";
@@ -76,7 +76,7 @@ export const setEventListeners = async (
 
             const urlLabel = document.getElementById(urlLabelId) as HTMLSpanElement;
 
-            const selected = await getSetting(CONF.selectedContextIndices);
+            const selected = await getSetting(CONF.selectedContextIndices) as SelectedContextIndex;
 
             if (isContextSelected(i, selected)) {
                 target.className = CLASSES_CONTAINER_LI_SELECTED;
@@ -121,7 +121,7 @@ export const setEventListeners = async (
 
             const target = event.target as HTMLElement;
 
-            const selected = await getSetting(CONF.selectedContextIndices);
+            const selected = await getSetting(CONF.selectedContextIndices) as SelectedContextIndex;
 
             if (isContextSelected(i, selected)) {
                 target.className = CLASSES_CONTAINER_LI_SELECTED;
@@ -203,5 +203,7 @@ export const preventUnload = () => {
 export const relieveUnload = () => {
     try {
         window.removeEventListener('beforeunload', unloader)
-    } catch { }
+    } catch {
+        // do nothing
+    }
 }

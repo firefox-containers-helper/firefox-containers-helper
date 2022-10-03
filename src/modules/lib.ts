@@ -13,7 +13,7 @@ import { showAlert, showPrompt, showConfirm } from './modals';
  * @param prompt If false, no modals are shown.
  * @return number The number of deleted containers
  */
-export const del = async (contexts: browser.contextualIdentities.ContextualIdentity[], prompt: boolean = true): Promise<number> => {
+export const del = async (contexts: browser.contextualIdentities.ContextualIdentity[], prompt = true): Promise<number> => {
     // selection mode can sometimes lead to contexts that don't exist,
     // so we will filter out contexts that are undefined
     const toDelete: browser.contextualIdentities.ContextualIdentity[] = [];
@@ -79,8 +79,6 @@ export const del = async (contexts: browser.contextualIdentities.ContextualIdent
                 throw `Error deleting container ${context.name} (id: ${context.cookieStoreId}): ${err}`;
             }
         }
-    } catch (err) {
-        throw err;
     } finally {
         // note that despite the performance hit, it is critical to *consider*
         // saving the settings each iteration of the loop. If we instead decide
@@ -118,8 +116,8 @@ export const del = async (contexts: browser.contextualIdentities.ContextualIdent
 export const setUrls = async (
     contexts: browser.contextualIdentities.ContextualIdentity[],
     url: string[],
-    allowAnyProtocol: boolean = false,
-    updateHelp: boolean = true,
+    allowAnyProtocol = false,
+    updateHelp = true,
 ) => {
     if (!contexts.length || !url.length) return;
 
@@ -177,9 +175,7 @@ export const setUrls = async (
     } catch (e) {
         throw `setUrls threw error: ${e}`;
     } finally {
-        if (!changed) return;
-
-        await setSettings({ containerDefaultUrls: urls });
+        if (changed) await setSettings({ containerDefaultUrls: urls });
     }
 }
 
@@ -325,6 +321,7 @@ export const rename = async (contexts: browser.contextualIdentities.ContextualId
 export const update = async (contexts: browser.contextualIdentities.ContextualIdentity[], key: string, value: string) => {
     const updated: browser.contextualIdentities.ContextualIdentity[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updates: browser.contextualIdentities._UpdateDetails | any = {};
     updates[key] = value;
 
@@ -440,7 +437,7 @@ export const replaceInName = async (contexts: browser.contextualIdentities.Conte
             updated.push(update);
 
             help(`Updated ${updated.length} containers`);
-        };
+        }
     } catch (err) {
         throw `Failed to rename container${s}: ${err}`
     }
@@ -523,7 +520,7 @@ export const replaceInUrls = async (contexts: browser.contextualIdentities.Conte
  * Duplicates one or more contexts.
  * @param prompt If false, no modals are shown.
  */
-export const duplicate = async (contexts: browser.contextualIdentities.ContextualIdentity[], prompt: boolean = true): Promise<number> => {
+export const duplicate = async (contexts: browser.contextualIdentities.ContextualIdentity[], prompt = true): Promise<number> => {
     const s = contexts.length === 1 ? '' : 's';
 
     const question = `Are you sure you want to duplicate ${contexts.length} containers?`;
@@ -870,14 +867,16 @@ const act = async (
         case MODES.SET_NAME:
             await rename(contexts);
             break;
-        case MODES.DELETE:
+        case MODES.DELETE: {
             const deleted = await del(contexts);
             if (deleted > 0) await deselect();
             break;
-        case MODES.REFRESH:
+        }
+        case MODES.REFRESH: {
             const [removed, refreshed] = await refresh(contexts);
             if (removed > 0 || refreshed > 0) await deselect();
             break;
+        }
         case MODES.SET_URL:
             await setUrlsPrompt(contexts);
             break;
@@ -893,10 +892,11 @@ const act = async (
         case MODES.REPLACE_IN_URL:
             await replaceInUrls(contexts);
             break;
-        case MODES.DUPLICATE:
+        case MODES.DUPLICATE: {
             const duplicated = await duplicate(contexts);
             if (duplicated > 0) await deselect();
             break;
+        }
         case MODES.OPEN:
             navigatedUrl = await getActionableUrl(contexts, tab);
             await open(contexts, ctrl, tab);
@@ -1092,7 +1092,7 @@ export const filter = async (
         const contexts = await browser.contextualIdentities.query({});
 
         if (!Array.isArray(contexts)) {
-            reflectSelected(await getSetting(CONF.selectedContextIndices));
+            reflectSelected(await getSetting(CONF.selectedContextIndices) as SelectedContextIndex);
             return;
         }
 
@@ -1114,7 +1114,7 @@ export const filter = async (
             event.preventDefault();
         }
 
-        reflectSelected(await getSetting(CONF.selectedContextIndices));
+        reflectSelected(await getSetting(CONF.selectedContextIndices) as SelectedContextIndex);
     } catch (err) {
         await showAlert(`Failed to filter the list of containers: ${err}`, 'Filter Error');
         return;
@@ -1132,6 +1132,7 @@ export const filter = async (
 export const toggleConfigFlag = async (key: CONF) => {
     const original = await getSetting(key) as boolean;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updates: any = {};
 
     updates[key] = !original;

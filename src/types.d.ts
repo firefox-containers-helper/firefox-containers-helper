@@ -140,7 +140,7 @@ export interface ExtensionConfig {
      * Defaults to an empty string.
      */
     openCurrentTabUrlOnMatch: UrlMatchTypes,
-};
+}
 
 /**
  * This is the type definition for the primary action handler that is triggered

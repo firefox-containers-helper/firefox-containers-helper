@@ -43,7 +43,7 @@ const init = async () => {
 
         help(msg);
     } catch (err) {
-        let msg = 'Failed to initialize page';
+        const msg = 'Failed to initialize page';
         const title = 'Initialization Error';
         if (err) {
             await showAlert(`${msg} due to error: ${err}`, title);

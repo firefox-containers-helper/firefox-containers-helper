@@ -45,9 +45,7 @@ export const focusSearchBox = () => {
  * to the user.
  */
 export const helpful = async (mode?: MODES) => {
-    if (!mode) {
-        mode = await getSetting(CONF.mode);
-    }
+    if (!mode) mode = await getSetting(CONF.mode) as MODES;
 
     switch (mode) {
         case MODES.SET_URL:

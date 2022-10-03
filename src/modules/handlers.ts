@@ -1,17 +1,18 @@
+import { SelectedContextIndex } from "src/types";
 import { getSetting } from "./config";
 import { CONF, PlatformModifierKey } from "./constants";
 import { reflectSelected } from "./elements";
 import { help, helpful } from "./html";
 import { toggleConfigFlag, filter, add, setMode, setSortMode, deselect } from "./lib";
 
-const stayOpenToggle = async (_: MouseEvent) => {
+const stayOpenToggle = async (/* _: MouseEvent */) => {
     await toggleConfigFlag(CONF.windowStayOpenState);
 }
 
-const selectionModeToggle = async (_: MouseEvent) => {
+const selectionModeToggle = async (/* _: MouseEvent */) => {
     await toggleConfigFlag(CONF.selectionMode);
 
-    reflectSelected(await getSetting(CONF.selectedContextIndices));
+    reflectSelected(await getSetting(CONF.selectedContextIndices) as SelectedContextIndex);
 
     if (await getSetting(CONF.selectionMode)) {
         help(`${PlatformModifierKey}+Click to select 1; ${PlatformModifierKey}+Shift+Click for a range`);
@@ -21,7 +22,7 @@ const selectionModeToggle = async (_: MouseEvent) => {
     await helpful();
 }
 
-const openCurrentPageToggle = async (_: MouseEvent) => {
+const openCurrentPageToggle = async (/* _: MouseEvent */) => {
     await toggleConfigFlag(CONF.openCurrentPage);
 
     if (await getSetting(CONF.openCurrentPage)) {
@@ -33,7 +34,7 @@ const openCurrentPageToggle = async (_: MouseEvent) => {
     await filter();
 }
 
-const addClick = async (_: MouseEvent) => { await add(); };
+const addClick = async (/* _: MouseEvent */) => { await add(); };
 
 const modeChange = async (event: Event) => {
     if (!event.target) return;
@@ -59,7 +60,7 @@ const sortChange = async (event: Event) => {
     event.preventDefault();
 }
 
-const searchKeyUp = (_: KeyboardEvent) => { filter(); };
+const searchKeyUp = (/* _: KeyboardEvent */) => { filter(); };
 
 const searchSubmit = (submitEvent: SubmitEvent) => { submitEvent.preventDefault(); };
 
